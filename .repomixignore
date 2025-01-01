@@ -2,3 +2,7 @@
 # Example:
 # *.log
 # tmp/
+LICENSE
+.repomixignore
+repomix.config.json
+.gitignore
