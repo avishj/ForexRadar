@@ -1,0 +1,15 @@
+{
+  "name": "forexradar-backend",
+  "version": "1.0.0",
+  "description": "Backend scripts for ForexRadar - fetches and stores exchange rate data",
+  "type": "module",
+  "scripts": {
+    "backfill": "node scripts/backfill.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
