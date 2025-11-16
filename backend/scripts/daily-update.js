@@ -1,0 +1,128 @@
+#!/usr/bin/env node
+
+/**
+ * Daily Update Script
+ * 
+ * Entry point for GitHub Actions. Iterates through the watchlist
+ * and fetches yesterday's rates for each currency pair.
+ * 
+ * @module daily-update
+ */
+
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import {
+  openDatabase,
+  insertRate,
+  rateExists,
+  closeDatabase
+} from './lib/db-handler.js';
+import { fetchRate } from './lib/visa-client.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+/**
+ * Loads the watchlist configuration
+ * @returns {Array<{from: string, to: string}>} Array of currency pairs
+ */
+function loadWatchlist() {
+  const watchlistPath = join(__dirname, '..', 'config', 'watchlist.json');
+  const content = readFileSync(watchlistPath, 'utf-8');
+  const config = JSON.parse(content);
+  return config.pairs || [];
+}
+
+/**
+ * Gets yesterday's date
+ * @returns {Date}
+ */
+function getYesterday() {
+  const date = new Date();
+  date.setDate(date.getDate() - 1);
+  return date;
+}
+
+/**
+ * Formats a Date to YYYY-MM-DD string
+ * @param {Date} date 
+ * @returns {string}
+ */
+function formatDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Updates rates for a single currency pair
+ * @param {{from: string, to: string}} pair 
+ * @param {Date} date 
+ * @returns {Promise<boolean>} True if updated, false if skipped/failed
+ */
+async function updatePair(pair, date) {
+  const { from, to } = pair;
+  const dateStr = formatDate(date);
+  
+  const db = openDatabase(from);
+  
+  try {
+    // Skip if already exists
+    if (rateExists(db, dateStr, from, to)) {
+      console.log(`  ${from}/${to}: Already exists for ${dateStr}, skipping`);
+      return false;
+    }
+    
+    const record = await fetchRate(date, from, to);
+    
+    if (record === null) {
+      console.log(`  ${from}/${to}: No data available for ${dateStr}`);
+      return false;
+    }
+    
+    insertRate(db, record);
+    console.log(`  ${from}/${to}: ${record.rate.toFixed(4)} (markup: ${(record.markup * 100).toFixed(4)}%)`);
+    return true;
+    
+  } catch (error) {
+    console.error(`  ${from}/${to}: Error - ${error.message}`);
+    return false;
+  } finally {
+    closeDatabase(db);
+  }
+}
+
+/**
+ * Main function
+ */
+async function main() {
+  console.log('=== ForexRadar Daily Update ===\n');
+  
+  const watchlist = loadWatchlist();
+  
+  if (watchlist.length === 0) {
+    console.log('No pairs in watchlist. Exiting.');
+    return;
+  }
+  
+  console.log(`Watchlist: ${watchlist.length} pair(s)`);
+  
+  const yesterday = getYesterday();
+  console.log(`Fetching rates for: ${formatDate(yesterday)}\n`);
+  
+  let updatedCount = 0;
+  
+  for (const pair of watchlist) {
+    const updated = await updatePair(pair, yesterday);
+    if (updated) updatedCount++;
+  }
+  
+  console.log(`\n=== Complete: ${updatedCount}/${watchlist.length} pairs updated ===`);
+}
+
+main().catch((error) => {
+  console.error('Daily update failed:', error.message);
+  process.exit(1);
+});

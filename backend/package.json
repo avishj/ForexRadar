@@ -4,7 +4,8 @@
   "description": "Backend scripts for ForexRadar - fetches and stores exchange rate data",
   "type": "module",
   "scripts": {
-    "backfill": "node scripts/backfill.js"
+    "backfill": "node scripts/backfill.js",
+    "daily": "node scripts/daily-update.js"
   },
   "dependencies": {
     "better-sqlite3": "^11.7.0"
