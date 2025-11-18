@@ -18,6 +18,7 @@
  */
 
 const VISA_API_BASE = 'https://www.visa.co.in/cmsapi/fx/rates';
+const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 const PROVIDER_NAME = 'VISA';
 
 /**
@@ -74,8 +75,11 @@ export async function fetchRate(date, fromCurr, toCurr) {
   url.searchParams.set('fromCurr', toCurr);  // Flipped
   url.searchParams.set('toCurr', fromCurr);  // Flipped
 
+  // Use CORS proxy to bypass browser restrictions
+  const proxyUrl = CORS_PROXY + encodeURIComponent(url.toString());
+
   try {
-    const response = await fetch(url.toString());
+    const response = await fetch(proxyUrl);
     
     // HTTP 500 indicates end of history
     if (response.status === 500) {
