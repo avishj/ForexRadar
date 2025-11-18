@@ -9,22 +9,15 @@
  * Implements the Progressive Enhancement pattern:
  * Local Cache -> Server DB -> Live API
  * 
- * @module DataManager
+ * @module data-manager
  */
 
-import * as ServerDB from './ServerDBLoader.js';
-import * as Storage from './StorageManager.js';
-import * as VisaClient from './VisaClient.js';
+import * as ServerDB from './server-db-loader.js';
+import * as Storage from './storage-manager.js';
+import * as VisaClient from './visa-client.js';
+import { formatDate, getYesterday, addDays } from '../../shared/utils.js';
 
-/**
- * @typedef {Object} RateRecord
- * @property {string} date - Date in "YYYY-MM-DD" format
- * @property {string} from_curr - Source currency code
- * @property {string} to_curr - Target currency code
- * @property {string} provider - Provider name
- * @property {number} rate - Exchange rate
- * @property {number} markup - Markup percentage as decimal
- */
+/** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
 
 /**
  * @typedef {Object} FetchResult
@@ -41,30 +34,6 @@ import * as VisaClient from './VisaClient.js';
  * @property {Function} [onProgress] - Progress callback (stage, message)
  * @property {boolean} [skipLive] - Skip live API fetch
  */
-
-/**
- * Gets yesterday's date
- * @returns {Date}
- */
-function getYesterday() {
-  const date = new Date();
-  date.setDate(date.getDate() - 1);
-  // Reset time to midnight
-  date.setHours(0, 0, 0, 0);
-  return date;
-}
-
-/**
- * Adds days to a date string
- * @param {string} dateStr - Date in YYYY-MM-DD format
- * @param {number} days - Days to add (can be negative)
- * @returns {string} New date string
- */
-function addDays(dateStr, days) {
-  const date = VisaClient.parseDate(dateStr);
-  date.setDate(date.getDate() + days);
-  return VisaClient.formatDateForStorage(date);
-}
 
 /**
  * Fetches rate data for a currency pair from all available sources.
@@ -122,7 +91,7 @@ export async function fetchRates(fromCurr, toCurr, options = {}) {
   // Step 3: Check for gaps and fetch live data
   if (!skipLive) {
     const yesterday = getYesterday();
-    const yesterdayStr = VisaClient.formatDateForStorage(yesterday);
+    const yesterdayStr = formatDate(yesterday);
     
     // Find the latest date we have
     let latestDate = null;
@@ -143,8 +112,8 @@ export async function fetchRates(fromCurr, toCurr, options = {}) {
       let consecutiveErrors = 0;
       const maxErrors = 3;
 
-      while (VisaClient.formatDateForStorage(currentDate) > stopDateStr) {
-        const dateStr = VisaClient.formatDateForStorage(currentDate);
+      while (formatDate(currentDate) > stopDateStr) {
+        const dateStr = formatDate(currentDate);
         
         // Skip if we already have this date
         if (mergedData.has(dateStr)) {

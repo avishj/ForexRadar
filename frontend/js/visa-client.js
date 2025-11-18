@@ -4,56 +4,16 @@
  * Fetches exchange rate data from Visa's public FX API.
  * Browser-side version for live fetching of recent data.
  * 
- * @module VisaClient
+ * @module visa-client
  */
 
-/**
- * @typedef {Object} RateRecord
- * @property {string} date - Date in "YYYY-MM-DD" format
- * @property {string} from_curr - Source currency code
- * @property {string} to_curr - Target currency code
- * @property {string} provider - Provider name
- * @property {number} rate - Exchange rate
- * @property {number} markup - Markup percentage as decimal
- */
+import { formatDate, formatDateForApi } from '../../shared/utils.js';
+
+/** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
 
 const VISA_API_BASE = 'https://www.visa.co.in/cmsapi/fx/rates';
 const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 const PROVIDER_NAME = 'VISA';
-
-/**
- * Formats a Date object to MM/DD/YYYY string for the Visa API
- * @param {Date} date - The date to format
- * @returns {string}
- */
-function formatDateForApi(date) {
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const year = date.getFullYear();
-  return `${month}/${day}/${year}`;
-}
-
-/**
- * Formats a Date object to YYYY-MM-DD string for storage
- * @param {Date} date - The date to format
- * @returns {string}
- */
-export function formatDateForStorage(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-/**
- * Parses a YYYY-MM-DD string to a Date object
- * @param {string} dateStr - Date string
- * @returns {Date}
- */
-export function parseDate(dateStr) {
-  const [year, month, day] = dateStr.split('-').map(Number);
-  return new Date(year, month - 1, day);
-}
 
 /**
  * Fetches exchange rate from Visa API for a specific date and currency pair.
@@ -104,7 +64,7 @@ export async function fetchRate(date, fromCurr, toCurr) {
     }
     
     return {
-      date: formatDateForStorage(date),
+      date: formatDate(date),
       from_curr: fromCurr,
       to_curr: toCurr,
       provider: PROVIDER_NAME,

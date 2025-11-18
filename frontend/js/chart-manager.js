@@ -5,15 +5,10 @@
  * - Y-Axis 1 (Left): Exchange Rate (Blue)
  * - Y-Axis 2 (Right): Markup % (Red, Dotted)
  * 
- * @module ChartManager
+ * @module chart-manager
  */
 
-/**
- * @typedef {Object} RateRecord
- * @property {string} date
- * @property {number} rate
- * @property {number} markup
- */
+/** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
 
 /** @type {ApexCharts|null} */
 let chartInstance = null;

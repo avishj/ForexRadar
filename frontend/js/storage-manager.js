@@ -7,18 +7,10 @@
  * Database: ForexRadarDB
  * Store: rates
  * 
- * @module StorageManager
+ * @module storage-manager
  */
 
-/**
- * @typedef {Object} RateRecord
- * @property {string} date - Date in "YYYY-MM-DD" format
- * @property {string} from_curr - Source currency code
- * @property {string} to_curr - Target currency code
- * @property {string} provider - Provider name (e.g., "VISA")
- * @property {number} rate - Exchange rate
- * @property {number} markup - Markup percentage as decimal
- */
+/** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
 
 const DB_NAME = 'ForexRadarDB';
 const DB_VERSION = 1;

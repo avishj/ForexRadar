@@ -14,9 +14,7 @@ import { existsSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-/**
- * @typedef {import('./visa-client.js').RateRecord} RateRecord
- */
+/** @typedef {import('../../../shared/types.js').RateRecord} RateRecord */
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

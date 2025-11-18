@@ -19,6 +19,9 @@ import {
   closeDatabase
 } from './lib/db-handler.js';
 import { fetchRate } from './lib/visa-client.js';
+import { formatDate, getYesterday } from '../../shared/utils.js';
+
+/** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -32,28 +35,6 @@ function loadWatchlist() {
   const content = readFileSync(watchlistPath, 'utf-8');
   const config = JSON.parse(content);
   return config.pairs || [];
-}
-
-/**
- * Gets yesterday's date
- * @returns {Date}
- */
-function getYesterday() {
-  const date = new Date();
-  date.setDate(date.getDate() - 1);
-  return date;
-}
-
-/**
- * Formats a Date to YYYY-MM-DD string
- * @param {Date} date 
- * @returns {string}
- */
-function formatDate(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
 }
 
 /**

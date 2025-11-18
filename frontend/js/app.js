@@ -7,8 +7,8 @@
  */
 
 import { currencies } from './currencies.js';
-import * as DataManager from './DataManager.js';
-import * as ChartManager from './ChartManager.js';
+import * as DataManager from './data-manager.js';
+import * as ChartManager from './chart-manager.js';
 
 // ============================================================================
 // DOM Elements
