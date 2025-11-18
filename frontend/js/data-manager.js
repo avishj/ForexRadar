@@ -106,7 +106,8 @@ export async function fetchRates(fromCurr, toCurr, options = {}) {
       notify('live', 'Fetching live data...');
       
       const startDate = new Date(yesterday);
-      const stopDateStr = latestDate || addDays(yesterdayStr, -365);
+      // If no historical data exists, only fetch last 7 days
+      const stopDateStr = latestDate || addDays(yesterdayStr, -7);
       
       let currentDate = new Date(startDate);
       let consecutiveErrors = 0;

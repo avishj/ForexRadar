@@ -56,10 +56,17 @@ export async function fetchRate(date, fromCurr, toCurr) {
     
     const data = await response.json();
     
-    const rate = data.fxRateVisa;
-    const markup = data.markupWithoutAdditionalFee;
+    // Extract rate from originalValues object
+    const originalValues = data.originalValues;
+    if (!originalValues) {
+      throw new Error('Invalid response: missing originalValues');
+    }
     
-    if (rate === undefined || rate === null) {
+    const rate = parseFloat(originalValues.fxRateVisa);
+    const benchmark = originalValues.benchmarks?.[0];
+    const markup = benchmark ? parseFloat(benchmark.markupWithoutAdditionalFee) : 0;
+    
+    if (isNaN(rate)) {
       throw new Error('Invalid response: missing fxRateVisa');
     }
     
