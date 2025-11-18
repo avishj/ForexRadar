@@ -165,7 +165,9 @@ function transformData(records) {
   const markupSeries = [];
   
   for (const record of records) {
-    const timestamp = new Date(record.date).getTime();
+    // Parse YYYY-MM-DD as local time (not UTC) to avoid timezone offset issues
+    const [year, month, day] = record.date.split('-').map(Number);
+    const timestamp = new Date(year, month - 1, day).getTime();
     
     rateSeries.push({
       x: timestamp,
