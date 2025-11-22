@@ -24,6 +24,7 @@ const emptyState = document.getElementById('empty-state');
 const lastUpdated = document.getElementById('last-updated');
 const requestArchivingLink = document.getElementById('request-archiving');
 const notificationContainer = document.getElementById('notification-container');
+const themeToggle = document.getElementById('theme-toggle');
 
 // Stats elements
 const statCurrent = document.getElementById('stat-current');
@@ -49,16 +50,23 @@ const DEBOUNCE_MS = 300;
  * @param {number} duration - Duration in ms (0 = persistent)
  */
 function showNotification(message, type = 'info', duration = 4000) {
+  const icons = {
+    info: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+    success: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+    error: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+    warning: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>'
+  };
+
   const colors = {
-    info: 'bg-blue-500',
-    success: 'bg-green-500',
-    error: 'bg-red-500',
-    warning: 'bg-yellow-500'
+    info: 'bg-brand-500 dark:bg-brand-600',
+    success: 'bg-emerald-500 dark:bg-emerald-600',
+    error: 'bg-rose-500 dark:bg-rose-600',
+    warning: 'bg-amber-500 dark:bg-amber-600'
   };
 
   const notification = document.createElement('div');
-  notification.className = `notification ${colors[type]} text-white px-4 py-3 rounded-lg shadow-lg max-w-sm`;
-  notification.textContent = message;
+  notification.className = `notification ${colors[type]} text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3`;
+  notification.innerHTML = `${icons[type]}<span class="text-sm font-medium">${message}</span>`;
 
   notificationContainer.appendChild(notification);
 
@@ -278,6 +286,15 @@ function init() {
   // Add event listeners with debouncing
   fromSelect.addEventListener('change', handleSelectionChange);
   toSelect.addEventListener('change', handleSelectionChange);
+
+  // Theme toggle handler
+  if (themeToggle) {
+    themeToggle.addEventListener('click', () => {
+      const isDark = document.documentElement.classList.toggle('dark');
+      document.documentElement.classList.toggle('light', !isDark);
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    });
+  }
 
   // Initial load
   loadCurrencyPair();

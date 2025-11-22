@@ -14,17 +14,32 @@
 let chartInstance = null;
 
 /**
+ * Checks if dark mode is active
+ * @returns {boolean}
+ */
+function isDarkMode() {
+  return document.documentElement.classList.contains('dark');
+}
+
+/**
  * Gets the base chart configuration
  * @param {string} fromCurr - Source currency code
  * @param {string} toCurr - Target currency code
  * @returns {Object} ApexCharts options
  */
 function getChartOptions(fromCurr, toCurr) {
+  const dark = isDarkMode();
+  const textColor = dark ? '#94a3b8' : '#64748b';
+  const gridColor = dark ? '#334155' : '#e2e8f0';
+  const bgColor = dark ? '#1e293b' : '#ffffff';
+  
   return {
     chart: {
       type: 'line',
       height: 400,
-      fontFamily: 'system-ui, -apple-system, sans-serif',
+      fontFamily: 'Inter, system-ui, sans-serif',
+      background: bgColor,
+      foreColor: textColor,
       toolbar: {
         show: true,
         tools: {
@@ -35,7 +50,8 @@ function getChartOptions(fromCurr, toCurr) {
           zoomout: true,
           pan: true,
           reset: true
-        }
+        },
+        autoSelected: 'zoom'
       },
       zoom: {
         enabled: true
@@ -45,6 +61,10 @@ function getChartOptions(fromCurr, toCurr) {
         easing: 'easeinout',
         speed: 500
       }
+    },
+    
+    theme: {
+      mode: dark ? 'dark' : 'light'
     },
     
     series: [
@@ -62,17 +82,26 @@ function getChartOptions(fromCurr, toCurr) {
     
     stroke: {
       curve: 'smooth',
-      width: [2, 2],
-      dashArray: [0, 5]  // Solid for rate, dotted for markup
+      width: [2.5, 2],
+      dashArray: [0, 5]
     },
     
-    colors: ['#3B82F6', '#EF4444'],  // Blue, Red
+    colors: ['#2aa6ff', '#f59e0b'],
     
     xaxis: {
       type: 'datetime',
       labels: {
         datetimeUTC: false,
-        format: 'MMM dd'
+        format: 'MMM dd',
+        style: {
+          colors: textColor
+        }
+      },
+      axisBorder: {
+        color: gridColor
+      },
+      axisTicks: {
+        color: gridColor
       },
       tooltip: {
         enabled: false
@@ -84,18 +113,19 @@ function getChartOptions(fromCurr, toCurr) {
         title: {
           text: `Rate (${fromCurr} → ${toCurr})`,
           style: {
-            color: '#3B82F6'
+            color: '#2aa6ff',
+            fontWeight: 600
           }
         },
         labels: {
           style: {
-            colors: '#3B82F6'
+            colors: '#2aa6ff'
           },
           formatter: (value) => value?.toFixed(4) ?? ''
         },
         axisBorder: {
           show: true,
-          color: '#3B82F6'
+          color: '#2aa6ff'
         }
       },
       {
@@ -103,18 +133,19 @@ function getChartOptions(fromCurr, toCurr) {
         title: {
           text: 'Markup (%)',
           style: {
-            color: '#EF4444'
+            color: '#f59e0b',
+            fontWeight: 600
           }
         },
         labels: {
           style: {
-            colors: '#EF4444'
+            colors: '#f59e0b'
           },
           formatter: (value) => value ? `${(value * 100).toFixed(3)}%` : ''
         },
         axisBorder: {
           show: true,
-          color: '#EF4444'
+          color: '#f59e0b'
         }
       }
     ],
@@ -122,6 +153,7 @@ function getChartOptions(fromCurr, toCurr) {
     tooltip: {
       shared: true,
       intersect: false,
+      theme: dark ? 'dark' : 'light',
       x: {
         format: 'MMM dd, yyyy'
       },
@@ -138,18 +170,22 @@ function getChartOptions(fromCurr, toCurr) {
     
     legend: {
       position: 'top',
-      horizontalAlign: 'center'
+      horizontalAlign: 'right',
+      labels: {
+        colors: textColor
+      }
     },
     
     grid: {
-      borderColor: '#E5E7EB',
+      borderColor: gridColor,
       strokeDashArray: 3
     },
     
     markers: {
       size: 0,
       hover: {
-        size: 5
+        size: 6,
+        sizeOffset: 3
       }
     }
   };
