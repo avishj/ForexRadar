@@ -2,8 +2,8 @@
  * Chart Manager
  * 
  * Configures and manages the ApexCharts dual-axis line chart.
- * - Y-Axis 1 (Left): Exchange Rate (Blue)
- * - Y-Axis 2 (Right): Markup % (Red, Dotted)
+ * - Y-Axis 1 (Left): Exchange Rate (Emerald)
+ * - Y-Axis 2 (Right): Markup % (Amber, Dotted)
  * 
  * @module chart-manager
  */
@@ -29,19 +29,21 @@ function isDarkMode() {
  */
 function getChartOptions(fromCurr, toCurr) {
   const dark = isDarkMode();
-  const textColor = dark ? '#94a3b8' : '#64748b';
-  const gridColor = dark ? '#334155' : '#e2e8f0';
-  const bgColor = dark ? '#1e293b' : '#ffffff';
+  const textColor = dark ? '#71717a' : '#71717a';  // zinc-500
+  const gridColor = dark ? '#27272a' : '#e4e4e7';  // zinc-800/zinc-200
+  const bgColor = dark ? '#18181b' : '#ffffff';    // zinc-900/white
   
   return {
     chart: {
       type: 'line',
-      height: 400,
-      fontFamily: 'Inter, system-ui, sans-serif',
+      height: 420,
+      fontFamily: '"DM Sans", system-ui, sans-serif',
       background: bgColor,
       foreColor: textColor,
       toolbar: {
         show: true,
+        offsetX: 0,
+        offsetY: 0,
         tools: {
           download: true,
           selection: true,
@@ -59,7 +61,7 @@ function getChartOptions(fromCurr, toCurr) {
       animations: {
         enabled: true,
         easing: 'easeinout',
-        speed: 500
+        speed: 400
       }
     },
     
@@ -82,11 +84,11 @@ function getChartOptions(fromCurr, toCurr) {
     
     stroke: {
       curve: 'smooth',
-      width: [2.5, 2],
-      dashArray: [0, 5]
+      width: [2, 1.5],
+      dashArray: [0, 4]
     },
     
-    colors: ['#2aa6ff', '#f59e0b'],
+    colors: ['#10b981', '#f59e0b'],  // emerald-500, amber-500
     
     xaxis: {
       type: 'datetime',
@@ -113,19 +115,20 @@ function getChartOptions(fromCurr, toCurr) {
         title: {
           text: `Rate (${fromCurr} → ${toCurr})`,
           style: {
-            color: '#2aa6ff',
-            fontWeight: 600
+            color: '#10b981',  // emerald-500
+            fontWeight: 500,
+            fontSize: '12px'
           }
         },
         labels: {
           style: {
-            colors: '#2aa6ff'
+            colors: '#10b981'
           },
           formatter: (value) => value?.toFixed(4) ?? ''
         },
         axisBorder: {
           show: true,
-          color: '#2aa6ff'
+          color: '#10b981'
         }
       },
       {
@@ -133,8 +136,9 @@ function getChartOptions(fromCurr, toCurr) {
         title: {
           text: 'Markup (%)',
           style: {
-            color: '#f59e0b',
-            fontWeight: 600
+            color: '#f59e0b',  // amber-500
+            fontWeight: 500,
+            fontSize: '12px'
           }
         },
         labels: {
@@ -169,10 +173,25 @@ function getChartOptions(fromCurr, toCurr) {
     },
     
     legend: {
-      position: 'top',
-      horizontalAlign: 'right',
+      show: true,
+      position: 'bottom',
+      horizontalAlign: 'center',
+      floating: false,
+      fontSize: '12px',
+      fontFamily: '"DM Sans", system-ui, sans-serif',
+      fontWeight: 500,
+      offsetY: 8,
       labels: {
         colors: textColor
+      },
+      markers: {
+        width: 8,
+        height: 8,
+        radius: 4
+      },
+      itemMargin: {
+        horizontal: 16,
+        vertical: 0
       }
     },
     

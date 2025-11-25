@@ -6,10 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Forex Radar: One stop solution to tracking Visa / Master Card exchange rates.</title>
   
-  <!-- Fonts -->
+  <!-- Fonts: Display (Cabinet Grotesk) + Body (Satoshi) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -19,28 +19,28 @@
       theme: {
         extend: {
           fontFamily: {
-            sans: ['Inter', 'system-ui', 'sans-serif'],
+            display: ['"Space Grotesk"', 'system-ui', 'sans-serif'],
+            body: ['"DM Sans"', 'system-ui', 'sans-serif'],
           },
           colors: {
-            brand: {
-              50: '#eef9ff',
-              100: '#d8f1ff',
-              200: '#b9e7ff',
-              300: '#89daff',
-              400: '#52c4ff',
-              500: '#2aa6ff',
-              600: '#1488f5',
-              700: '#0d6fe1',
-              800: '#1259b6',
-              900: '#154c8f',
-              950: '#122f57',
+            surface: {
+              50: '#fafafa',
+              100: '#f4f4f5',
+              800: '#18181b',
+              900: '#0f0f10',
+              950: '#09090b',
+            },
+            accent: {
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
             }
           },
           animation: {
-            'fade-in': 'fadeIn 0.5s ease-out',
-            'slide-up': 'slideUp 0.4s ease-out',
+            'fade-in': 'fadeIn 0.6s ease-out',
+            'slide-up': 'slideUp 0.5s ease-out',
             'slide-in-right': 'slideInRight 0.3s ease-out',
-            'pulse-soft': 'pulseSoft 2s ease-in-out infinite',
+            'float': 'float 6s ease-in-out infinite',
           },
           keyframes: {
             fadeIn: {
@@ -48,16 +48,16 @@
               '100%': { opacity: '1' },
             },
             slideUp: {
-              '0%': { opacity: '0', transform: 'translateY(20px)' },
+              '0%': { opacity: '0', transform: 'translateY(30px)' },
               '100%': { opacity: '1', transform: 'translateY(0)' },
             },
             slideInRight: {
               '0%': { opacity: '0', transform: 'translateX(100%)' },
               '100%': { opacity: '1', transform: 'translateX(0)' },
             },
-            pulseSoft: {
-              '0%, 100%': { opacity: '1' },
-              '50%': { opacity: '0.6' },
+            float: {
+              '0%, 100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-20px)' },
             },
           },
         },
@@ -72,19 +72,18 @@
   <script src="https://sql.js.org/dist/sql-wasm.js"></script>
   
   <style>
+    * { font-family: 'DM Sans', system-ui, sans-serif; }
+    h1, h2, h3, h4, .font-display { font-family: 'Space Grotesk', system-ui, sans-serif; }
+    
     html { transition: background-color 0.3s ease, color 0.3s ease; }
     
-    ::-webkit-scrollbar { width: 8px; height: 8px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-    .dark ::-webkit-scrollbar-thumb { background: #475569; }
+    /* Dark mode - truly dark */
+    .dark { background-color: #050505; color: #e4e4e7; }
     
-    .glass {
-      background: rgba(255, 255, 255, 0.7);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-    }
-    .dark .glass { background: rgba(30, 41, 59, 0.8); }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 3px; }
+    .dark ::-webkit-scrollbar-thumb { background: #27272a; }
     
     .notification {
       transform: translateX(100%);
@@ -93,207 +92,213 @@
     }
     .notification.show { transform: translateX(0); opacity: 1; }
     
-    .stat-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-    .stat-card:hover { transform: translateY(-2px); }
-    
     select {
       appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-      background-position: right 0.75rem center;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2371717a'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+      background-position: right 1rem center;
       background-repeat: no-repeat;
-      background-size: 1.25rem;
+      background-size: 1rem;
       padding-right: 2.5rem;
     }
     .dark select {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2752525b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
     }
     
     .spinner {
-      border: 3px solid transparent;
+      border: 2px solid transparent;
       border-top-color: currentColor;
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      animation: spin 0.6s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     
-    .glow { box-shadow: 0 0 20px rgba(42, 166, 255, 0.3); }
-    .dark .glow { box-shadow: 0 0 30px rgba(42, 166, 255, 0.2); }
+    /* Gradient border effect */
+    .gradient-border {
+      position: relative;
+      background: linear-gradient(135deg, #10b981 0%, #3b82f6 100%);
+      padding: 1px;
+      border-radius: 1rem;
+    }
+    .gradient-border > * {
+      background: white;
+      border-radius: calc(1rem - 1px);
+    }
+    .dark .gradient-border > * {
+      background: #0a0a0a;
+    }
   </style>
 </head>
 
-<body class="bg-slate-50 dark:bg-slate-900 min-h-screen font-sans antialiased transition-colors duration-300">
-  
-  <!-- Ambient Background Gradient -->
-  <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
-    <div class="absolute -top-40 -right-40 w-80 h-80 bg-brand-500/10 dark:bg-brand-500/5 rounded-full blur-3xl"></div>
-    <div class="absolute top-1/2 -left-40 w-80 h-80 bg-purple-500/10 dark:bg-purple-500/5 rounded-full blur-3xl"></div>
-  </div>
+<body class="bg-zinc-50 dark:bg-[#050505] min-h-screen antialiased transition-colors duration-300">
   
   <!-- Main Container -->
-  <div class="relative z-10">
+  <div class="relative">
     
-    <!-- Header -->
-    <header class="sticky top-0 z-40 glass border-b border-slate-200/50 dark:border-slate-700/50">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex items-center justify-between h-16">
+    <!-- Minimal Header -->
+    <header class="absolute top-0 left-0 right-0 z-40">
+      <div class="max-w-6xl mx-auto px-6 py-6">
+        <div class="flex items-center justify-between">
           
-          <!-- Logo & Title -->
-          <div class="flex items-center gap-3">
-            <div class="relative">
-              <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center shadow-lg glow">
-                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                </svg>
-              </div>
+          <!-- Logo -->
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center">
+              <span class="text-white font-display font-bold text-sm">FR</span>
             </div>
-            <div>
-              <h1 class="text-xl font-bold text-slate-900 dark:text-white">Forex Radar</h1>
-              <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">Visa Exchange Rate Tracker</p>
-            </div>
+            <span class="font-display font-semibold text-zinc-900 dark:text-white">Forex Radar</span>
           </div>
           
-          <!-- Right side controls -->
-          <div class="flex items-center gap-4">
-            <div id="last-updated" class="hidden sm:block text-xs text-slate-400 dark:text-slate-500"></div>
-            
-            <!-- Theme Toggle -->
-            <button id="theme-toggle" 
-                    class="relative w-14 h-7 rounded-full bg-slate-200 dark:bg-slate-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
-                    aria-label="Toggle dark mode">
-              <div class="absolute inset-0 flex items-center justify-between px-1.5 text-xs">
-                <span class="text-amber-500">☀️</span>
-                <span class="text-slate-400">🌙</span>
-              </div>
-              <div class="absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white shadow-md transform transition-transform duration-300 dark:translate-x-7"></div>
-            </button>
-          </div>
+          <!-- Theme Toggle -->
+          <button id="theme-toggle" 
+                  class="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors"
+                  aria-label="Toggle dark mode">
+            <svg class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+            </svg>
+            <svg class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+            </svg>
+          </button>
         </div>
       </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      
-      <!-- Currency Selector Card -->
-      <div class="animate-fade-in">
-        <div class="relative overflow-hidden rounded-2xl bg-white dark:bg-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 border border-slate-200/50 dark:border-slate-700/50 p-6 mb-8">
-          <div class="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-brand-500/10 to-purple-500/10 dark:from-brand-500/5 dark:to-purple-500/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
+    <!-- Hero Section -->
+    <section class="relative pt-32 pb-16 px-6">
+      <div class="max-w-6xl mx-auto">
+        <div class="max-w-2xl">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-sm font-medium mb-6">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            Live Data from Visa
+          </div>
           
-          <div class="relative">
-            <div class="flex flex-col sm:flex-row items-stretch sm:items-end gap-4">
-              <div class="flex-1">
-                <label for="from-currency" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">From Currency</label>
-                <select id="from-currency" class="w-full h-12 rounded-xl border-2 border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white focus:border-brand-500 dark:focus:border-brand-400 focus:ring-0 transition-colors text-sm font-medium px-4">
-                  <option value="">Select currency...</option>
-                </select>
-              </div>
-              
-              <div class="hidden sm:flex items-center justify-center w-12 h-12 mb-0.5">
-                <div class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
-                  <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-                  </svg>
-                </div>
-              </div>
-              
-              <div class="flex-1">
-                <label for="to-currency" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">To Currency</label>
-                <select id="to-currency" class="w-full h-12 rounded-xl border-2 border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-white focus:border-brand-500 dark:focus:border-brand-400 focus:ring-0 transition-colors text-sm font-medium px-4">
-                  <option value="">Select currency...</option>
-                </select>
-              </div>
+          <h1 class="font-display text-4xl sm:text-5xl font-bold text-zinc-900 dark:text-white leading-tight mb-4">
+            Track credit card<br/>
+            <span class="text-emerald-500">exchange rates</span>
+          </h1>
+          
+          <p class="text-lg text-zinc-600 dark:text-zinc-400 mb-8 leading-relaxed">
+            Access historical Visa and Mastercard exchange rates with real markup percentages. 
+            See what you're actually paying when you swipe abroad.
+          </p>
+          
+          <div class="flex flex-wrap gap-4 text-sm text-zinc-500 dark:text-zinc-500">
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+              </svg>
+              Up to 365 days history
             </div>
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+              </svg>
+              Real markup %
+            </div>
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+              </svg>
+              150+ currencies
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-6 pb-24">
+      
+      <!-- Currency Selector -->
+      <div class="mb-12">
+        <div class="flex flex-col sm:flex-row items-stretch gap-3">
+          <div class="flex-1">
+            <label for="from-currency" class="block text-xs font-medium text-zinc-500 dark:text-zinc-500 uppercase tracking-wider mb-2">From</label>
+            <select id="from-currency" class="w-full h-14 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all text-base font-medium px-4">
+              <option value="">Select currency...</option>
+            </select>
+          </div>
+          
+          <div class="flex items-end justify-center pb-3">
+            <div class="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center">
+              <svg class="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+              </svg>
+            </div>
+          </div>
+          
+          <div class="flex-1">
+            <label for="to-currency" class="block text-xs font-medium text-zinc-500 dark:text-zinc-500 uppercase tracking-wider mb-2">To</label>
+            <select id="to-currency" class="w-full h-14 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all text-base font-medium px-4">
+              <option value="">Select currency...</option>
+            </select>
           </div>
         </div>
       </div>
 
       <!-- Loader -->
-      <div id="loader" class="hidden animate-fade-in">
-        <div class="rounded-2xl bg-white dark:bg-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 border border-slate-200/50 dark:border-slate-700/50 p-12 mb-8">
-          <div class="flex flex-col items-center justify-center gap-4">
-            <div class="w-12 h-12 spinner text-brand-500"></div>
-            <span id="loader-text" class="text-slate-600 dark:text-slate-300 font-medium">Loading exchange rates...</span>
-          </div>
+      <div id="loader" class="hidden">
+        <div class="flex flex-col items-center justify-center py-20">
+          <div class="w-8 h-8 spinner text-emerald-500 mb-4"></div>
+          <span id="loader-text" class="text-zinc-500 dark:text-zinc-400 text-sm">Loading exchange rates...</span>
         </div>
       </div>
 
       <!-- Stats Bar -->
-      <div id="stats-bar" class="hidden animate-slide-up">
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <div class="stat-card group rounded-2xl bg-white dark:bg-slate-800 shadow-lg shadow-slate-200/50 dark:shadow-slate-900/50 border border-slate-200/50 dark:border-slate-700/50 p-5 cursor-default">
-            <div class="flex items-center gap-3 mb-3">
-              <div class="w-10 h-10 rounded-xl bg-brand-500/10 dark:bg-brand-500/20 flex items-center justify-center">
-                <svg class="w-5 h-5 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-              </div>
-              <span class="text-sm font-medium text-slate-500 dark:text-slate-400">Current Rate</span>
-            </div>
-            <div id="stat-current" class="text-2xl font-bold text-slate-900 dark:text-white">-</div>
+      <div id="stats-bar" class="hidden mb-8">
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          
+          <!-- Current Rate -->
+          <div class="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+            <div class="text-xs font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1">Current</div>
+            <div id="stat-current" class="font-display text-xl font-semibold text-zinc-900 dark:text-white">-</div>
           </div>
           
-          <div class="stat-card group rounded-2xl bg-white dark:bg-slate-800 shadow-lg shadow-slate-200/50 dark:shadow-slate-900/50 border border-slate-200/50 dark:border-slate-700/50 p-5 cursor-default">
-            <div class="flex items-center gap-3 mb-3">
-              <div class="w-10 h-10 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 flex items-center justify-center">
-                <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-                </svg>
-              </div>
-              <span class="text-sm font-medium text-slate-500 dark:text-slate-400">High</span>
-            </div>
-            <div id="stat-high" class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">-</div>
+          <!-- High -->
+          <div class="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+            <div class="text-xs font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1">High</div>
+            <div id="stat-high" class="font-display text-xl font-semibold text-emerald-600 dark:text-emerald-400">-</div>
           </div>
           
-          <div class="stat-card group rounded-2xl bg-white dark:bg-slate-800 shadow-lg shadow-slate-200/50 dark:shadow-slate-900/50 border border-slate-200/50 dark:border-slate-700/50 p-5 cursor-default">
-            <div class="flex items-center gap-3 mb-3">
-              <div class="w-10 h-10 rounded-xl bg-rose-500/10 dark:bg-rose-500/20 flex items-center justify-center">
-                <svg class="w-5 h-5 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/>
-                </svg>
-              </div>
-              <span class="text-sm font-medium text-slate-500 dark:text-slate-400">Low</span>
-            </div>
-            <div id="stat-low" class="text-2xl font-bold text-rose-600 dark:text-rose-400">-</div>
+          <!-- Low -->
+          <div class="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+            <div class="text-xs font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1">Low</div>
+            <div id="stat-low" class="font-display text-xl font-semibold text-rose-600 dark:text-rose-400">-</div>
           </div>
           
-          <div class="stat-card group rounded-2xl bg-white dark:bg-slate-800 shadow-lg shadow-slate-200/50 dark:shadow-slate-900/50 border border-slate-200/50 dark:border-slate-700/50 p-5 cursor-default">
-            <div class="flex items-center gap-3 mb-3">
-              <div class="w-10 h-10 rounded-xl bg-amber-500/10 dark:bg-amber-500/20 flex items-center justify-center">
-                <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
-                </svg>
-              </div>
-              <span class="text-sm font-medium text-slate-500 dark:text-slate-400">Avg Markup</span>
-            </div>
-            <div id="stat-markup" class="text-2xl font-bold text-amber-600 dark:text-amber-400">-</div>
+          <!-- Markup -->
+          <div class="p-4 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+            <div class="text-xs font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1">Avg Markup</div>
+            <div id="stat-markup" class="font-display text-xl font-semibold text-amber-600 dark:text-amber-400">-</div>
           </div>
         </div>
+        
+        <div id="last-updated" class="mt-3 text-xs text-zinc-400 dark:text-zinc-600"></div>
       </div>
 
       <!-- Chart Container -->
-      <div id="chart-container" class="hidden animate-slide-up">
-        <div class="rounded-2xl bg-white dark:bg-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 border border-slate-200/50 dark:border-slate-700/50 p-6 mb-8">
-          <div id="chart" class="w-full" style="min-height: 400px;"></div>
+      <div id="chart-container" class="hidden">
+        <div class="rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-4 sm:p-6 mb-8">
+          <div id="chart" class="w-full" style="min-height: 420px;"></div>
         </div>
       </div>
 
       <!-- Empty State -->
-      <div id="empty-state" class="animate-fade-in">
-        <div class="rounded-2xl bg-white dark:bg-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 border border-slate-200/50 dark:border-slate-700/50 p-12 text-center">
-          <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-brand-500/20 to-purple-500/20 dark:from-brand-500/10 dark:to-purple-500/10 mb-6">
-            <svg class="w-10 h-10 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div id="empty-state">
+        <div class="rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-16 text-center">
+          <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-500/10 mb-6">
+            <svg class="w-8 h-8 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
             </svg>
           </div>
-          <h3 class="text-xl font-semibold text-slate-900 dark:text-white mb-2">Select a currency pair</h3>
-          <p class="text-slate-500 dark:text-slate-400 max-w-sm mx-auto">Choose source and target currencies above to view historical Visa exchange rates and markup percentages.</p>
+          <h3 class="font-display text-lg font-semibold text-zinc-900 dark:text-white mb-2">Select a currency pair</h3>
+          <p class="text-zinc-500 dark:text-zinc-400 text-sm max-w-xs mx-auto">Choose currencies above to view historical Visa exchange rates and markup percentages.</p>
         </div>
       </div>
 
       <!-- Request Archiving Link -->
-      <div class="mt-8 text-center">
-        <a id="request-archiving" href="#" target="_blank" class="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="mt-6 text-center">
+        <a id="request-archiving" href="#" target="_blank" class="inline-flex items-center gap-2 text-xs text-zinc-400 dark:text-zinc-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
           </svg>
           Request server-side archiving for this pair
@@ -302,15 +307,15 @@
     </main>
 
     <!-- Footer -->
-    <footer class="mt-16 py-8 border-t border-slate-200 dark:border-slate-800">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <footer class="py-8 border-t border-zinc-200 dark:border-zinc-800/50">
+      <div class="max-w-6xl mx-auto px-6">
         <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p class="text-sm text-slate-500 dark:text-slate-400">Data sourced from Visa. Historical data may be limited to ~365 days.</p>
-          <a href="https://github.com/avishj/ForexRadar" target="_blank" class="inline-flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors">
-            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+          <p class="text-xs text-zinc-400 dark:text-zinc-600">Data from Visa. Historical data limited to ~365 days.</p>
+          <a href="https://github.com/avishj/ForexRadar" target="_blank" class="inline-flex items-center gap-1.5 text-xs text-zinc-400 dark:text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
               <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"/>
             </svg>
-            View on GitHub
+            GitHub
           </a>
         </div>
       </div>
