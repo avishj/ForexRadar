@@ -24,7 +24,6 @@ const emptyState = document.getElementById('empty-state');
 const lastUpdated = document.getElementById('last-updated');
 const requestArchivingLink = document.getElementById('request-archiving');
 const notificationContainer = document.getElementById('notification-container');
-const themeToggle = document.getElementById('theme-toggle');
 
 // Stats elements
 const statCurrent = document.getElementById('stat-current');
@@ -287,14 +286,14 @@ function init() {
   fromSelect.addEventListener('change', handleSelectionChange);
   toSelect.addEventListener('change', handleSelectionChange);
 
-  // Theme toggle handler
-  if (themeToggle) {
-    themeToggle.addEventListener('click', () => {
-      const isDark = document.documentElement.classList.toggle('dark');
-      document.documentElement.classList.toggle('light', !isDark);
-      localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    });
-  }
+  // Listen for theme changes to update chart
+  window.addEventListener('themechange', () => {
+    const fromCurr = fromSelect.value;
+    const toCurr = toSelect.value;
+    if (fromCurr && toCurr && ChartManager.isChartInitialized()) {
+      ChartManager.refreshChartTheme(fromCurr, toCurr);
+    }
+  });
 
   // Initial load
   loadCurrencyPair();
