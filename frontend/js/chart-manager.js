@@ -29,9 +29,10 @@ function isDarkMode() {
  */
 function getChartOptions(fromCurr, toCurr) {
   const dark = isDarkMode();
-  const textColor = dark ? '#71717a' : '#71717a';  // zinc-500
+  const textColor = dark ? '#a1a1aa' : '#52525b';  // zinc-400/zinc-600
   const gridColor = dark ? '#27272a' : '#e4e4e7';  // zinc-800/zinc-200
   const bgColor = dark ? '#18181b' : '#ffffff';    // zinc-900/white
+  const tooltipTheme = dark ? 'dark' : 'light';
   
   return {
     chart: {
@@ -66,7 +67,7 @@ function getChartOptions(fromCurr, toCurr) {
     },
     
     theme: {
-      mode: dark ? 'dark' : 'light'
+      mode: tooltipTheme
     },
     
     series: [
@@ -180,7 +181,7 @@ function getChartOptions(fromCurr, toCurr) {
       fontSize: '12px',
       fontFamily: '"DM Sans", system-ui, sans-serif',
       fontWeight: 500,
-      offsetY: 8,
+      offsetY: 0,
       labels: {
         colors: textColor
       },
@@ -191,7 +192,7 @@ function getChartOptions(fromCurr, toCurr) {
       },
       itemMargin: {
         horizontal: 16,
-        vertical: 0
+        vertical: 8
       }
     },
     
@@ -334,4 +335,45 @@ export function destroyChart() {
  */
 export function isChartInitialized() {
   return chartInstance !== null;
+}
+
+/**
+ * Refreshes the chart theme (call on theme toggle)
+ * @param {string} fromCurr - Source currency code
+ * @param {string} toCurr - Target currency code
+ */
+export function refreshChartTheme(fromCurr, toCurr) {
+  if (!chartInstance) return;
+  
+  const dark = isDarkMode();
+  const textColor = dark ? '#a1a1aa' : '#52525b';
+  const gridColor = dark ? '#27272a' : '#e4e4e7';
+  const bgColor = dark ? '#18181b' : '#ffffff';
+  const tooltipTheme = dark ? 'dark' : 'light';
+  
+  chartInstance.updateOptions({
+    chart: {
+      background: bgColor,
+      foreColor: textColor
+    },
+    theme: {
+      mode: tooltipTheme
+    },
+    grid: {
+      borderColor: gridColor
+    },
+    xaxis: {
+      labels: {
+        style: { colors: textColor }
+      },
+      axisBorder: { color: gridColor },
+      axisTicks: { color: gridColor }
+    },
+    tooltip: {
+      theme: tooltipTheme
+    },
+    legend: {
+      labels: { colors: textColor }
+    }
+  }, false, false);
 }

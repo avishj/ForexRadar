@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="light">
+<html lang="en" class="dark">
 
 <head>
   <meta charset="UTF-8">
@@ -51,7 +51,7 @@
   <header class="header">
     <div class="header-inner">
       <!-- Logo -->
-      <a href="/" class="logo magnetic">
+      <a href="/" class="logo">
         <div class="logo-icon">
           <!-- Radar rings animation -->
           <div class="radar-ring radar-ring-1"></div>
@@ -63,7 +63,6 @@
         </div>
         <div class="logo-text-wrapper">
           <span class="logo-text">Forex Radar</span>
-          <span class="logo-tagline">Real-time FX Intelligence</span>
         </div>
       </a>
       
@@ -103,51 +102,38 @@
         </div>
         <!-- Currency blips that appear on the radar -->
         <div class="radar-blips">
-          <span class="radar-blip" style="--angle: 45deg; --distance: 30%;" data-currency="EUR">€</span>
-          <span class="radar-blip" style="--angle: 120deg; --distance: 50%;" data-currency="GBP">£</span>
-          <span class="radar-blip" style="--angle: 200deg; --distance: 70%;" data-currency="JPY">¥</span>
-          <span class="radar-blip" style="--angle: 280deg; --distance: 45%;" data-currency="INR">₹</span>
-          <span class="radar-blip" style="--angle: 340deg; --distance: 60%;" data-currency="KRW">₩</span>
+          <span class="radar-blip" style="--angle: 45deg; --distance: 80px;" data-currency="EUR">€</span>
+          <span class="radar-blip" style="--angle: 120deg; --distance: 130px;" data-currency="GBP">£</span>
+          <span class="radar-blip" style="--angle: 200deg; --distance: 180px;" data-currency="JPY">¥</span>
+          <span class="radar-blip" style="--angle: 280deg; --distance: 110px;" data-currency="INR">₹</span>
+          <span class="radar-blip" style="--angle: 340deg; --distance: 160px;" data-currency="KRW">₩</span>
         </div>
       </div>
       
       <!-- Main content - asymmetric layout -->
       <div class="hero-main">
-        <div class="hero-tagline">
-          <span class="tagline-icon">◉</span>
-          <span class="tagline-text">FX Rate Intelligence</span>
-        </div>
-        
         <h1 class="hero-title">
           <span class="hero-title-line">Decode the</span>
           <span class="hero-title-line">
             <span class="gradient-text">hidden costs</span>
           </span>
-          <span class="hero-title-line hero-title-small">of swiping abroad</span>
+          <span class="hero-title-line hero-title-small">of swiping abroad.</span>
         </h1>
         
         <p class="hero-description">
-          Real Visa & Mastercard rates. Real markup data. 
+          Real Visa & Mastercard rates. Real markup data.<br>
           <strong>365 days of history</strong> to help you time your transactions.
         </p>
-      </div>
-      
-      <!-- Stats ribbon - horizontal scroll effect -->
-      <div class="hero-ribbon">
-        <div class="ribbon-track">
-          <div class="ribbon-item">
-            <span class="ribbon-number">150+</span>
-            <span class="ribbon-label">Currencies</span>
+        
+        <!-- Stats inline -->
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <span class="hero-stat-number">150+</span>
+            <span class="hero-stat-label">Currencies</span>
           </div>
-          <div class="ribbon-divider"></div>
-          <div class="ribbon-item">
-            <span class="ribbon-number">365</span>
-            <span class="ribbon-label">Days History</span>
-          </div>
-          <div class="ribbon-divider"></div>
-          <div class="ribbon-item">
-            <span class="ribbon-number">0.00%</span>
-            <span class="ribbon-label">Markup Tracked</span>
+          <div class="hero-stat">
+            <span class="hero-stat-number">365</span>
+            <span class="hero-stat-label">Days History</span>
           </div>
         </div>
       </div>
@@ -235,13 +221,16 @@
     </div>
   </section>
 
-  <!-- Request Archiving Link -->
-  <div style="text-align: center; padding: 1rem 2rem;">
+  <!-- Request Archiving Link (only visible for non-archived pairs) -->
+  <div id="archiving-section" style="text-align: center; padding: 1rem 2rem; display: none;">
+    <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+      ⚠️ This pair is not archived on server. Only showing ~7 days of live data.
+    </p>
     <a id="request-archiving" href="#" target="_blank" class="footer-link" style="font-size: 0.75rem;">
       <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
       </svg>
-      Request server-side archiving for this pair
+      Request server-side archiving for 365 days of history
     </a>
   </div>
 

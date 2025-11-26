@@ -23,6 +23,7 @@ const chartContainer = document.getElementById('chart-container');
 const emptyState = document.getElementById('empty-state');
 const lastUpdated = document.getElementById('last-updated');
 const requestArchivingLink = document.getElementById('request-archiving');
+const archivingSection = document.getElementById('archiving-section');
 const notificationContainer = document.getElementById('notification-container');
 
 // Stats elements
@@ -167,14 +168,22 @@ function updateLastUpdated(dateStr) {
 }
 
 /**
- * Updates the Request Archiving link
+ * Updates the Request Archiving link and visibility based on server availability
  * @param {string} fromCurr - Source currency
  * @param {string} toCurr - Target currency
+ * @param {boolean} isArchivedOnServer - Whether this pair exists in server database
  */
-function updateArchivingLink(fromCurr, toCurr) {
-  const title = encodeURIComponent(`Add pair: ${fromCurr}/${toCurr}`);
-  const body = encodeURIComponent(`Please add server-side archiving for the ${fromCurr}/${toCurr} currency pair.`);
-  requestArchivingLink.href = `https://github.com/avishj/ForexRadar/issues/new?title=${title}&body=${body}`;
+function updateArchivingLink(fromCurr, toCurr, isArchivedOnServer = false) {
+  if (isArchivedOnServer) {
+    // Hide the archiving request section if pair is archived
+    archivingSection.style.display = 'none';
+  } else {
+    // Show the archiving request section with explanation
+    archivingSection.style.display = 'block';
+    const title = encodeURIComponent(`Add pair: ${fromCurr}/${toCurr}`);
+    const body = encodeURIComponent(`Please add server-side archiving for the ${fromCurr}/${toCurr} currency pair.`);
+    requestArchivingLink.href = `https://github.com/avishj/ForexRadar/issues/new?title=${title}&body=${body}`;
+  }
 }
 
 // ============================================================================
@@ -199,9 +208,6 @@ async function loadCurrencyPair() {
     return;
   }
 
-  // Update archiving link
-  updateArchivingLink(fromCurr, toCurr);
-
   // Show loader
   showLoader('Fetching history...');
 
@@ -216,9 +222,16 @@ async function loadCurrencyPair() {
     if (result.records.length === 0) {
       hideLoader();
       showEmptyState();
+      updateArchivingLink(fromCurr, toCurr, false);
       showNotification('No data available for this pair', 'warning');
       return;
     }
+
+    // Check if pair is archived on server (has server data)
+    const isArchivedOnServer = result.stats.fromServer > 0;
+    
+    // Update archiving link visibility
+    updateArchivingLink(fromCurr, toCurr, isArchivedOnServer);
 
     // Calculate stats
     const stats = DataManager.calculateStats(result.records);
@@ -242,6 +255,11 @@ async function loadCurrencyPair() {
     if (fromServer > 0) source.push(`${fromServer} from server`);
     if (fromCache > 0) source.push(`${fromCache} cached`);
     if (fromLive > 0) source.push(`${fromLive} live`);
+    
+    // Show special notification if not archived on server
+    if (!isArchivedOnServer) {
+      showNotification(`This pair is not archived on server. Only showing last ~7 days of data.`, 'warning', 6000);
+    }
     
     showNotification(`Loaded ${total} data points (${source.join(', ')})`, 'success');
 
