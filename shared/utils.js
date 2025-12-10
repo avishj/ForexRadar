@@ -29,14 +29,22 @@ export function parseDate(dateStr) {
 }
 
 /**
- * Gets yesterday's date at midnight
- * @returns {Date} Yesterday's date
+ * Gets yesterday's date at midnight in ET timezone
+ * Visa data is typically available for the previous day in ET
+ * @returns {Date} Yesterday's date in ET
  */
 export function getYesterday() {
-  const date = new Date();
-  date.setDate(date.getDate() - 1);
-  date.setHours(0, 0, 0, 0);
-  return date;
+  // Get current time in ET
+  const now = new Date();
+  const etOptions = { timeZone: 'America/New_York' };
+  const etDateStr = now.toLocaleDateString('en-CA', etOptions); // YYYY-MM-DD format
+  
+  // Parse as local date and subtract one day
+  const [year, month, day] = etDateStr.split('-').map(Number);
+  const etToday = new Date(year, month - 1, day);
+  etToday.setDate(etToday.getDate() - 1);
+  etToday.setHours(0, 0, 0, 0);
+  return etToday;
 }
 
 /**

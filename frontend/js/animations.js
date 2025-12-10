@@ -15,6 +15,23 @@ class AnimationsManager {
     this.initHeaderScroll();
     this.initHoverEffects();
     this.initParallax();
+    this.initSpotlightCards();
+  }
+  
+  /**
+   * Initialize spotlight effect for cards that follow mouse
+   */
+  initSpotlightCards() {
+    const selectorCard = document.querySelector('.selector-card');
+    if (selectorCard) {
+      selectorCard.addEventListener('mousemove', (e) => {
+        const rect = selectorCard.getBoundingClientRect();
+        const x = ((e.clientX - rect.left) / rect.width) * 100;
+        const y = ((e.clientY - rect.top) / rect.height) * 100;
+        selectorCard.style.setProperty('--mouse-x', `${x}%`);
+        selectorCard.style.setProperty('--mouse-y', `${y}%`);
+      });
+    }
   }
   
   /**

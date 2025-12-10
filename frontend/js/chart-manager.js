@@ -188,7 +188,8 @@ function getChartOptions(fromCurr, toCurr) {
       markers: {
         width: 8,
         height: 8,
-        radius: 4
+        radius: 4,
+        offsetX: -4
       },
       itemMargin: {
         horizontal: 16,

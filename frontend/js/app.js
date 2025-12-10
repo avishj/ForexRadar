@@ -43,6 +43,9 @@ const DEBOUNCE_MS = 300;
 // Notifications
 // ============================================================================
 
+// Track notification count for staggering
+let notificationCount = 0;
+
 /**
  * Shows a notification toast
  * @param {string} message - Message to display
@@ -50,36 +53,51 @@ const DEBOUNCE_MS = 300;
  * @param {number} duration - Duration in ms (0 = persistent)
  */
 function showNotification(message, type = 'info', duration = 4000) {
-  const icons = {
-    info: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
-    success: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
-    error: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
-    warning: '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>'
-  };
+  // Ensure message ends with period
+  const finalMessage = message.endsWith('.') || message.endsWith('!') || message.endsWith('?') 
+    ? message 
+    : message + '.';
 
-  const colors = {
-    info: 'bg-brand-500 dark:bg-brand-600',
-    success: 'bg-emerald-500 dark:bg-emerald-600',
-    error: 'bg-rose-500 dark:bg-rose-600',
-    warning: 'bg-amber-500 dark:bg-amber-600'
+  const icons = {
+    info: '<svg class="notif-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+    success: '<svg class="notif-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+    error: '<svg class="notif-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+    warning: '<svg class="notif-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>'
   };
 
   const notification = document.createElement('div');
-  notification.className = `notification ${colors[type]} text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3`;
-  notification.innerHTML = `${icons[type]}<span class="text-sm font-medium">${message}</span>`;
+  notification.className = `notification notification-${type}`;
+  notification.innerHTML = `
+    ${icons[type]}
+    <span class="notif-message">${finalMessage}</span>
+    <button class="notif-close" aria-label="Dismiss">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    </button>
+  `;
+
+  // Add close button functionality
+  const closeBtn = notification.querySelector('.notif-close');
+  closeBtn.addEventListener('click', () => {
+    notification.classList.remove('show');
+    setTimeout(() => notification.remove(), 300);
+  });
 
   notificationContainer.appendChild(notification);
 
-  // Trigger animation
-  requestAnimationFrame(() => {
+  // Stagger animation based on existing notifications
+  const existingNotifs = notificationContainer.querySelectorAll('.notification');
+  const staggerDelay = (existingNotifs.length - 1) * 100;
+  
+  // Trigger animation with stagger
+  setTimeout(() => {
     notification.classList.add('show');
-  });
+  }, staggerDelay);
 
   if (duration > 0) {
     setTimeout(() => {
       notification.classList.remove('show');
       setTimeout(() => notification.remove(), 300);
-    }, duration);
+    }, duration + staggerDelay);
   }
 
   return notification;
@@ -90,7 +108,13 @@ function showNotification(message, type = 'info', duration = 4000) {
 // ============================================================================
 
 /**
+ * Top 10 most commonly used currencies
+ */
+const TOP_CURRENCIES = ['USD', 'EUR', 'GBP', 'JPY', 'INR', 'CAD', 'AUD', 'CHF', 'CNY', 'MXN'];
+
+/**
  * Populates a select element with currency options
+ * Top currencies are listed first, followed by a separator and remaining currencies
  * @param {HTMLSelectElement} select - Select element
  */
 function populateCurrencyDropdown(select) {
@@ -99,12 +123,34 @@ function populateCurrencyDropdown(select) {
   select.innerHTML = '';
   select.appendChild(placeholder);
 
-  for (const currency of currencies) {
-    const option = document.createElement('option');
-    option.value = currency.code;
-    option.textContent = `${currency.name} (${currency.code})`;
-    select.appendChild(option);
+  // Add top currencies group
+  const topGroup = document.createElement('optgroup');
+  topGroup.label = '★ Popular';
+  
+  for (const code of TOP_CURRENCIES) {
+    const currency = currencies.find(c => c.code === code);
+    if (currency) {
+      const option = document.createElement('option');
+      option.value = currency.code;
+      option.textContent = `${currency.name} (${currency.code})`;
+      topGroup.appendChild(option);
+    }
   }
+  select.appendChild(topGroup);
+
+  // Add remaining currencies group
+  const otherGroup = document.createElement('optgroup');
+  otherGroup.label = 'All Currencies';
+  
+  for (const currency of currencies) {
+    if (!TOP_CURRENCIES.includes(currency.code)) {
+      const option = document.createElement('option');
+      option.value = currency.code;
+      option.textContent = `${currency.name} (${currency.code})`;
+      otherGroup.appendChild(option);
+    }
+  }
+  select.appendChild(otherGroup);
 }
 
 /**
@@ -131,6 +177,14 @@ function showResults() {
   statsBar.classList.remove('hidden');
   chartContainer.classList.remove('hidden');
   emptyState.classList.add('hidden');
+  
+  // Re-trigger stat card animations
+  const statCards = document.querySelectorAll('.stat-card');
+  statCards.forEach((card, i) => {
+    card.style.animation = 'none';
+    card.offsetHeight; // Force reflow
+    card.style.animation = `stat-card-entrance 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards ${0.1 * (i + 1)}s`;
+  });
 }
 
 /**
