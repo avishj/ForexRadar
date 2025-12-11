@@ -7,6 +7,7 @@
 
 class AnimationsManager {
   constructor() {
+    this.tooltipElement = null;
     this.init();
   }
   
@@ -16,6 +17,54 @@ class AnimationsManager {
     this.initHoverEffects();
     this.initParallax();
     this.initSpotlightCards();
+    this.initTooltips();
+  }
+  
+  /**
+   * Initialize fixed-position tooltips that escape overflow contexts
+   */
+  initTooltips() {
+    // Create single tooltip element
+    this.tooltipElement = document.createElement('div');
+    this.tooltipElement.className = 'tooltip-popup';
+    document.body.appendChild(this.tooltipElement);
+    
+    // Attach listeners to all info-tooltips
+    document.querySelectorAll('.info-tooltip').forEach(trigger => {
+      trigger.addEventListener('mouseenter', (e) => this.showTooltip(e, trigger));
+      trigger.addEventListener('mouseleave', () => this.hideTooltip());
+    });
+  }
+  
+  showTooltip(e, trigger) {
+    const text = trigger.getAttribute('data-tooltip');
+    if (!text) return;
+    
+    this.tooltipElement.textContent = text;
+    this.tooltipElement.classList.add('visible');
+    
+    // Position above the trigger
+    const rect = trigger.getBoundingClientRect();
+    const tooltipRect = this.tooltipElement.getBoundingClientRect();
+    
+    let left = rect.left + rect.width / 2 - tooltipRect.width / 2;
+    let top = rect.top - tooltipRect.height - 10;
+    
+    // Keep within viewport
+    if (left < 10) left = 10;
+    if (left + tooltipRect.width > window.innerWidth - 10) {
+      left = window.innerWidth - tooltipRect.width - 10;
+    }
+    if (top < 10) {
+      top = rect.bottom + 10; // Show below if no room above
+    }
+    
+    this.tooltipElement.style.left = `${left}px`;
+    this.tooltipElement.style.top = `${top}px`;
+  }
+  
+  hideTooltip() {
+    this.tooltipElement.classList.remove('visible');
   }
   
   /**

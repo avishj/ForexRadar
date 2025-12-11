@@ -29,22 +29,45 @@ export function parseDate(dateStr) {
 }
 
 /**
+ * Gets the latest available date for Visa data in ET timezone
+ * If it's past 12pm ET, today's data should be available
+ * Otherwise, only yesterday's data is available
+ * @returns {Date} Latest available date in ET
+ */
+export function getLatestAvailableDate() {
+  const now = new Date();
+  
+  // Get current hour in ET
+  const etTimeStr = now.toLocaleTimeString('en-US', { 
+    timeZone: 'America/New_York', 
+    hour12: false, 
+    hour: '2-digit' 
+  });
+  const etHour = parseInt(etTimeStr, 10);
+  
+  // Get today's date in ET
+  const etDateStr = now.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+  const [year, month, day] = etDateStr.split('-').map(Number);
+  const etToday = new Date(year, month - 1, day);
+  
+  // If it's past 12pm ET, today's data is available; otherwise use yesterday
+  if (etHour >= 12) {
+    etToday.setHours(0, 0, 0, 0);
+    return etToday;
+  } else {
+    etToday.setDate(etToday.getDate() - 1);
+    etToday.setHours(0, 0, 0, 0);
+    return etToday;
+  }
+}
+
+/**
+ * @deprecated Use getLatestAvailableDate() instead
  * Gets yesterday's date at midnight in ET timezone
- * Visa data is typically available for the previous day in ET
  * @returns {Date} Yesterday's date in ET
  */
 export function getYesterday() {
-  // Get current time in ET
-  const now = new Date();
-  const etOptions = { timeZone: 'America/New_York' };
-  const etDateStr = now.toLocaleDateString('en-CA', etOptions); // YYYY-MM-DD format
-  
-  // Parse as local date and subtract one day
-  const [year, month, day] = etDateStr.split('-').map(Number);
-  const etToday = new Date(year, month - 1, day);
-  etToday.setDate(etToday.getDate() - 1);
-  etToday.setHours(0, 0, 0, 0);
-  return etToday;
+  return getLatestAvailableDate();
 }
 
 /**
