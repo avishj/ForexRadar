@@ -27,7 +27,7 @@ import {
   closeDatabase,
   getRecordCount
 } from './lib/db-handler.js';
-import { fetchRate } from './lib/visa-client.js';
+import { fetchRate, closeBrowser } from './lib/visa-client.js';
 import { formatDate } from '../../shared/utils.js';
 
 /** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
@@ -107,59 +107,94 @@ async function main() {
   const currentDate = new Date(startDate);
   let insertedCount = 0;
   let skippedCount = 0;
+  const BATCH_SIZE = 8;
   
-  // Loop backwards through dates
+  // Loop backwards through dates in batches
   while (currentDate >= stopDate) {
-    const dateStr = formatDate(currentDate);
+    // Collect batch of dates to fetch
+    const batch = [];
+    const tempDate = new Date(currentDate);
     
-    // Skip if already exists in DB
-    if (rateExists(db, dateStr, from, to)) {
-      skippedCount++;
-      currentDate.setDate(currentDate.getDate() - 1);
+    for (let i = 0; i < BATCH_SIZE && tempDate >= stopDate; i++) {
+      const dateStr = formatDate(tempDate);
+      
+      // Skip if already exists in DB
+      if (rateExists(db, dateStr, from, to)) {
+        skippedCount++;
+      } else {
+        batch.push(new Date(tempDate));
+      }
+      
+      tempDate.setDate(tempDate.getDate() - 1);
+    }
+    
+    // Update currentDate for next batch
+    currentDate.setTime(tempDate.getTime());
+    
+    // Skip if no dates to fetch
+    if (batch.length === 0) {
       continue;
     }
     
-    try {
-      process.stdout.write(`Fetching ${dateStr}... `);
-      
-      const record = await fetchRate(currentDate, from, to);
-      
-      if (record === null) {
-        // HTTP 500 - end of history
-        console.log('End of history reached (HTTP 500)');
-        break;
+    console.log(`Fetching batch of ${batch.length} dates...`);
+    
+    // Fetch all dates in parallel
+    const results = await Promise.allSettled(
+      batch.map(date => 
+        fetchRate(date, from, to)
+          .then(record => ({ date: formatDate(date), record, error: null }))
+          .catch(error => ({ date: formatDate(date), record: null, error }))
+      )
+    );
+    
+    // Process results
+    for (const result of results) {
+      if (result.status === 'fulfilled') {
+        const { date, record, error } = result.value;
+        
+        if (error) {
+          console.log(`${date}: ✗ ${error.message}`);
+        } else if (record === null) {
+          console.log(`${date}: End of history reached (HTTP 500)`);
+          // Set currentDate to stopDate to exit loop
+          currentDate.setTime(stopDate.getTime() - 1);
+          break;
+        } else {
+          insertRate(db, record);
+          insertedCount++;
+          console.log(`${date}: ✓ Rate: ${record.rate.toFixed(4)}`);
+        }
+      } else {
+        console.log(`Batch error: ${result.reason}`);
       }
-      
-      insertRate(db, record);
-      insertedCount++;
-      console.log(`✓ Rate: ${record.rate.toFixed(4)}`);
-      
-    } catch (error) {
-      console.log(`✗ ${error.message}`);
-      // Continue with next date on error
     }
     
-    // Move to previous day
-    currentDate.setDate(currentDate.getDate() - 1);
-    
-    // Small delay to be respectful to the API
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Small delay between batches
+    await new Promise(resolve => setTimeout(resolve, 500));
   }
   
   // Close database
   closeDatabase(db);
   
+  // Close browser
+  await closeBrowser();
+  
   // Summary
-  const totalRecords = getRecordCount(openDatabase(from), from, to);
-  closeDatabase(openDatabase(from));
+  const dbForCount = openDatabase(from);
+  const totalRecords = getRecordCount(dbForCount, from, to);
+  closeDatabase(dbForCount);
   
   console.log('\n--- Summary ---');
   console.log(`Inserted: ${insertedCount} days`);
   console.log(`Skipped (existing): ${skippedCount} days`);
   console.log(`Total records for ${from}/${to}: ${totalRecords}`);
+  
+  // Force exit to ensure browser resources are freed
+  process.exit(0);
 }
 
-main().catch((error) => {
+main().catch(async (error) => {
+  await closeBrowser();
   console.error('Backfill failed:', error.message);
   process.exit(1);
 });

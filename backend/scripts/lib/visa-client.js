@@ -1,12 +1,14 @@
 /**
  * Visa Exchange Rate Client
  * 
- * Fetches exchange rate data from Visa's public FX API.
+ * Fetches exchange rate data from Visa's public FX API using Playwright
+ * to bypass Cloudflare protection.
  * Designed to be extendible for future providers (e.g., MasterCard).
  * 
  * @module visa-client
  */
 
+import { firefox } from 'playwright';
 import { formatDate, formatDateForApi } from '../../../shared/utils.js';
 
 /** @typedef {import('../../../shared/types.js').RateRecord} RateRecord */
@@ -14,8 +16,43 @@ import { formatDate, formatDateForApi } from '../../../shared/utils.js';
 const VISA_API_BASE = 'https://www.visa.co.in/cmsapi/fx/rates';
 const PROVIDER_NAME = 'VISA';
 
+// Reusable browser instance for efficiency
+let browserInstance = null;
+let browserContext = null;
+
+/**
+ * Gets or creates a shared browser instance
+ * @returns {Promise<{browser: import('playwright').Browser, context: import('playwright').BrowserContext}>}
+ */
+async function getBrowser() {
+  if (!browserInstance) {
+    console.log('[VISA] Launching headless Firefox browser...');
+    browserInstance = await firefox.launch({ headless: true });
+    browserContext = await browserInstance.newContext({
+      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:120.0) Gecko/20100101 Firefox/120.0',
+      extraHTTPHeaders: {
+        'Accept-Language': 'en-US,en;q=0.9'
+      }
+    });
+  }
+  return { browser: browserInstance, context: browserContext };
+}
+
+/**
+ * Closes the shared browser instance (call when done with all fetches)
+ */
+export async function closeBrowser() {
+  if (browserInstance) {
+    console.log('[VISA] Closing browser...');
+    await browserInstance.close();
+    browserInstance = null;
+    browserContext = null;
+  }
+}
+
 /**
  * Fetches exchange rate from Visa API for a specific date and currency pair.
+ * Uses Playwright to bypass Cloudflare JS challenge.
  * 
  * IMPORTANT: Due to Visa API quirk, request parameters are flipped.
  * To get rate for A→B, we send from=B&to=A.
@@ -28,7 +65,6 @@ const PROVIDER_NAME = 'VISA';
  */
 export async function fetchRate(date, fromCurr, toCurr) {
   const formattedDate = formatDateForApi(date);
-  const encodedDate = encodeURIComponent(formattedDate);
   
   // QUIRK: Flip the currencies for the API request
   // To get A→B rate, we request from=B&to=A
@@ -40,41 +76,83 @@ export async function fetchRate(date, fromCurr, toCurr) {
   url.searchParams.set('fromCurr', toCurr);  // Flipped
   url.searchParams.set('toCurr', fromCurr);   // Flipped
 
+  const urlStr = url.toString();
+  console.log(`[VISA] Request -> ${urlStr}`);
+
   try {
-    const response = await fetch(url.toString());
-    
+    const { context } = await getBrowser();
+    const page = await context.newPage();
+
+    let apiResponse = null;
+    let apiStatus = null;
+
+    // Intercept the API response
+    page.on('response', async (response) => {
+      if (response.url().includes('/cmsapi/fx/rates')) {
+        apiStatus = response.status();
+        try {
+          apiResponse = await response.text();
+        } catch (e) {
+          // Response body may not be available
+        }
+      }
+    });
+
+    // Navigate to the URL and wait for network to settle
+    await page.goto(urlStr, { waitUntil: 'networkidle', timeout: 30000 });
+
+    // Give Cloudflare challenge a moment if needed
+    if (!apiResponse) {
+      await page.waitForTimeout(3000);
+    }
+
+    await page.close();
+
+    console.log(`[VISA] Response status -> ${apiStatus}`);
+
     // HTTP 500 indicates end of history (dates older than ~1 year)
-    if (response.status === 500) {
+    if (apiStatus === 500) {
       return null;
     }
-    
-    // Rate limiting - throw to allow retry logic upstream
-    if (response.status === 429 || response.status === 403) {
-      throw new Error(`Rate limited: HTTP ${response.status}`);
+
+    // Handle errors
+    if (!apiResponse || apiStatus !== 200) {
+      if (apiStatus === 429 || apiStatus === 403) {
+        console.error(`[VISA] Rate limited or forbidden. HTTP ${apiStatus}`);
+        throw new Error(`Rate limited: HTTP ${apiStatus}`);
+      }
+      throw new Error(`HTTP error: ${apiStatus}`);
+    }
+
+    // Parse the JSON response
+    let data;
+    try {
+      data = JSON.parse(apiResponse);
+    } catch (e) {
+      console.error('[VISA] Failed to parse JSON:', apiResponse.substring(0, 200));
+      throw new Error('Invalid JSON response from Visa API');
     }
     
-    if (!response.ok) {
-      throw new Error(`HTTP error: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    
-    // Extract rate and markup from response
-    const rate = data.fxRateVisa;
-    const markup = data.markupWithoutAdditionalFee;
+    // Extract rate and markup from response (nested in originalValues)
+    const rate = data.originalValues?.fxRateVisa;
+    const markup = data.benchMarkAmount || 0;
     
     if (rate === undefined || rate === null) {
+      console.error('[VISA] Invalid response payload:', data);
       throw new Error('Invalid response: missing fxRateVisa');
     }
     
-    return {
+    const record = {
       date: formatDate(date),
       from_curr: fromCurr,
       to_curr: toCurr,
       provider: PROVIDER_NAME,
-      rate: rate,
-      markup: markup ?? 0
+      rate: parseFloat(rate),
+      markup: parseFloat(markup)
     };
+
+    console.log(`[VISA] Fetched rate for ${record.date} ${fromCurr}/${toCurr} -> ${record.rate}`);
+    return record;
   } catch (error) {
     // Re-throw rate limit errors
     if (error.message.includes('Rate limited')) {
