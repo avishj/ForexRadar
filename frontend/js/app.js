@@ -205,7 +205,7 @@ function updateStats(stats) {
   statHigh.textContent = stats.high?.toFixed(4) ?? '-';
   statLow.textContent = stats.low?.toFixed(4) ?? '-';
   statMarkup.textContent = stats.avgMarkup 
-    ? `${(stats.avgMarkup * 100).toFixed(3)}%` 
+    ? `${stats.avgMarkup.toFixed(3)}%` 
     : '-';
 }
 
