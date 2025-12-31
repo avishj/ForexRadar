@@ -1,0 +1,41 @@
+name: Deploy Frontend
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'index.html'
+      - 'css/**'
+      - 'js/**'
+      - 'shared/**'
+      - 'db/**'
+  workflow_dispatch: # Allow manual trigger
+  workflow_run:
+    workflows: ["Update Data"]
+    types:
+      - completed
+
+# Allow one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
+      
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          publish_branch: gh-pages
+          exclude_assets: '.github,backend,node_modules,docs,*.config.json,*.xml,LICENSE,README.md,package*.json,tsconfig.json'
