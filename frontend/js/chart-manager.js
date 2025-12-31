@@ -300,7 +300,7 @@ export function updateChart(records, fromCurr, toCurr) {
         },
         labels: {
           style: { colors: '#3B82F6' },
-          formatter: (value) => value?.toFixed(4) ?? ''
+          formatter: (value) => value?.toFixed(0) ?? ''
         },
         axisBorder: { show: true, color: '#3B82F6' }
       },
@@ -312,7 +312,7 @@ export function updateChart(records, fromCurr, toCurr) {
         },
         labels: {
           style: { colors: '#EF4444' },
-          formatter: (value) => value ? `${(value * 100).toFixed(3)}%` : ''
+          formatter: (value) => value ? `${(value).toFixed(2)}%` : ''
         },
         axisBorder: { show: true, color: '#EF4444' }
       }
