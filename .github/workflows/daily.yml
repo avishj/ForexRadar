@@ -11,11 +11,11 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
       
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v6.1.0
         with:
           node-version: '20'
           cache: 'npm'
