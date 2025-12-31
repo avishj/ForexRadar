@@ -8,7 +8,7 @@
  * @module chart-manager
  */
 
-import ApexCharts from 'apexcharts';
+/* global ApexCharts */
 
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
 
