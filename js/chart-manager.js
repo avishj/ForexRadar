@@ -326,25 +326,25 @@ export function updateChart(records, fromCurr, toCurr) {
       {
         title: {
           text: `Rate (${fromCurr} → ${toCurr})`,
-          style: { color: '#3B82F6' }
+          style: { color: '#10b981', fontWeight: 500, fontSize: '12px' }
         },
         labels: {
-          style: { colors: '#3B82F6' },
+          style: { colors: '#10b981' },
           formatter: (value) => value?.toFixed(0) ?? ''
         },
-        axisBorder: { show: true, color: '#3B82F6' }
+        axisBorder: { show: true, color: '#10b981' }
       },
       {
         opposite: true,
         title: {
           text: 'Markup (%)',
-          style: { color: '#EF4444' }
+          style: { color: '#f59e0b', fontWeight: 500, fontSize: '12px' }
         },
         labels: {
-          style: { colors: '#EF4444' },
+          style: { colors: '#f59e0b' },
           formatter: (value) => value ? `${(value).toFixed(2)}%` : ''
         },
-        axisBorder: { show: true, color: '#EF4444' }
+        axisBorder: { show: true, color: '#f59e0b' }
       }
     ]
   }, false, false);
