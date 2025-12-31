@@ -1015,6 +1015,15 @@ h1, h2, h3, h4, h5, h6, .font-display {
 }
 
 @media (max-width: 768px) {
+  .selector-container {
+    padding: 0 1rem;
+  }
+  
+  .selector-card {
+    padding: 1.25rem;
+    border-radius: 16px;
+  }
+  
   .selector-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
@@ -1022,6 +1031,42 @@ h1, h2, h3, h4, h5, h6, .font-display {
   
   .selector-arrow {
     display: none;
+  }
+  
+  .selector-input {
+    height: 48px;
+    font-size: 0.9rem;
+    padding: 0 1rem;
+    padding-right: 2.5rem;
+    background-size: 1rem;
+    background-position: right 0.75rem center;
+  }
+  
+  .selector-label {
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .selector-container {
+    padding: 0 0.75rem;
+  }
+  
+  .selector-card {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+  
+  .selector-input {
+    height: 44px;
+    font-size: 0.85rem;
+    padding: 0 0.75rem;
+    padding-right: 2.25rem;
+    border-radius: 12px;
+  }
+  
+  .selector-label {
+    font-size: 0.65rem;
   }
 }
 
