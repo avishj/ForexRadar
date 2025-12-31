@@ -26,16 +26,26 @@ jobs:
     runs-on: ubuntu-latest
     
     permissions:
-      contents: write
+      contents: read
+      pages: write
+      id-token: write
+    
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.1
       
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Setup Pages
+        uses: actions/configure-pages@v5.0.0
+      
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v4.0.0
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: .
-          publish_branch: gh-pages
-          exclude_assets: '.github,backend,node_modules,docs,*.config.json,*.xml,LICENSE,README.md,package*.json,tsconfig.json'
+          path: .
+      
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4.0.5
