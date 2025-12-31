@@ -27,6 +27,7 @@ import { formatDate, getYesterday, addDays } from '../../shared/utils.js';
  * @property {number} stats.fromCache - Count from IndexedDB
  * @property {number} stats.fromLive - Count from live API
  * @property {number} stats.total - Total record count
+ * @property {boolean} stats.hasServerData - Whether server data exists for this pair
  */
 
 /**
@@ -62,6 +63,7 @@ export async function fetchRates(fromCurr, toCurr, options = {}) {
   let fromServer = 0;
   let fromCache = 0;
   let fromLive = 0;
+  let hasServerData = false;
 
   // Step 1: Load Cache Data first
   notify('cache', 'Loading cached data...');
@@ -82,6 +84,7 @@ export async function fetchRates(fromCurr, toCurr, options = {}) {
   
   try {
     const serverRecords = await ServerDB.queryRates(fromCurr, toCurr);
+    hasServerData = serverRecords.length > 0;
     for (const record of serverRecords) {
       const wasInCache = mergedData.has(record.date);
       mergedData.set(record.date, record);
@@ -201,7 +204,8 @@ export async function fetchRates(fromCurr, toCurr, options = {}) {
       fromServer,
       fromCache,
       fromLive,
-      total: records.length
+      total: records.length,
+      hasServerData
     }
   };
 }

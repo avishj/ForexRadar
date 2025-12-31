@@ -282,7 +282,7 @@ async function loadCurrencyPair() {
     }
 
     // Check if pair is archived on server (has server data)
-    const isArchivedOnServer = result.stats.fromServer > 0;
+    const isArchivedOnServer = result.stats.hasServerData;
     
     // Update archiving link visibility
     updateArchivingLink(fromCurr, toCurr, isArchivedOnServer);
