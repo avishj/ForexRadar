@@ -19,7 +19,7 @@ import {
   closeDatabase
 } from './lib/db-handler.js';
 import { fetchRate } from './lib/visa-client.js';
-import { formatDate, getYesterday } from '../../shared/utils.js';
+import { formatDate, getLatestAvailableDate, getYesterday } from '../../shared/utils.js';
 
 /** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
 
@@ -90,13 +90,13 @@ async function main() {
   
   console.log(`Watchlist: ${watchlist.length} pair(s)`);
   
-  const yesterday = getYesterday();
-  console.log(`Fetching rates for: ${formatDate(yesterday)}\n`);
+  const latestAvailableDate = getLatestAvailableDate();
+  console.log(`Fetching rates for: ${formatDate(latestAvailableDate)}\n`);
   
   let updatedCount = 0;
   
   for (const pair of watchlist) {
-    const updated = await updatePair(pair, yesterday);
+    const updated = await updatePair(pair, latestAvailableDate);
     if (updated) updatedCount++;
   }
   
