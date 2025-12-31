@@ -39,8 +39,8 @@ async function initSqlJs() {
  * @returns {string} URL to the database file
  */
 function getDbUrl(fromCurr) {
-  // Database files are at /db/{currency}.db
-  return `/db/${fromCurr}.db`;
+  // Database files are at db/{currency}.db
+  return `db/${fromCurr}.db`;
 }
 
 /**
