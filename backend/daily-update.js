@@ -18,7 +18,7 @@ import {
   rateExists,
   closeDatabase
 } from './db-handler.js';
-import { fetchRate } from './visa-client.js';
+import { fetchRate, closeBrowser } from './visa-client.js';
 import { formatDate, getLatestAvailableDate, getYesterday } from '../shared/utils.js';
 
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
@@ -101,6 +101,9 @@ async function main() {
   }
   
   console.log(`\n=== Complete: ${updatedCount}/${watchlist.length} pairs updated ===`);
+  
+  // Close the browser instance to allow script to exit
+  await closeBrowser();
 }
 
 main().catch((error) => {
