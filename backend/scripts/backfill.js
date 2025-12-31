@@ -100,14 +100,14 @@ async function main() {
   const startDate = getStartDate();
   console.log(`Starting from: ${formatDate(startDate)}`);
   
-  // Calculate stop date (365 days ago - Visa API limit)
+  // Calculate stop date (730 days ago)
   const stopDate = new Date(startDate);
-  stopDate.setDate(stopDate.getDate() - 365);
+  stopDate.setDate(stopDate.getDate() - 730);
   
   const currentDate = new Date(startDate);
   let insertedCount = 0;
   let skippedCount = 0;
-  const BATCH_SIZE = 8;
+  const BATCH_SIZE = 16;
   
   // Loop backwards through dates in batches
   while (currentDate >= stopDate) {
