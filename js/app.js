@@ -50,6 +50,11 @@ const statMarkup = document.getElementById('stat-markup');
 let debounceTimer = null;
 const DEBOUNCE_MS = 300;
 
+// Track current data for stats recalculation on zoom
+let currentFullDataset = [];
+let currentFromCurr = '';
+let currentToCurr = '';
+
 // ============================================================================
 // Notifications
 // ============================================================================
@@ -251,6 +256,24 @@ function updateArchivingLink(fromCurr, toCurr, isArchivedOnServer = false) {
   }
 }
 
+/**
+ * Handles chart zoom/pan events to update stats based on visible data range
+ * @param {number} minTimestamp - Minimum visible timestamp (ms)
+ * @param {number} maxTimestamp - Maximum visible timestamp (ms)
+ */
+function handleChartZoom(minTimestamp, maxTimestamp) {
+  if (currentFullDataset.length === 0) return;
+  
+  // Filter records to visible range
+  const visibleRecords = ChartManager.getVisibleRecords(currentFullDataset, minTimestamp, maxTimestamp);
+  
+  if (visibleRecords.length > 0) {
+    // Recalculate stats for visible data
+    const stats = DataManager.calculateStats(visibleRecords);
+    updateStats(stats);
+  }
+}
+
 // ============================================================================
 // Core Logic
 // ============================================================================
@@ -292,13 +315,18 @@ async function loadCurrencyPair() {
       return;
     }
 
+    // Store full dataset for zoom stats updates
+    currentFullDataset = result.records;
+    currentFromCurr = fromCurr;
+    currentToCurr = toCurr;
+
     // Check if pair is archived on server (has server data)
     const isArchivedOnServer = result.stats.hasServerData;
     
     // Update archiving link visibility
     updateArchivingLink(fromCurr, toCurr, isArchivedOnServer);
 
-    // Calculate stats
+    // Calculate stats for full dataset
     const stats = DataManager.calculateStats(result.records);
 
     // Update UI
@@ -306,6 +334,9 @@ async function loadCurrencyPair() {
     showResults();
     updateStats(stats);
     updateLastUpdated(stats.dateRange.end);
+
+    // Set up zoom callback before initializing/updating chart
+    ChartManager.setZoomCallback(handleChartZoom);
 
     // Render chart
     if (ChartManager.isChartInitialized()) {

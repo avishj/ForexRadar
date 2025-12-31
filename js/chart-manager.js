@@ -243,6 +243,20 @@ function transformData(records) {
 }
 
 /**
+ * Callback function for zoom/pan events
+ * @type {Function|null}
+ */
+let onZoomCallback = null;
+
+/**
+ * Sets the zoom event callback
+ * @param {Function} callback - Function to call on zoom/pan
+ */
+export function setZoomCallback(callback) {
+  onZoomCallback = callback;
+}
+
+/**
  * Initializes the chart with data
  * @param {string} containerId - DOM element ID for the chart
  * @param {RateRecord[]} records - Array of rate records
@@ -267,6 +281,20 @@ export function initChart(containerId, records, fromCurr, toCurr) {
   const options = getChartOptions(fromCurr, toCurr);
   options.series[0].data = rateSeries;
   options.series[1].data = markupSeries;
+  
+  // Add zoom/pan event listeners
+  options.chart.events = {
+    zoomed: (chartContext, { xaxis, yaxis }) => {
+      if (onZoomCallback) {
+        onZoomCallback(xaxis.min, xaxis.max);
+      }
+    },
+    scrolled: (chartContext, { xaxis }) => {
+      if (onZoomCallback) {
+        onZoomCallback(xaxis.min, xaxis.max);
+      }
+    }
+  };
   
   chartInstance = new ApexCharts(container, options);
   chartInstance.render();
@@ -379,4 +407,19 @@ export function refreshChartTheme(fromCurr, toCurr) {
       labels: { colors: textColor }
     }
   }, false, false);
+}
+
+/**
+ * Filters records based on visible chart range
+ * @param {RateRecord[]} records - All records
+ * @param {number} minTimestamp - Minimum timestamp (ms)
+ * @param {number} maxTimestamp - Maximum timestamp (ms)
+ * @returns {RateRecord[]} Filtered records
+ */
+export function getVisibleRecords(records, minTimestamp, maxTimestamp) {
+  return records.filter(record => {
+    const [year, month, day] = record.date.split('-').map(Number);
+    const timestamp = new Date(year, month - 1, day).getTime();
+    return timestamp >= minTimestamp && timestamp <= maxTimestamp;
+  });
 }
