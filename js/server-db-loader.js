@@ -109,12 +109,12 @@ export async function queryRates(fromCurr, toCurr) {
     while (stmt.step()) {
       const row = stmt.getAsObject();
       records.push({
-        date: row.date,
-        from_curr: row.from_curr,
-        to_curr: row.to_curr,
-        provider: row.provider,
-        rate: row.rate,
-        markup: row.markup
+        date: String(row.date),
+        from_curr: String(row.from_curr),
+        to_curr: String(row.to_curr),
+        provider: String(row.provider),
+        rate: Number(row.rate),
+        markup: Number(row.markup)
       });
     }
 
@@ -151,7 +151,7 @@ export async function getLatestDate(fromCurr, toCurr) {
     let latestDate = null;
     if (stmt.step()) {
       const row = stmt.getAsObject();
-      latestDate = row.latest_date || null;
+      latestDate = row.latest_date ? String(row.latest_date) : null;
     }
 
     stmt.free();
@@ -185,8 +185,8 @@ export async function listPairs(fromCurr) {
     while (stmt.step()) {
       const row = stmt.getAsObject();
       pairs.push({
-        from_curr: row.from_curr,
-        to_curr: row.to_curr
+        from_curr: String(row.from_curr),
+        to_curr: String(row.to_curr)
       });
     }
 

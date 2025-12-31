@@ -10,7 +10,9 @@
     "allowJs": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true
   },
   "include": ["js/**/*", "shared/**/*", "backend/**/*"],
   "exclude": ["node_modules", "db"]

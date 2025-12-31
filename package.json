@@ -19,6 +19,8 @@
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "@types/sql.js": "^1.4.9",
+    "apexcharts": "^3.45.0",
     "typescript": "^5.0.0"
   },
   "engines": {

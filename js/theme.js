@@ -79,6 +79,6 @@ class ThemeManager {
 const themeManager = new ThemeManager();
 
 // Make available globally for debugging
-window.themeManager = themeManager;
+/** @type {any} */ (window).themeManager = themeManager;
 
 export { ThemeManager };
