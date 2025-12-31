@@ -70,6 +70,16 @@ export async function fetchRates(fromCurr, toCurr, options = {}) {
     }
     fromServer = serverRecords.length;
     notify('server', `Loaded ${fromServer} records from server`);
+    
+    // Cache server data in IndexedDB for offline access
+    if (serverRecords.length > 0) {
+      try {
+        await Storage.saveRates(serverRecords);
+      } catch (cacheError) {
+        // Non-fatal: cache save failure shouldn't stop data flow
+        console.warn('Failed to cache server data:', cacheError);
+      }
+    }
   } catch (error) {
     notify('server', `Server data unavailable: ${error.message}`);
   }
