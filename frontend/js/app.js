@@ -334,6 +334,12 @@ function handleSelectionChange() {
   }
 
   debounceTimer = setTimeout(() => {
+    // Save selection to localStorage
+    const fromCurr = fromSelect.value;
+    const toCurr = toSelect.value;
+    if (fromCurr && toCurr) {
+      localStorage.setItem('forexRadar_lastPair', JSON.stringify({ from: fromCurr, to: toCurr }));
+    }
     loadCurrencyPair();
   }, DEBOUNCE_MS);
 }
@@ -350,9 +356,33 @@ function init() {
   populateCurrencyDropdown(fromSelect);
   populateCurrencyDropdown(toSelect);
 
-  // Set defaults (USD -> INR)
-  fromSelect.value = 'USD';
-  toSelect.value = 'INR';
+  // Restore last selected pair or use defaults (USD -> INR)
+  try {
+    const lastPair = localStorage.getItem('forexRadar_lastPair');
+    if (lastPair) {
+      const { from, to } = JSON.parse(lastPair);
+      // Validate that the currencies exist in our list
+      const validFrom = currencies.find(c => c.code === from);
+      const validTo = currencies.find(c => c.code === to);
+      if (validFrom && validTo) {
+        fromSelect.value = from;
+        toSelect.value = to;
+      } else {
+        // Invalid saved pair, use defaults
+        fromSelect.value = 'USD';
+        toSelect.value = 'INR';
+      }
+    } else {
+      // No saved pair, use defaults
+      fromSelect.value = 'USD';
+      toSelect.value = 'INR';
+    }
+  } catch (error) {
+    // Error parsing saved pair, use defaults
+    console.error('Error restoring last pair:', error);
+    fromSelect.value = 'USD';
+    toSelect.value = 'INR';
+  }
 
   // Add event listeners with debouncing
   fromSelect.addEventListener('change', handleSelectionChange);
