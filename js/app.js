@@ -220,9 +220,9 @@ function updateStats(stats) {
   statCurrent.textContent = stats.current?.toFixed(4) ?? '-';
   statHigh.textContent = stats.high?.toFixed(4) ?? '-';
   statLow.textContent = stats.low?.toFixed(4) ?? '-';
-  statMarkup.textContent = stats.avgMarkup 
-    ? `${stats.avgMarkup.toFixed(3)}%` 
-    : '-';
+  statMarkup.textContent = (stats.avgMarkup === null || stats.avgMarkup === undefined)
+    ? '-'
+    : `${stats.avgMarkup.toFixed(3)}%`;
 }
 
 /**

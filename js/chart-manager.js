@@ -15,6 +15,10 @@
 /** @type {ApexCharts|null} */
 let chartInstance = null;
 
+// Chart color constants
+const RATE_COLOR = '#10b981';    // emerald-500
+const MARKUP_COLOR = '#f59e0b';  // amber-500
+
 /**
  * Checks if dark mode is active
  * @returns {boolean}
@@ -91,7 +95,7 @@ function getChartOptions(fromCurr, toCurr) {
       dashArray: [0, 4]
     },
     
-    colors: ['#10b981', '#f59e0b'],  // emerald-500, amber-500
+    colors: [RATE_COLOR, MARKUP_COLOR],
     
     xaxis: {
       type: 'datetime',
@@ -118,20 +122,20 @@ function getChartOptions(fromCurr, toCurr) {
         title: {
           text: `Rate (${fromCurr} → ${toCurr})`,
           style: {
-            color: '#10b981',  // emerald-500
+            color: RATE_COLOR,
             fontWeight: 500,
             fontSize: '12px'
           }
         },
         labels: {
           style: {
-            colors: '#10b981'
+            colors: RATE_COLOR
           },
           formatter: (value) => value?.toFixed(0) ?? ''
         },
         axisBorder: {
           show: true,
-          color: '#10b981'
+          color: RATE_COLOR
         }
       },
       {
@@ -139,20 +143,20 @@ function getChartOptions(fromCurr, toCurr) {
         title: {
           text: 'Markup (%)',
           style: {
-            color: '#f59e0b',  // amber-500
+            color: MARKUP_COLOR,
             fontWeight: 500,
             fontSize: '12px'
           }
         },
         labels: {
           style: {
-            colors: '#f59e0b'
+            colors: MARKUP_COLOR
           },
-          formatter: (value) => value ? `${value.toFixed(2)}%` : ''
+          formatter: (value) => (value === null || value === undefined) ? '' : `${value.toFixed(2)}%`
         },
         axisBorder: {
           show: true,
-          color: '#f59e0b'
+          color: MARKUP_COLOR
         }
       }
     ],
@@ -169,7 +173,7 @@ function getChartOptions(fromCurr, toCurr) {
           if (seriesIndex === 0) {
             return value?.toFixed(2) ?? '-';
           } else {
-            return value ? `${value.toFixed(2)}%` : '-';
+            return (value === null || value === undefined) ? '-' : `${value.toFixed(2)}%`;
           }
         }
       }
@@ -326,25 +330,25 @@ export function updateChart(records, fromCurr, toCurr) {
       {
         title: {
           text: `Rate (${fromCurr} → ${toCurr})`,
-          style: { color: '#10b981', fontWeight: 500, fontSize: '12px' }
+          style: { color: RATE_COLOR, fontWeight: 500, fontSize: '12px' }
         },
         labels: {
-          style: { colors: '#10b981' },
+          style: { colors: RATE_COLOR },
           formatter: (value) => value?.toFixed(0) ?? ''
         },
-        axisBorder: { show: true, color: '#10b981' }
+        axisBorder: { show: true, color: RATE_COLOR }
       },
       {
         opposite: true,
         title: {
           text: 'Markup (%)',
-          style: { color: '#f59e0b', fontWeight: 500, fontSize: '12px' }
+          style: { color: MARKUP_COLOR, fontWeight: 500, fontSize: '12px' }
         },
         labels: {
-          style: { colors: '#f59e0b' },
-          formatter: (value) => value ? `${(value).toFixed(2)}%` : ''
+          style: { colors: MARKUP_COLOR },
+          formatter: (value) => (value === null || value === undefined) ? '' : `${(value).toFixed(2)}%`
         },
-        axisBorder: { show: true, color: '#f59e0b' }
+        axisBorder: { show: true, color: MARKUP_COLOR }
       }
     ]
   }, false, false);
