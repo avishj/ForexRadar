@@ -56,20 +56,41 @@ export async function fetchRates(fromCurr, toCurr, options = {}) {
   /** @type {Map<string, RateRecord>} */
   const mergedData = new Map();
   
+  /** @type {Map<string, 'cache'|'server'|'live'>} Track source of each record */
+  const recordSources = new Map();
+  
   let fromServer = 0;
   let fromCache = 0;
   let fromLive = 0;
 
-  // Step 1: Load Server Data
+  // Step 1: Load Cache Data first
+  notify('cache', 'Loading cached data...');
+  
+  try {
+    const cacheRecords = await Storage.getRatesForPair(fromCurr, toCurr);
+    for (const record of cacheRecords) {
+      mergedData.set(record.date, record);
+      recordSources.set(record.date, 'cache');
+    }
+    notify('cache', `Loaded ${cacheRecords.length} records from cache`);
+  } catch (error) {
+    notify('cache', `Cache unavailable: ${error.message}`);
+  }
+
+  // Step 2: Load Server Data (may overwrite cache with fresher data)
   notify('server', 'Loading server data...');
   
   try {
     const serverRecords = await ServerDB.queryRates(fromCurr, toCurr);
     for (const record of serverRecords) {
+      const wasInCache = mergedData.has(record.date);
       mergedData.set(record.date, record);
+      // Only mark as 'server' if it wasn't already in cache
+      if (!wasInCache) {
+        recordSources.set(record.date, 'server');
+      }
     }
-    fromServer = serverRecords.length;
-    notify('server', `Loaded ${fromServer} records from server`);
+    notify('server', `Loaded ${serverRecords.length} records from server`);
     
     // Cache server data in IndexedDB for offline access
     if (serverRecords.length > 0) {
@@ -82,20 +103,6 @@ export async function fetchRates(fromCurr, toCurr, options = {}) {
     }
   } catch (error) {
     notify('server', `Server data unavailable: ${error.message}`);
-  }
-
-  // Step 2: Load Cache Data (overwrites server data if fresher)
-  notify('cache', 'Loading cached data...');
-  
-  try {
-    const cacheRecords = await Storage.getRatesForPair(fromCurr, toCurr);
-    for (const record of cacheRecords) {
-      mergedData.set(record.date, record);
-    }
-    fromCache = cacheRecords.length;
-    notify('cache', `Loaded ${fromCache} records from cache`);
-  } catch (error) {
-    notify('cache', `Cache unavailable: ${error.message}`);
   }
 
   // Step 3: Check for gaps and fetch live data
@@ -148,6 +155,7 @@ export async function fetchRates(fromCurr, toCurr, options = {}) {
           
           // Add to merged data
           mergedData.set(record.date, record);
+          recordSources.set(record.date, 'live');
           fromLive++;
           consecutiveErrors = 0;
           
@@ -179,6 +187,13 @@ export async function fetchRates(fromCurr, toCurr, options = {}) {
   // Convert map to sorted array
   const records = Array.from(mergedData.values())
     .sort((a, b) => a.date.localeCompare(b.date));
+
+  // Count sources accurately
+  for (const [date, source] of recordSources.entries()) {
+    if (source === 'cache') fromCache++;
+    else if (source === 'server') fromServer++;
+    else if (source === 'live') fromLive++;
+  }
 
   return {
     records,
