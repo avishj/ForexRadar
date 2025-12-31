@@ -97,6 +97,7 @@ export async function fetchRate(date, fromCurr, toCurr) {
     const { context } = await getBrowser();
     const page = await context.newPage();
 
+    /** @type {string | null} */
     let apiResponse = null;
     let apiStatus = null;
 
@@ -219,7 +220,7 @@ export async function fetchDateRange(fromCurr, toCurr, startDate, stopDate = nul
       }
     } catch (error) {
       // Log error but continue with next date
-      console.error(`Failed to fetch rate for ${formatDateForStorage(currentDate)}: ${error.message}`);
+      console.error(`Failed to fetch rate for ${formatDate(currentDate)}: ${error.message}`);
     }
     
     // Move to previous day

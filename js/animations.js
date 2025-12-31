@@ -71,9 +71,10 @@ class AnimationsManager {
    * Initialize spotlight effect for cards that follow mouse
    */
   initSpotlightCards() {
+    /** @type {HTMLElement} */
     const selectorCard = document.querySelector('.selector-card');
     if (selectorCard) {
-      selectorCard.addEventListener('mousemove', (e) => {
+      selectorCard.addEventListener('mousemove', (/** @type {MouseEvent} */ e) => {
         const rect = selectorCard.getBoundingClientRect();
         const x = ((e.clientX - rect.left) / rect.width) * 100;
         const y = ((e.clientY - rect.top) / rect.height) * 100;
@@ -112,6 +113,7 @@ class AnimationsManager {
    * Handle header transparency on scroll
    */
   initHeaderScroll() {
+    /** @type {HTMLElement} */
     const header = document.querySelector('.header');
     if (!header) return;
     
@@ -151,16 +153,16 @@ class AnimationsManager {
    */
   initHoverEffects() {
     document.querySelectorAll('.magnetic').forEach(el => {
-      el.addEventListener('mousemove', (e) => {
+      el.addEventListener('mousemove', (/** @type {MouseEvent} */ e) => {
         const rect = el.getBoundingClientRect();
         const x = e.clientX - rect.left - rect.width / 2;
         const y = e.clientY - rect.top - rect.height / 2;
         
-        el.style.transform = `translate(${x * 0.1}px, ${y * 0.1}px)`;
+        /** @type {HTMLElement} */ (el).style.transform = `translate(${x * 0.1}px, ${y * 0.1}px)`;
       });
       
       el.addEventListener('mouseleave', () => {
-        el.style.transform = 'translate(0, 0)';
+        /** @type {HTMLElement} */ (el).style.transform = 'translate(0, 0)';
       });
     });
   }
@@ -177,7 +179,7 @@ class AnimationsManager {
     const updateParallax = () => {
       const scrollY = window.scrollY;
       
-      blobs.forEach((blob, index) => {
+      blobs.forEach(( /** @type {HTMLElement} */ blob, index) => {
         const speed = 0.1 + (index * 0.05);
         blob.style.transform = `translateY(${scrollY * speed}px)`;
       });

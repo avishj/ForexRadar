@@ -1,0 +1,40 @@
+{
+  "name": "forexradar",
+  "version": "1.0.0",
+  "description": "Track historical Visa and Mastercard exchange rates",
+  "type": "module",
+  "scripts": {
+    "backfill": "cd backend && node backfill.js",
+    "daily": "cd backend && node daily-update.js",
+    "validate": "cd backend && node validate-data.js",
+    "typecheck": "tsc --noEmit",
+    "typecheck:frontend": "tsc --project jsconfig.json --noEmit",
+    "typecheck:backend": "tsc --project backend/jsconfig.json --noEmit",
+    "check": "npm run typecheck",
+    "postinstall": "cd backend && npx playwright install firefox"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.7.0",
+    "playwright": "^1.40.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/avishj/ForexRadar.git"
+  },
+  "keywords": [
+    "forex",
+    "exchange-rates",
+    "visa",
+    "mastercard",
+    "currency"
+  ],
+  "author": "Avish J",
+  "license": "MIT"
+}

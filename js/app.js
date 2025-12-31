@@ -14,17 +14,28 @@ import * as ChartManager from './chart-manager.js';
 // DOM Elements
 // ============================================================================
 
-const fromSelect = document.getElementById('from-currency');
-const toSelect = document.getElementById('to-currency');
-const loader = document.getElementById('loader');
-const loaderText = document.getElementById('loader-text');
-const statsBar = document.getElementById('stats-bar');
-const chartContainer = document.getElementById('chart-container');
-const emptyState = document.getElementById('empty-state');
-const lastUpdated = document.getElementById('last-updated');
-const requestArchivingLink = document.getElementById('request-archiving');
-const archivingSection = document.getElementById('archiving-section');
-const notificationContainer = document.getElementById('notification-container');
+/** @type {HTMLSelectElement} */
+const fromSelect = /** @type {HTMLSelectElement} */ (document.getElementById('from-currency'));
+/** @type {HTMLSelectElement} */
+const toSelect = /** @type {HTMLSelectElement} */ (document.getElementById('to-currency'));
+/** @type {HTMLElement} */
+const loader = /** @type {HTMLElement} */ (document.getElementById('loader'));
+/** @type {HTMLElement} */
+const loaderText = /** @type {HTMLElement} */ (document.getElementById('loader-text'));
+/** @type {HTMLElement} */
+const statsBar = /** @type {HTMLElement} */ (document.getElementById('stats-bar'));
+/** @type {HTMLElement} */
+const chartContainer = /** @type {HTMLElement} */ (document.getElementById('chart-container'));
+/** @type {HTMLElement} */
+const emptyState = /** @type {HTMLElement} */ (document.getElementById('empty-state'));
+/** @type {HTMLElement} */
+const lastUpdated = /** @type {HTMLElement} */ (document.getElementById('last-updated'));
+/** @type {HTMLAnchorElement} */
+const requestArchivingLink = /** @type {HTMLAnchorElement} */ (document.getElementById('request-archiving'));
+/** @type {HTMLElement} */
+const archivingSection = /** @type {HTMLElement} */ (document.getElementById('archiving-section'));
+/** @type {HTMLElement} */
+const notificationContainer = /** @type {HTMLElement} */ (document.getElementById('notification-container'));
 
 // Stats elements
 const statCurrent = document.getElementById('stat-current');
@@ -180,7 +191,7 @@ function showResults() {
   
   // Re-trigger stat card animations
   const statCards = document.querySelectorAll('.stat-card');
-  statCards.forEach((card, i) => {
+  statCards.forEach((/** @type {HTMLElement} */ card, i) => {
     card.style.animation = 'none';
     card.offsetHeight; // Force reflow
     card.style.animation = `stat-card-entrance 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards ${0.1 * (i + 1)}s`;
