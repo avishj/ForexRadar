@@ -25,7 +25,7 @@
 
 ### 2.1 Storage Layers
 1.  **Server-Side (SQLite):**
-    *   **Location:** `/public/db/{FROM_CURRENCY}.db`
+    *   **Location:** `/db/{FROM_CURRENCY}.db`
     *   **Purpose:** Persistent history > 1 year. Committed to Git.
     *   **Engine:** `sql.js` (WASM) loaded in browser.
 2.  **Client-Side (IndexedDB):**
@@ -81,7 +81,7 @@ This stage sets up the automated ingestion system.
   daily-update.js    // GitHub Action entry point
 ```
 
-#### 1.2 The Visa Client (`scripts/lib/visa-client.js`)
+#### 1.2 The Visa Client (`visa-client.js`)
 **Logic:**
 *   **Input:** `Date` object, `from_curr`, `to_curr`.
 *   **Request Flip:** Swap params. Send `from=to_curr&to=from_curr`.
@@ -90,10 +90,10 @@ This stage sets up the automated ingestion system.
 *   **Error Handling:** If `HTTP 500`, return `null` (End of history). If `429/403`, throw `Error` (Rate limit).
 *   **Output:** `RateRecord` or `null`.
 
-#### 1.3 The Backfill Script (`scripts/backfill.js`)
-**Usage:** `node scripts/backfill.js --from=USD --to=INR`
+#### 1.3 The Backfill Script (`backfill.js`)
+**Usage:** `node backfill.js --from=USD --to=INR`
 **Logic:**
-1.  Open SQLite DB (`public/db/USD.db`).
+1.  Open SQLite DB (`db/USD.db`).
 2.  Determine `start_date` = Today - 1 Day or Today if ET time is past 12pm.
 3.  **Loop:** While `current_date` > (Latest date in DB or 1 year ago):
     *   Call `visa-client.fetch(date)`.
@@ -108,14 +108,14 @@ This stage sets up the automated ingestion system.
 **Steps:**
 1.  `actions/checkout@v3`
 2.  `actions/setup-node@v3`
-3.  Run `node scripts/daily-update.js`.
-    *   This script iterates through a `config/watchlist.json`.
+3.  Run `node daily-update.js`.
+    *   This script iterates through a `watchlist.json`.
     *   Calls `visa-client` for yesterday.
     *   Updates the relevant SQLite files.
 4.  Commit changes:
     ```bash
     git config user.name "Bot"
-    git add public/db/*.db
+    git add db/*.db
     git commit -m "auto: daily rates update"
     git push
     ```
@@ -133,7 +133,7 @@ This stage handles the complexity of merging data from Server, Cache, and Live A
 
 #### 2.2 The Data Manager Class (`/public/js/DataManager.js`)
 **Responsibilities:**
-1.  **Load Sharded DB:** Fetch `/public/db/{FROM}.db` and load into `sql.js`.
+1.  **Load Sharded DB:** Fetch `/db/{FROM}.db` and load into `sql.js`.
 2.  **Query Server:** `SELECT * FROM rates WHERE from=? AND to=?`.
 3.  **Query Cache (IndexedDB):** Open `ForexRadarDB`, get all records for pair.
 4.  **Hybrid Fetch (The Core Logic):**
@@ -185,8 +185,8 @@ This stage handles the complexity of merging data from Server, Cache, and Live A
 ## 4. Operational & Deployment Guide
 
 ### 4.1 Initial Population (Bootstrap)
-1.  Developer runs `node scripts/backfill.js --from=USD --to=INR`.
-2.  Verify `public/db/USD.db` has data.
+1.  Developer runs `node backfill.js --from=USD --to=INR`.
+2.  Verify `db/USD.db` has data.
 3.  Commit and Push.
 
 ### 4.2 CI/CD Pipeline

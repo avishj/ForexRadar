@@ -7,7 +7,7 @@
  * @module server-db-loader
  */
 
-/** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
+/** @typedef {import('../shared/types.js').RateRecord} RateRecord */
 
 /** @type {import('sql.js').SqlJsStatic|null} */
 let SQL = null;
@@ -39,9 +39,8 @@ async function initSqlJs() {
  * @returns {string} URL to the database file
  */
 function getDbUrl(fromCurr) {
-  // Adjust path based on whether we're in /frontend/ subdirectory
-  const isInFrontendDir = window.location.pathname.includes('/frontend/');
-  return isInFrontendDir ? `/public/db/${fromCurr}.db` : `/db/${fromCurr}.db`;
+  // Database files are at /db/{currency}.db
+  return `/db/${fromCurr}.db`;
 }
 
 /**

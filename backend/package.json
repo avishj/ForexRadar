@@ -4,8 +4,8 @@
   "description": "Backend scripts for ForexRadar - fetches and stores exchange rate data",
   "type": "module",
   "scripts": {
-    "backfill": "node scripts/backfill.js",
-    "daily": "node scripts/daily-update.js",
+    "backfill": "node backfill.js",
+    "daily": "node daily-update.js",
     "postinstall": "npx playwright install firefox"
   },
   "dependencies": {

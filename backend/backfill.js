@@ -5,7 +5,7 @@
  * 
  * Fetches historical exchange rate data from Visa API and stores in SQLite.
  * 
- * Usage: node scripts/backfill.js --from=USD --to=INR
+ * Usage: node backfill.js --from=USD --to=INR
  * 
  * Logic:
  * 1. Opens SQLite DB for the source currency
@@ -26,11 +26,11 @@ import {
   rateExists,
   closeDatabase,
   getRecordCount
-} from './lib/db-handler.js';
-import { fetchRate, closeBrowser } from './lib/visa-client.js';
-import { formatDate } from '../../shared/utils.js';
+} from './db-handler.js';
+import { fetchRate, closeBrowser } from './visa-client.js';
+import { formatDate } from '../shared/utils.js';
 
-/** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
+/** @typedef {import('../shared/types.js').RateRecord} RateRecord */
 
 /**
  * Parses command line arguments
@@ -45,7 +45,7 @@ function parseCliArgs() {
   });
 
   if (!values.from || !values.to) {
-    console.error('Usage: node scripts/backfill.js --from=USD --to=INR');
+    console.error('Usage: node backfill.js --from=USD --to=INR');
     process.exit(1);
   }
 

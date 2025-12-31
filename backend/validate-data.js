@@ -5,11 +5,11 @@
  * 
  * Queries the SQLite database to verify archived data.
  * 
- * Usage: node scripts/validate-data.js --from=USD --to=INR [--limit=10]
+ * Usage: node validate-data.js --from=USD --to=INR [--limit=10]
  */
 
 import { parseArgs } from 'node:util';
-import { openDatabase, closeDatabase } from './lib/db-handler.js';
+import { openDatabase, closeDatabase } from './db-handler.js';
 
 function parseCliArgs() {
   const { values } = parseArgs({
@@ -21,7 +21,7 @@ function parseCliArgs() {
   });
 
   if (!values.from || !values.to) {
-    console.error('Usage: node scripts/validate-data.js --from=USD --to=INR [--limit=10]');
+    console.error('Usage: node validate-data.js --from=USD --to=INR [--limit=10]');
     process.exit(1);
   }
 

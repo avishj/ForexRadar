@@ -4,7 +4,7 @@
  * Manages SQLite database operations for storing exchange rate data.
  * Uses better-sqlite3 for synchronous, performant SQLite access.
  * 
- * Database files are sharded by source currency: /public/db/{FROM_CURRENCY}.db
+ * Database files are sharded by source currency: /db/{FROM_CURRENCY}.db
  * 
  * @module db-handler
  */
@@ -14,13 +14,13 @@ import { existsSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-/** @typedef {import('../../../shared/types.js').RateRecord} RateRecord */
+/** @typedef {import('../shared/types.js').RateRecord} RateRecord */
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Path to public/db relative to this script
-const DB_BASE_PATH = join(__dirname, '..', '..', '..', 'public', 'db');
+// Path to db/ relative to this script (root level)
+const DB_BASE_PATH = join(__dirname, '..', 'db');
 
 /**
  * Schema for the rates table - matches the unified schema from spec

@@ -10,7 +10,7 @@
  * @module storage-manager
  */
 
-/** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
+/** @typedef {import('../shared/types.js').RateRecord} RateRecord */
 
 const DB_NAME = 'ForexRadarDB';
 const DB_VERSION = 1;

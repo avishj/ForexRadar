@@ -9,9 +9,9 @@
  */
 
 import { firefox } from 'playwright';
-import { formatDate, formatDateForApi } from '../../../shared/utils.js';
+import { formatDate, formatDateForApi } from '../shared/utils.js';
 
-/** @typedef {import('../../../shared/types.js').RateRecord} RateRecord */
+/** @typedef {import('../shared/types.js').RateRecord} RateRecord */
 
 const VISA_API_BASE = 'https://www.visa.co.in/cmsapi/fx/rates';
 const PROVIDER_NAME = 'VISA';

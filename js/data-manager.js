@@ -15,9 +15,9 @@
 import * as ServerDB from './server-db-loader.js';
 import * as Storage from './storage-manager.js';
 import * as VisaClient from './visa-client.js';
-import { formatDate, getYesterday, addDays } from '../../shared/utils.js';
+import { formatDate, getYesterday, addDays } from '../shared/utils.js';
 
-/** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
+/** @typedef {import('../shared/types.js').RateRecord} RateRecord */
 
 /**
  * @typedef {Object} FetchResult

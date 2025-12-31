@@ -7,9 +7,9 @@
  * @module visa-client
  */
 
-import { formatDate, formatDateForApi } from '../../shared/utils.js';
+import { formatDate, formatDateForApi } from '../shared/utils.js';
 
-/** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
+/** @typedef {import('../shared/types.js').RateRecord} RateRecord */
 
 const VISA_API_BASE = 'https://www.visa.co.in/cmsapi/fx/rates';
 const CORS_PROXY = 'https://api.allorigins.win/raw?url=';

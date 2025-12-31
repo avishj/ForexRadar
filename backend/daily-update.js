@@ -17,11 +17,11 @@ import {
   insertRate,
   rateExists,
   closeDatabase
-} from './lib/db-handler.js';
-import { fetchRate } from './lib/visa-client.js';
-import { formatDate, getLatestAvailableDate, getYesterday } from '../../shared/utils.js';
+} from './db-handler.js';
+import { fetchRate } from './visa-client.js';
+import { formatDate, getLatestAvailableDate, getYesterday } from '../shared/utils.js';
 
-/** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
+/** @typedef {import('../shared/types.js').RateRecord} RateRecord */
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -31,7 +31,7 @@ const __dirname = dirname(__filename);
  * @returns {Array<{from: string, to: string}>} Array of currency pairs
  */
 function loadWatchlist() {
-  const watchlistPath = join(__dirname, '..', 'config', 'watchlist.json');
+  const watchlistPath = join(__dirname, 'watchlist.json');
   const content = readFileSync(watchlistPath, 'utf-8');
   const config = JSON.parse(content);
   return config.pairs || [];
