@@ -64,7 +64,7 @@ async function updatePair(pair, date) {
     }
     
     insertRate(db, record);
-    console.log(`  ${from}/${to}: ${record.rate.toFixed(4)} (markup: ${(record.markup * 100).toFixed(4)}%)`);
+    console.log(`  ${from}/${to}: ${record.rate.toFixed(4)} (markup: ${(record.markup).toFixed(4)}%)`);
     return true;
     
   } catch (error) {
