@@ -19,13 +19,24 @@ const PROVIDER_NAME = 'VISA';
 // Reusable browser instance for efficiency
 let browserInstance = null;
 let browserContext = null;
+let browserInitPromise = null;
 
 /**
- * Gets or creates a shared browser instance
+ * Gets or creates a shared browser instance (race-condition safe)
  * @returns {Promise<{browser: import('playwright').Browser, context: import('playwright').BrowserContext}>}
  */
 async function getBrowser() {
-  if (!browserInstance) {
+  if (browserInstance) {
+    return { browser: browserInstance, context: browserContext };
+  }
+  
+  // If already initializing, wait for that promise
+  if (browserInitPromise) {
+    return browserInitPromise;
+  }
+  
+  // Start initialization
+  browserInitPromise = (async () => {
     console.log('[VISA] Launching headless Firefox browser...');
     browserInstance = await firefox.launch({ headless: true });
     browserContext = await browserInstance.newContext({
@@ -34,8 +45,10 @@ async function getBrowser() {
         'Accept-Language': 'en-US,en;q=0.9'
       }
     });
-  }
-  return { browser: browserInstance, context: browserContext };
+    return { browser: browserInstance, context: browserContext };
+  })();
+  
+  return browserInitPromise;
 }
 
 /**
@@ -47,6 +60,7 @@ export async function closeBrowser() {
     await browserInstance.close();
     browserInstance = null;
     browserContext = null;
+    browserInitPromise = null;
   }
 }
 

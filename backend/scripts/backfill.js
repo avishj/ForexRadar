@@ -107,7 +107,7 @@ async function main() {
   const currentDate = new Date(startDate);
   let insertedCount = 0;
   let skippedCount = 0;
-  const BATCH_SIZE = 16;
+  const BATCH_SIZE = 64;
   
   // Loop backwards through dates in batches
   while (currentDate >= stopDate) {
