@@ -125,7 +125,7 @@ function getChartOptions(fromCurr, toCurr) {
           style: {
             colors: '#10b981'
           },
-          formatter: (value) => value?.toFixed(4) ?? ''
+          formatter: (value) => value?.toFixed(0) ?? ''
         },
         axisBorder: {
           show: true,
@@ -146,7 +146,7 @@ function getChartOptions(fromCurr, toCurr) {
           style: {
             colors: '#f59e0b'
           },
-          formatter: (value) => value ? `${(value * 100).toFixed(3)}%` : ''
+          formatter: (value) => value ? `${value.toFixed(2)}%` : ''
         },
         axisBorder: {
           show: true,
@@ -165,9 +165,9 @@ function getChartOptions(fromCurr, toCurr) {
       y: {
         formatter: function(value, { seriesIndex }) {
           if (seriesIndex === 0) {
-            return value?.toFixed(6) ?? '-';
+            return value?.toFixed(2) ?? '-';
           } else {
-            return value ? `${(value * 100).toFixed(4)}%` : '-';
+            return value ? `${value.toFixed(2)}%` : '-';
           }
         }
       }
