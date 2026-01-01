@@ -162,12 +162,18 @@ async function backfillProvider(from, to, providerName, client, startDate, stopD
           endOfHistoryReached = true;
           break;
         } else {
-          insertRate(db, record);
-          insertedCount++;
-          if (providerName === 'VISA' && record.markup !== null) {
-            console.log(`[${providerName}] ${date}: ✓ Rate: ${record.rate.toFixed(4)} (markup: ${record.markup.toFixed(2)}%)`);
+          // insertRate returns true if inserted, false if duplicate was skipped
+          const inserted = insertRate(db, record);
+          if (inserted) {
+            insertedCount++;
+            if (providerName === 'VISA' && record.markup !== null) {
+              console.log(`[${providerName}] ${date}: ✓ Rate: ${record.rate.toFixed(4)} (markup: ${record.markup.toFixed(2)}%)`);
+            } else {
+              console.log(`[${providerName}] ${date}: ✓ Rate: ${record.rate.toFixed(4)}`);
+            }
           } else {
-            console.log(`[${providerName}] ${date}: ✓ Rate: ${record.rate.toFixed(4)}`);
+            console.log(`[${providerName}] ${date}: ⊘ Already exists, skipped`);
+            skippedCount++;
           }
         }
       } else {

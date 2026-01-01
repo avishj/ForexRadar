@@ -68,39 +68,39 @@ function main() {
   console.log(`Oldest archived date: ${earliest}`);
   console.log(`Latest archived date: ${latest}\n`);
 
-  // Check for duplicates
+  // Check for duplicates (same date + provider appearing multiple times)
   const dupeStmt = db.prepare(`
-    SELECT date, COUNT(*) as dupe_count
+    SELECT date, provider, COUNT(*) as dupe_count
     FROM rates
     WHERE from_curr = ? AND to_curr = ?
-    GROUP BY date
+    GROUP BY date, provider
     HAVING COUNT(*) > 1
-    ORDER BY date DESC
+    ORDER BY date DESC, provider
   `);
   const duplicates = dupeStmt.all(from, to);
 
   if (duplicates.length > 0) {
-    console.log(`⚠️  Found ${duplicates.length} dates with duplicate records:`);
+    console.log(`⚠️  Found ${duplicates.length} duplicate records (same date + provider):`);
     console.table(duplicates);
     console.log('');
 
     if (cleanup) {
       console.log('🧹 Cleaning up duplicates...');
       
-      // For each duplicate date, keep only the first record (by rowid) and delete the rest
+      // For each duplicate, keep only the first record (by rowid) and delete the rest
       const cleanupStmt = db.prepare(`
         DELETE FROM rates
         WHERE rowid NOT IN (
           SELECT MIN(rowid)
           FROM rates
-          WHERE from_curr = ? AND to_curr = ? AND date = ?
+          WHERE from_curr = ? AND to_curr = ? AND date = ? AND provider = ?
         )
-        AND from_curr = ? AND to_curr = ? AND date = ?
+        AND from_curr = ? AND to_curr = ? AND date = ? AND provider = ?
       `);
 
       let totalDeleted = 0;
-      for (const { date } of duplicates) {
-        const result = cleanupStmt.run(from, to, date, from, to, date);
+      for (const { date, provider } of duplicates) {
+        const result = cleanupStmt.run(from, to, date, provider, from, to, date, provider);
         totalDeleted += result.changes;
       }
 
@@ -150,6 +150,7 @@ function main() {
   }
 
   // Summary
+  // @ts-ignore
   const expectedDays = Math.floor((new Date(latest) - new Date(earliest)) / (1000 * 60 * 60 * 24)) + 1;
   const uniqueDates = allDates.length;
   const coverage = ((uniqueDates / expectedDays) * 100).toFixed(1);
@@ -159,7 +160,7 @@ function main() {
   console.log(`Unique dates with data: ${uniqueDates}`);
   console.log(`Coverage: ${coverage}%`);
   console.log(`Total records: ${count}`);
-  console.log(`Duplicates: ${duplicates.length} dates`);
+  console.log(`Duplicate records: ${duplicates.length} (same date+provider)`);
   console.log(`Missing dates: ${missingDates.length}\n`);
 
   // Get sample records (properly sorted)

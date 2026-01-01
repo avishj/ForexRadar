@@ -55,7 +55,7 @@ async function updatePairForProvider(pair, date, provider, client) {
   const db = openDatabase(from);
   
   try {
-    // Skip if already exists for this provider
+    // Check if already exists to avoid unnecessary API calls
     if (rateExists(db, dateStr, from, to, provider)) {
       console.log(`  [${provider}] ${from}/${to}: Already exists for ${dateStr}, skipping`);
       return false;
@@ -68,7 +68,14 @@ async function updatePairForProvider(pair, date, provider, client) {
       return false;
     }
     
-    insertRate(db, record);
+    // insertRate returns true if inserted, false if duplicate was skipped by UNIQUE constraint
+    // This is a safety net in case of race conditions
+    const inserted = insertRate(db, record);
+    
+    if (!inserted) {
+      console.log(`  [${provider}] ${from}/${to}: Race condition detected, already inserted`);
+      return false;
+    }
     
     // Format output based on provider (MC doesn't have markup)
     if (provider === 'VISA' && record.markup !== null) {
