@@ -1,10 +1,16 @@
 /**
  * Data Manager
  * 
- * Orchestrates data fetching from multiple sources:
+ * Orchestrates data fetching from multiple sources and providers:
+ * 
+ * Sources:
  * 1. Server Database (SQLite via sql.js) - Long-term historical data
  * 2. Client Cache (IndexedDB) - Recently fetched live data
- * 3. Live API (Visa) - Fresh data for gaps
+ * 3. Live API (Visa, Mastercard) - Fresh data for gaps
+ * 
+ * Providers:
+ * - Visa: Exchange rate + markup percentage
+ * - Mastercard: Exchange rate only (no markup)
  * 
  * Implements the Progressive Enhancement pattern:
  * Local Cache -> Server DB -> Live API
@@ -15,17 +21,24 @@
 import * as ServerDB from './server-db-loader.js';
 import * as Storage from './storage-manager.js';
 import * as VisaClient from './visa-client.js';
+import * as MastercardClient from './mastercard-client.js';
 import { formatDate, getYesterday, addDays } from '../shared/utils.js';
 
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
+/** @typedef {import('../shared/types.js').Provider} Provider */
+/** @typedef {import('../shared/types.js').MultiProviderStats} MultiProviderStats */
 
 /**
  * @typedef {Object} FetchResult
- * @property {RateRecord[]} records - Array of rate records
+ * @property {RateRecord[]} records - Array of rate records (all providers combined)
+ * @property {RateRecord[]} visaRecords - Visa-only records
+ * @property {RateRecord[]} mastercardRecords - Mastercard-only records
  * @property {Object} stats - Fetch statistics
  * @property {number} stats.fromServer - Count from server DB
  * @property {number} stats.fromCache - Count from IndexedDB
  * @property {number} stats.fromLive - Count from live API
+ * @property {number} stats.visaCount - Total Visa records
+ * @property {number} stats.mastercardCount - Total Mastercard records
  * @property {number} stats.total - Total record count
  * @property {boolean} stats.hasServerData - Whether server data exists for this pair
  */
@@ -34,10 +47,22 @@ import { formatDate, getYesterday, addDays } from '../shared/utils.js';
  * @typedef {Object} FetchOptions
  * @property {Function} [onProgress] - Progress callback (stage, message)
  * @property {boolean} [skipLive] - Skip live API fetch
+ * @property {boolean} [fetchVisa] - Fetch Visa rates (default: true)
+ * @property {boolean} [fetchMastercard] - Fetch Mastercard rates (default: true)
  */
 
 /**
- * Fetches rate data for a currency pair from all available sources.
+ * Creates a unique key for a rate record (date + provider)
+ * @param {string} date - Date string
+ * @param {string} provider - Provider name
+ * @returns {string} Unique key
+ */
+function makeRecordKey(date, provider) {
+  return `${date}:${provider}`;
+}
+
+/**
+ * Fetches rate data for a currency pair from all available sources and providers.
  * Implements the hybrid fetch strategy from the spec.
  * 
  * @param {string} fromCurr - Source currency code
@@ -46,7 +71,12 @@ import { formatDate, getYesterday, addDays } from '../shared/utils.js';
  * @returns {Promise<FetchResult>} Merged rate records and stats
  */
 export async function fetchRates(fromCurr, toCurr, options = {}) {
-  const { onProgress, skipLive = false } = options;
+  const { 
+    onProgress, 
+    skipLive = false,
+    fetchVisa = true,
+    fetchMastercard = true 
+  } = options;
   
   const notify = (stage, message) => {
     if (onProgress) {
@@ -54,7 +84,7 @@ export async function fetchRates(fromCurr, toCurr, options = {}) {
     }
   };
 
-  /** @type {Map<string, RateRecord>} */
+  /** @type {Map<string, RateRecord>} Key is date:provider */
   const mergedData = new Map();
   
   /** @type {Map<string, 'cache'|'server'|'live'>} Track source of each record */
@@ -71,8 +101,9 @@ export async function fetchRates(fromCurr, toCurr, options = {}) {
   try {
     const cacheRecords = await Storage.getRatesForPair(fromCurr, toCurr);
     for (const record of cacheRecords) {
-      mergedData.set(record.date, record);
-      recordSources.set(record.date, 'cache');
+      const key = makeRecordKey(record.date, record.provider);
+      mergedData.set(key, record);
+      recordSources.set(key, 'cache');
     }
     notify('cache', `Loaded ${cacheRecords.length} records from cache`);
   } catch (error) {
@@ -86,11 +117,12 @@ export async function fetchRates(fromCurr, toCurr, options = {}) {
     const serverRecords = await ServerDB.queryRates(fromCurr, toCurr);
     hasServerData = serverRecords.length > 0;
     for (const record of serverRecords) {
-      const wasInCache = mergedData.has(record.date);
-      mergedData.set(record.date, record);
+      const key = makeRecordKey(record.date, record.provider);
+      const wasInCache = mergedData.has(key);
+      mergedData.set(key, record);
       // Only mark as 'server' if it wasn't already in cache
       if (!wasInCache) {
-        recordSources.set(record.date, 'server');
+        recordSources.set(key, 'server');
       }
     }
     notify('server', `Loaded ${serverRecords.length} records from server`);
@@ -108,81 +140,62 @@ export async function fetchRates(fromCurr, toCurr, options = {}) {
     notify('server', `Server data unavailable: ${error.message}`);
   }
 
-  // Step 3: Check for gaps and fetch live data
-  if (!skipLive) {
+  // Step 3: Check for gaps and fetch live data from both providers
+  if (!skipLive && (fetchVisa || fetchMastercard)) {
     const yesterday = getYesterday();
     const yesterdayStr = formatDate(yesterday);
     
-    // Find the latest date we have
-    let latestDate = null;
-    for (const date of mergedData.keys()) {
-      if (!latestDate || date > latestDate) {
-        latestDate = date;
+    // Find the latest date we have for each provider
+    let latestVisaDate = null;
+    let latestMcDate = null;
+    
+    for (const [key, record] of mergedData.entries()) {
+      if (record.provider === 'VISA') {
+        if (!latestVisaDate || record.date > latestVisaDate) {
+          latestVisaDate = record.date;
+        }
+      } else if (record.provider === 'MASTERCARD') {
+        if (!latestMcDate || record.date > latestMcDate) {
+          latestMcDate = record.date;
+        }
       }
     }
 
-    // If we're missing recent data, fetch from live API
-    if (!latestDate || latestDate < yesterdayStr) {
-      notify('live', 'Fetching live data...');
-      
-      const startDate = new Date(yesterday);
-      // If no historical data exists, only fetch last 7 days
-      const stopDateStr = latestDate || addDays(yesterdayStr, -7);
-      
-      let currentDate = new Date(startDate);
-      let consecutiveErrors = 0;
-      const maxErrors = 3;
+    // Fetch live data for Visa if needed
+    if (fetchVisa && (!latestVisaDate || latestVisaDate < yesterdayStr)) {
+      const liveCount = await fetchLiveDataForProvider(
+        'VISA',
+        VisaClient,
+        fromCurr,
+        toCurr,
+        yesterdayStr,
+        latestVisaDate,
+        hasServerData,
+        mergedData,
+        recordSources,
+        notify
+      );
+      fromLive += liveCount;
+    }
 
-      while (formatDate(currentDate) > stopDateStr) {
-        const dateStr = formatDate(currentDate);
-        
-        // Skip if we already have this date
-        if (mergedData.has(dateStr)) {
-          currentDate.setDate(currentDate.getDate() - 1);
-          continue;
-        }
+    // Fetch live data for Mastercard if needed
+    if (fetchMastercard && (!latestMcDate || latestMcDate < yesterdayStr)) {
+      const liveCount = await fetchLiveDataForProvider(
+        'MASTERCARD',
+        MastercardClient,
+        fromCurr,
+        toCurr,
+        yesterdayStr,
+        latestMcDate,
+        hasServerData,
+        mergedData,
+        recordSources,
+        notify
+      );
+      fromLive += liveCount;
+    }
 
-        try {
-          notify('live', `Fetching ${dateStr}...`);
-          
-          const record = await VisaClient.fetchRate(currentDate, fromCurr, toCurr);
-          
-          if (record === null) {
-            // End of history (HTTP 500)
-            notify('live', 'Reached end of available history');
-            break;
-          }
-
-          // Save to cache immediately
-          await Storage.saveRate(record);
-          
-          // Add to merged data
-          mergedData.set(record.date, record);
-          recordSources.set(record.date, 'live');
-          fromLive++;
-          consecutiveErrors = 0;
-          
-        } catch (error) {
-          consecutiveErrors++;
-          notify('live', `Error fetching ${dateStr}: ${error.message}`);
-          
-          if (consecutiveErrors >= maxErrors) {
-            notify('live', 'Too many consecutive errors, stopping');
-            break;
-          }
-        }
-
-        // Move to previous day
-        currentDate.setDate(currentDate.getDate() - 1);
-        
-        // Small delay to be respectful
-        await new Promise(resolve => setTimeout(resolve, 50));
-      }
-
-      if (fromLive > 0) {
-        notify('live', `Fetched ${fromLive} records from live API`);
-      }
-    } else {
+    if (fromLive === 0 && (fetchVisa || fetchMastercard)) {
       notify('live', 'Data is up to date');
     }
   }
@@ -191,19 +204,29 @@ export async function fetchRates(fromCurr, toCurr, options = {}) {
   const records = Array.from(mergedData.values())
     .sort((a, b) => a.date.localeCompare(b.date));
 
+  // Separate by provider
+  const visaRecords = records.filter(r => r.provider === 'VISA');
+  const mastercardRecords = records.filter(r => r.provider === 'MASTERCARD');
+
   // Count sources accurately
-  for (const [date, source] of recordSources.entries()) {
+  fromServer = 0;
+  fromCache = 0;
+  for (const [key, source] of recordSources.entries()) {
     if (source === 'cache') fromCache++;
     else if (source === 'server') fromServer++;
-    else if (source === 'live') fromLive++;
+    // fromLive is already counted during fetch
   }
 
   return {
     records,
+    visaRecords,
+    mastercardRecords,
     stats: {
       fromServer,
       fromCache,
       fromLive,
+      visaCount: visaRecords.length,
+      mastercardCount: mastercardRecords.length,
       total: records.length,
       hasServerData
     }
@@ -211,9 +234,100 @@ export async function fetchRates(fromCurr, toCurr, options = {}) {
 }
 
 /**
- * Gets statistics for a dataset
+ * Fetches live data for a specific provider
+ * @param {Provider} providerName - Provider name
+ * @param {typeof VisaClient | typeof MastercardClient} client - Provider client module
+ * @param {string} fromCurr - Source currency
+ * @param {string} toCurr - Target currency
+ * @param {string} yesterdayStr - Yesterday's date string
+ * @param {string|null} latestDate - Latest date we have for this provider
+ * @param {boolean} hasServerData - Whether server data exists
+ * @param {Map<string, RateRecord>} mergedData - Map to add records to
+ * @param {Map<string, string>} recordSources - Map to track record sources
+ * @param {Function} notify - Progress notification function
+ * @returns {Promise<number>} Number of records fetched
+ */
+async function fetchLiveDataForProvider(
+  providerName,
+  client,
+  fromCurr,
+  toCurr,
+  yesterdayStr,
+  latestDate,
+  hasServerData,
+  mergedData,
+  recordSources,
+  notify
+) {
+  notify('live', `Fetching live ${providerName} data...`);
+  
+  let fetchedCount = 0;
+  const startDate = new Date(yesterdayStr);
+  // If no historical data exists, only fetch last 7 days
+  const stopDateStr = latestDate || addDays(yesterdayStr, -7);
+  
+  let currentDate = new Date(startDate);
+  let consecutiveErrors = 0;
+  const maxErrors = 3;
+
+  while (formatDate(currentDate) > stopDateStr) {
+    const dateStr = formatDate(currentDate);
+    const key = makeRecordKey(dateStr, providerName);
+    
+    // Skip if we already have this date for this provider
+    if (mergedData.has(key)) {
+      currentDate.setDate(currentDate.getDate() - 1);
+      continue;
+    }
+
+    try {
+      notify('live', `Fetching ${providerName} ${dateStr}...`);
+      
+      const record = await client.fetchRate(currentDate, fromCurr, toCurr);
+      
+      if (record === null) {
+        // End of history
+        notify('live', `${providerName}: Reached end of available history`);
+        break;
+      }
+
+      // Save to cache immediately
+      await Storage.saveRate(record);
+      
+      // Add to merged data
+      mergedData.set(key, record);
+      recordSources.set(key, 'live');
+      fetchedCount++;
+      consecutiveErrors = 0;
+      
+    } catch (error) {
+      consecutiveErrors++;
+      notify('live', `${providerName} error for ${dateStr}: ${error.message}`);
+      
+      if (consecutiveErrors >= maxErrors) {
+        notify('live', `${providerName}: Too many consecutive errors, stopping`);
+        break;
+      }
+    }
+
+    // Move to previous day
+    currentDate.setDate(currentDate.getDate() - 1);
+    
+    // Small delay to be respectful
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }
+
+  if (fetchedCount > 0) {
+    notify('live', `Fetched ${fetchedCount} ${providerName} records`);
+  }
+
+  return fetchedCount;
+}
+
+/**
+ * Gets statistics for a single provider's dataset
  * @param {RateRecord[]} records - Array of rate records
- * @returns {Object} Statistics object
+ * @returns {import('../shared/types.js').RateStats} Statistics object
  */
 export function calculateStats(records) {
   if (records.length === 0) {
@@ -240,6 +354,72 @@ export function calculateStats(records) {
       start: records[0].date,
       end: records[records.length - 1].date
     }
+  };
+}
+
+/**
+ * Calculates multi-provider statistics for comparison
+ * @param {RateRecord[]} visaRecords - Visa rate records
+ * @param {RateRecord[]} mastercardRecords - Mastercard rate records
+ * @returns {MultiProviderStats} Combined statistics for both providers
+ */
+export function calculateMultiProviderStats(visaRecords, mastercardRecords) {
+  const visaStats = calculateStats(visaRecords);
+  const mcStats = calculateStats(mastercardRecords);
+
+  // Calculate spread (difference between MC and Visa rates)
+  // Build a map of dates where we have both rates
+  const visaByDate = new Map(visaRecords.map(r => [r.date, r.rate]));
+  const mcByDate = new Map(mastercardRecords.map(r => [r.date, r.rate]));
+  
+  const spreads = [];
+  for (const [date, visaRate] of visaByDate.entries()) {
+    const mcRate = mcByDate.get(date);
+    if (mcRate !== undefined) {
+      // Spread = MC rate - Visa rate (positive means MC is higher/worse for buyer)
+      spreads.push(mcRate - visaRate);
+    }
+  }
+
+  const avgSpread = spreads.length > 0 
+    ? spreads.reduce((a, b) => a + b, 0) / spreads.length 
+    : null;
+
+  // Current spread (using most recent date where both exist)
+  let currentSpread = null;
+  let betterRateProvider = null;
+
+  // Get the most recent date that has both
+  const allDates = [...new Set([...visaByDate.keys(), ...mcByDate.keys()])].sort().reverse();
+  for (const date of allDates) {
+    const visaRate = visaByDate.get(date);
+    const mcRate = mcByDate.get(date);
+    if (visaRate !== undefined && mcRate !== undefined) {
+      currentSpread = mcRate - visaRate;
+      // Lower rate is better for buyer (more foreign currency per unit)
+      // Actually for buying foreign currency, HIGHER rate is better (you get more per USD)
+      // But for billing (paying in foreign currency), LOWER is better
+      // Typically for forex cards, lower rate = less INR per USD = better for buyer
+      betterRateProvider = visaRate < mcRate ? 'VISA' : (mcRate < visaRate ? 'MASTERCARD' : null);
+      break;
+    }
+  }
+
+  // Combined date range
+  const allRecords = [...visaRecords, ...mastercardRecords];
+  const dates = allRecords.map(r => r.date).sort();
+  const dateRange = {
+    start: dates.length > 0 ? dates[0] : null,
+    end: dates.length > 0 ? dates[dates.length - 1] : null
+  };
+
+  return {
+    visa: visaStats,
+    mastercard: mcStats,
+    avgSpread,
+    currentSpread,
+    betterRateProvider,
+    dateRange
   };
 }
 
