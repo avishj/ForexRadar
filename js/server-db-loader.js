@@ -112,9 +112,9 @@ export async function queryRates(fromCurr, toCurr) {
         date: String(row.date),
         from_curr: String(row.from_curr),
         to_curr: String(row.to_curr),
-        provider: String(row.provider),
+        provider: /** @type {import('../shared/types.js').Provider} */ (String(row.provider)),
         rate: Number(row.rate),
-        markup: Number(row.markup)
+        markup: row.markup !== null ? Number(row.markup) : null
       });
     }
 
