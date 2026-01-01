@@ -18,6 +18,7 @@ import { formatDate } from '../shared/utils.js';
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
 
 const MASTERCARD_API_BASE = 'https://www.mastercard.co.in/settlement/currencyrate/conversion-rate';
+const MASTERCARD_UI_PAGE = 'https://www.mastercard.co.in/content/mastercardcom/global/en/personal/get-support/convert-currency.html';
 const PROVIDER_NAME = 'MASTERCARD';
 
 // Reusable browser instance for efficiency
@@ -49,6 +50,19 @@ async function getBrowser() {
         'Accept-Language': 'en-US,en;q=0.9'
       }
     });
+    
+    // Visit UI page first to get cookies before hitting the API
+    console.log('[MASTERCARD] Visiting UI page to get cookies...');
+    const initPage = await browserContext.newPage();
+    try {
+      await initPage.goto(MASTERCARD_UI_PAGE, { waitUntil: 'networkidle', timeout: 30000 });
+      console.log('[MASTERCARD] Cookies obtained successfully');
+    } catch (error) {
+      console.warn('[MASTERCARD] Failed to load UI page, continuing anyway:', error.message);
+    } finally {
+      await initPage.close();
+    }
+    
     return { browser: browserInstance, context: browserContext };
   })();
   
