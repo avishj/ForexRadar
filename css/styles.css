@@ -1371,16 +1371,33 @@ h1, h2, h3, h4, h5, h6, .font-display {
 }
 
 .stat-label {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.03em;
   color: var(--text-tertiary);
   margin-bottom: 0.5rem;
   display: flex;
   align-items: center;
   gap: 0.375rem;
   position: static;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Responsive stat label sizing */
+@media (max-width: 1200px) {
+  .stat-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.02em;
+  }
+}
+
+@media (max-width: 768px) {
+  .stat-label {
+    font-size: 0.7rem;
+  }
 }
 
 /* --------------------------------
