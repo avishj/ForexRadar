@@ -12,7 +12,7 @@
  * @module mastercard-client
  */
 
-import { firefox } from 'playwright';
+import { chromium } from 'playwright';
 import { formatDate } from '../shared/utils.js';
 
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
@@ -42,24 +42,32 @@ async function getBrowser() {
   
   // Start initialization
   browserInitPromise = (async () => {
-    console.log('[MASTERCARD] Launching headless Firefox browser...');
-    browserInstance = await firefox.launch({ headless: true });
+    console.log('[MASTERCARD] Launching Chromium browser...');
+    browserInstance = await chromium.launch({ 
+      headless: false,  // Akamai bot detection blocks headless mode
+      args: [
+        '--disable-blink-features=AutomationControlled'
+      ]
+    });
     browserContext = await browserInstance.newContext({
-      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:120.0) Gecko/20100101 Firefox/120.0',
+      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+      viewport: { width: 1920, height: 1080 },
+      locale: 'en-GB',
       extraHTTPHeaders: {
-        'Accept-Language': 'en-US,en;q=0.9'
+        'Accept-Language': 'en-GB,en;q=0.9',
+        'DNT': '1',
+        'Sec-GPC': '1'
       }
     });
     
-    // Visit UI page first to get cookies before hitting the API
-    console.log('[MASTERCARD] Visiting UI page to get cookies...');
+    // Visit UI page first to establish session (required for Akamai)
+    console.log('[MASTERCARD] Visiting UI page...');
     const initPage = await browserContext.newPage();
     try {
       await initPage.goto(MASTERCARD_UI_PAGE, { waitUntil: 'networkidle', timeout: 30000 });
-      console.log('[MASTERCARD] Cookies obtained successfully');
+      // Keep this page open to maintain the session
     } catch (error) {
-      console.warn('[MASTERCARD] Failed to load UI page, continuing anyway:', error.message);
-    } finally {
+      console.warn('[MASTERCARD] Failed to load UI page:', error.message);
       await initPage.close();
     }
     
@@ -145,35 +153,20 @@ export async function fetchRate(date, fromCurr, toCurr) {
 
   try {
     const { context } = await getBrowser();
+    
+    // Create a new page for the API request
     const page = await context.newPage();
-
-    /** @type {string | null} */
-    let apiResponse = null;
-    let apiStatus = null;
-
-    // Intercept the API response
-    page.on('response', async (response) => {
-      if (response.url().includes('/settlement/currencyrate/conversion-rate')) {
-        apiStatus = response.status();
-        try {
-          apiResponse = await response.text();
-        } catch (e) {
-          // Response body may not be available
-        }
-      }
-    });
-
-    // Navigate to the URL and wait for network to settle
-    await page.goto(urlStr, { waitUntil: 'networkidle', timeout: 30000 });
-
-    // Give Cloudflare challenge a moment if needed
-    if (!apiResponse) {
-      await page.waitForTimeout(3000);
-    }
-
-    await page.close();
-
+    
+    // Navigate directly to the API URL (like opening in a new tab)
+    const response = await page.goto(urlStr, { waitUntil: 'networkidle', timeout: 30000 });
+    
+    const apiStatus = response.status();
     console.log(`[MASTERCARD] Response status -> ${apiStatus}`);
+    
+    // Get the response body (the page content will be the JSON response)
+    const apiResponse = await page.content();
+    
+    await page.close();
 
     // Handle HTTP errors
     if (apiStatus === 429 || apiStatus === 403) {
@@ -181,14 +174,27 @@ export async function fetchRate(date, fromCurr, toCurr) {
       throw new Error(`Rate limited: HTTP ${apiStatus}`);
     }
 
-    if (!apiResponse || (apiStatus !== 200 && apiStatus !== null)) {
+    if (apiStatus !== 200) {
       throw new Error(`HTTP error: ${apiStatus}`);
     }
 
-    // Parse the JSON response
+    // Parse the JSON response (extract from HTML wrapper if needed)
     let data;
     try {
-      data = JSON.parse(apiResponse);
+      let jsonText = apiResponse;
+      // Extract JSON from <pre> tag if wrapped in HTML
+      // Look for <pre> first (innermost), fallback to <body>
+      let match = apiResponse.match(/<pre[^>]*>(.*?)<\/pre>/is);
+      if (match) {
+        jsonText = match[1].trim();
+      } else {
+        // Fallback to <body> if no <pre> tag
+        match = apiResponse.match(/<body[^>]*>(.*?)<\/body>/is);
+        if (match) {
+          jsonText = match[1].trim();
+        }
+      }
+      data = JSON.parse(jsonText);
     } catch (e) {
       console.error('[MASTERCARD] Failed to parse JSON:', apiResponse.substring(0, 200));
       throw new Error('Invalid JSON response from Mastercard API');

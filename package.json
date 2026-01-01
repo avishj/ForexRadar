@@ -11,7 +11,7 @@
     "typecheck:frontend": "tsc --project jsconfig.json --noEmit",
     "typecheck:backend": "tsc --project backend/jsconfig.json --noEmit",
     "check": "npm run typecheck",
-    "postinstall": "cd backend && npx playwright install firefox"
+    "postinstall": "cd backend && npx playwright install firefox chromium"
   },
   "dependencies": {
     "better-sqlite3": "^11.7.0",
