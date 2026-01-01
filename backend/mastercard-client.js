@@ -25,10 +25,12 @@ const PROVIDER_NAME = 'MASTERCARD';
 let browserInstance = null;
 let browserContext = null;
 let browserInitPromise = null;
+let apiPage = null; // Reusable page for API requests
 
-// Request counter for session refresh
+// Request counter for session refresh and rate limiting
 let requestCounter = 0;
 const REFRESH_INTERVAL = 6; // Refresh session every 6 API requests
+const PAUSE_INTERVAL = 18; // Pause for 20s after every 18 requests
 
 /**
  * Gets or creates a shared browser instance (race-condition safe)
@@ -91,8 +93,32 @@ export async function closeBrowser() {
     browserInstance = null;
     browserContext = null;
     browserInitPromise = null;
+    apiPage = null;
     requestCounter = 0; // Reset counter
   }
+}
+
+/**
+ * Sleep utility for rate limiting
+ * @param {number} ms - Milliseconds to sleep
+ */
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Gets or creates a reusable page for API requests
+ * @returns {Promise<import('playwright').Page>}
+ */
+async function getApiPage() {
+  if (apiPage && !apiPage.isClosed()) {
+    return apiPage;
+  }
+  
+  const { context } = await getBrowser();
+  apiPage = await context.newPage();
+  console.log('[MASTERCARD] Created reusable API page');
+  return apiPage;
 }
 
 /**
@@ -174,16 +200,22 @@ export async function fetchRate(date, fromCurr, toCurr) {
   console.log(`[MASTERCARD] Request -> ${urlStr}`);
 
   try {
-    // Check if we need to refresh the session (every 6 requests)
+    // Increment request counter and handle session management
     requestCounter++;
+    
+    // Check if we need to pause (every 30 requests)
+    if (requestCounter % PAUSE_INTERVAL === 0) {
+      console.log(`[MASTERCARD] Pausing for 20s after ${requestCounter} requests...`);
+      await sleep(20000);
+    }
+    
+    // Check if we need to refresh the session (every 6 requests)
     if (requestCounter % REFRESH_INTERVAL === 0) {
       await refreshSession();
     }
     
-    const { context } = await getBrowser();
-    
-    // Create a new page for the API request
-    const page = await context.newPage();
+    // Get or reuse the API page
+    const page = await getApiPage();
     
     // Navigate directly to the API URL (like opening in a new tab)
     const response = await page.goto(urlStr, { waitUntil: 'networkidle', timeout: 5000 });
@@ -193,8 +225,6 @@ export async function fetchRate(date, fromCurr, toCurr) {
     
     // Get the response body (the page content will be the JSON response)
     const apiResponse = await page.content();
-    
-    await page.close();
 
     // Handle HTTP errors
     if (apiStatus === 429 || apiStatus === 403) {
