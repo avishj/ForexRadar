@@ -203,10 +203,12 @@ export async function fetchRate(date, fromCurr, toCurr) {
     // Increment request counter and handle session management
     requestCounter++;
     
-    // Check if we need to pause (every 30 requests)
+    // Check if we need to completely restart browser (every 18 requests)
     if (requestCounter % PAUSE_INTERVAL === 0) {
-      console.log(`[MASTERCARD] Pausing for 20s after ${requestCounter} requests...`);
-      await sleep(20000);
+      console.log(`[MASTERCARD] Restarting browser after ${requestCounter} requests to prevent 403s...`);
+      await closeBrowser();
+      await sleep(5000); // Wait 5s before restarting
+      // Browser will be reinitialized on next getBrowser() call
     }
     
     // Check if we need to refresh the session (every 6 requests)
