@@ -4,7 +4,8 @@
  * Daily Update Script
  * 
  * Entry point for GitHub Actions. Iterates through the watchlist
- * and fetches yesterday's rates for each currency pair.
+ * and fetches yesterday's rates for each currency pair from both
+ * Visa and Mastercard providers.
  * 
  * @module daily-update
  */
@@ -18,10 +19,12 @@ import {
   rateExists,
   closeDatabase
 } from './db-handler.js';
-import { fetchRate, closeBrowser } from './visa-client.js';
-import { formatDate, getLatestAvailableDate, getYesterday } from '../shared/utils.js';
+import * as VisaClient from './visa-client.js';
+import * as MastercardClient from './mastercard-client.js';
+import { formatDate, getLatestAvailableDate } from '../shared/utils.js';
 
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
+/** @typedef {import('../shared/types.js').Provider} Provider */
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -38,41 +41,62 @@ function loadWatchlist() {
 }
 
 /**
- * Updates rates for a single currency pair
+ * Updates rate for a single currency pair and provider
  * @param {{from: string, to: string}} pair 
  * @param {Date} date 
+ * @param {Provider} provider
+ * @param {typeof VisaClient | typeof MastercardClient} client
  * @returns {Promise<boolean>} True if updated, false if skipped/failed
  */
-async function updatePair(pair, date) {
+async function updatePairForProvider(pair, date, provider, client) {
   const { from, to } = pair;
   const dateStr = formatDate(date);
   
   const db = openDatabase(from);
   
   try {
-    // Skip if already exists
-    if (rateExists(db, dateStr, from, to)) {
-      console.log(`  ${from}/${to}: Already exists for ${dateStr}, skipping`);
+    // Skip if already exists for this provider
+    if (rateExists(db, dateStr, from, to, provider)) {
+      console.log(`  [${provider}] ${from}/${to}: Already exists for ${dateStr}, skipping`);
       return false;
     }
     
-    const record = await fetchRate(date, from, to);
+    const record = await client.fetchRate(date, from, to);
     
     if (record === null) {
-      console.log(`  ${from}/${to}: No data available for ${dateStr}`);
+      console.log(`  [${provider}] ${from}/${to}: No data available for ${dateStr}`);
       return false;
     }
     
     insertRate(db, record);
-    console.log(`  ${from}/${to}: ${record.rate.toFixed(4)} (markup: ${(record.markup).toFixed(2)}%)`);
+    
+    // Format output based on provider (MC doesn't have markup)
+    if (provider === 'VISA' && record.markup !== null) {
+      console.log(`  [${provider}] ${from}/${to}: ${record.rate.toFixed(4)} (markup: ${record.markup.toFixed(2)}%)`);
+    } else {
+      console.log(`  [${provider}] ${from}/${to}: ${record.rate.toFixed(4)}`);
+    }
     return true;
     
   } catch (error) {
-    console.error(`  ${from}/${to}: Error - ${error.message}`);
+    console.error(`  [${provider}] ${from}/${to}: Error - ${error.message}`);
     return false;
   } finally {
     closeDatabase(db);
   }
+}
+
+/**
+ * Updates rates for a single currency pair from all providers
+ * @param {{from: string, to: string}} pair 
+ * @param {Date} date 
+ * @returns {Promise<{visa: boolean, mastercard: boolean}>} Update status per provider
+ */
+async function updatePair(pair, date) {
+  const visaUpdated = await updatePairForProvider(pair, date, 'VISA', VisaClient);
+  const mcUpdated = await updatePairForProvider(pair, date, 'MASTERCARD', MastercardClient);
+  
+  return { visa: visaUpdated, mastercard: mcUpdated };
 }
 
 /**
@@ -89,24 +113,38 @@ async function main() {
   }
   
   console.log(`Watchlist: ${watchlist.length} pair(s)`);
+  console.log('Providers: Visa, Mastercard\n');
   
   const latestAvailableDate = getLatestAvailableDate();
   console.log(`Fetching rates for: ${formatDate(latestAvailableDate)}\n`);
   
-  let updatedCount = 0;
+  let visaUpdatedCount = 0;
+  let mcUpdatedCount = 0;
   
   for (const pair of watchlist) {
-    const updated = await updatePair(pair, latestAvailableDate);
-    if (updated) updatedCount++;
+    console.log(`Processing ${pair.from}/${pair.to}...`);
+    const result = await updatePair(pair, latestAvailableDate);
+    if (result.visa) visaUpdatedCount++;
+    if (result.mastercard) mcUpdatedCount++;
   }
   
-  console.log(`\n=== Complete: ${updatedCount}/${watchlist.length} pairs updated ===`);
+  console.log(`\n=== Complete ===`);
+  console.log(`Visa: ${visaUpdatedCount}/${watchlist.length} pairs updated`);
+  console.log(`Mastercard: ${mcUpdatedCount}/${watchlist.length} pairs updated`);
   
-  // Close the browser instance to allow script to exit
-  await closeBrowser();
+  // Close both browser instances to allow script to exit
+  await VisaClient.closeBrowser();
+  await MastercardClient.closeBrowser();
 }
 
-main().catch((error) => {
+main().catch(async (error) => {
   console.error('Daily update failed:', error.message);
+  // Ensure browsers are closed on error
+  try {
+    await VisaClient.closeBrowser();
+    await MastercardClient.closeBrowser();
+  } catch (e) {
+    // Ignore cleanup errors
+  }
   process.exit(1);
 });

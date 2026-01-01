@@ -166,22 +166,32 @@ export function getOldestDate(db, fromCurr, toCurr) {
 }
 
 /**
- * Checks if a rate exists for a specific date and currency pair
+ * Checks if a rate exists for a specific date, currency pair, and provider
  * @param {Database.Database} db - SQLite database instance
  * @param {string} date - Date in "YYYY-MM-DD" format
  * @param {string} fromCurr - Source currency code
  * @param {string} toCurr - Target currency code
+ * @param {string} [provider] - Optional provider name. If omitted, checks for any provider.
  * @returns {boolean} True if rate exists
  */
-export function rateExists(db, date, fromCurr, toCurr) {
-  const stmt = db.prepare(`
-    SELECT 1 FROM rates
-    WHERE date = ? AND from_curr = ? AND to_curr = ?
-    LIMIT 1
-  `);
-  
-  const result = stmt.get(date, fromCurr, toCurr);
-  return result !== undefined;
+export function rateExists(db, date, fromCurr, toCurr, provider) {
+  if (provider) {
+    const stmt = db.prepare(`
+      SELECT 1 FROM rates
+      WHERE date = ? AND from_curr = ? AND to_curr = ? AND provider = ?
+      LIMIT 1
+    `);
+    const result = stmt.get(date, fromCurr, toCurr, provider);
+    return result !== undefined;
+  } else {
+    const stmt = db.prepare(`
+      SELECT 1 FROM rates
+      WHERE date = ? AND from_curr = ? AND to_curr = ?
+      LIMIT 1
+    `);
+    const result = stmt.get(date, fromCurr, toCurr);
+    return result !== undefined;
+  }
 }
 
 /**
