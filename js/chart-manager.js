@@ -187,8 +187,8 @@ function getChartOptions(fromCurr, toCurr) {
     
     yaxis: [
       {
-        // Shared Y-axis for both Visa and Mastercard rates
-        seriesName: 'Visa Rate',
+        // Shared Y-axis for both Visa and Mastercard rates (left)
+        seriesName: ['Visa Rate', 'Mastercard Rate'],
         title: {
           text: `Rate (${fromCurr} → ${toCurr})`,
           style: {
@@ -201,7 +201,7 @@ function getChartOptions(fromCurr, toCurr) {
           style: {
             colors: textColor
           },
-          formatter: (value) => value?.toFixed(2) ?? ''
+          formatter: (value) => value?.toFixed(4) ?? ''
         },
         axisBorder: {
           show: true,
@@ -209,14 +209,9 @@ function getChartOptions(fromCurr, toCurr) {
         }
       },
       {
-        // Mastercard rate shares the same Y-axis as Visa rate
-        seriesName: 'Mastercard Rate',
-        show: false // Hide duplicate axis
-      },
-      {
         // Visa Markup on right Y-axis
-        opposite: true,
         seriesName: 'Visa Markup (%)',
+        opposite: true,
         title: {
           text: 'Visa Markup (%)',
           style: {
@@ -429,24 +424,20 @@ export function updateChart(visaRecords, mastercardRecords, fromCurr, toCurr) {
   chartInstance.updateOptions({
     yaxis: [
       {
-        seriesName: 'Visa Rate',
+        seriesName: ['Visa Rate', 'Mastercard Rate'],
         title: {
           text: `Rate (${fromCurr} → ${toCurr})`,
           style: { color: textColor, fontWeight: 500, fontSize: '12px' }
         },
         labels: {
           style: { colors: textColor },
-          formatter: (value) => value?.toFixed(2) ?? ''
+          formatter: (value) => value?.toFixed(4) ?? ''
         },
         axisBorder: { show: true, color: gridColor }
       },
       {
-        seriesName: 'Mastercard Rate',
-        show: false
-      },
-      {
-        opposite: true,
         seriesName: 'Visa Markup (%)',
+        opposite: true,
         title: {
           text: 'Visa Markup (%)',
           style: { color: VISA_MARKUP_COLOR, fontWeight: 500, fontSize: '12px' }
@@ -513,24 +504,20 @@ export function refreshChartTheme(fromCurr, toCurr) {
     },
     yaxis: [
       {
-        seriesName: 'Visa Rate',
+        seriesName: ['Visa Rate', 'Mastercard Rate'],
         title: {
           text: `Rate (${fromCurr} → ${toCurr})`,
           style: { color: textColor, fontWeight: 500, fontSize: '12px' }
         },
         labels: {
           style: { colors: textColor },
-          formatter: (value) => value?.toFixed(2) ?? ''
+          formatter: (value) => value?.toFixed(4) ?? ''
         },
         axisBorder: { show: true, color: gridColor }
       },
       {
-        seriesName: 'Mastercard Rate',
-        show: false
-      },
-      {
-        opposite: true,
         seriesName: 'Visa Markup (%)',
+        opposite: true,
         title: {
           text: 'Visa Markup (%)',
           style: { color: VISA_MARKUP_COLOR, fontWeight: 500, fontSize: '12px' }
