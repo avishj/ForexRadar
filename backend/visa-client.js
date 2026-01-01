@@ -128,7 +128,7 @@ export async function fetchRate(date, fromCurr, toCurr) {
     console.log(`[VISA] Response status -> ${apiStatus}`);
 
     // HTTP 500 indicates end of history (dates older than ~1 year)
-    if (apiStatus === 500) {
+    if (apiStatus === 500 || apiStatus === 400) {
       return null;
     }
 
