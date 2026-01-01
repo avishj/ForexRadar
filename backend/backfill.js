@@ -109,7 +109,7 @@ async function backfillProvider(from, to, providerName, client, startDate, stopD
   const currentDate = new Date(startDate);
   let insertedCount = 0;
   let skippedCount = 0;
-  const BATCH_SIZE = 64;
+  const BATCH_SIZE = 4;
   
   // Loop backwards through dates in batches
   while (currentDate >= stopDate) {
