@@ -12,8 +12,10 @@ import { firefox } from 'playwright';
 import { formatDate, formatDateForApi } from '../shared/utils.js';
 
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
+/** @typedef {import('../shared/types.js').Provider} Provider */
 
 const VISA_API_BASE = 'https://www.visa.co.in/cmsapi/fx/rates';
+/** @type {Provider} */
 const PROVIDER_NAME = 'VISA';
 
 // Reusable browser instance for efficiency

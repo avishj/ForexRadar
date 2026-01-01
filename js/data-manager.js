@@ -387,6 +387,7 @@ export function calculateMultiProviderStats(visaRecords, mastercardRecords) {
 
   // Current spread (using most recent date where both exist)
   let currentSpread = null;
+  /** @type {Provider | null} */
   let betterRateProvider = null;
 
   // Get the most recent date that has both
