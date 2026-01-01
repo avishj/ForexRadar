@@ -26,6 +26,10 @@ let browserInstance = null;
 let browserContext = null;
 let browserInitPromise = null;
 
+// Request counter for session refresh
+let requestCounter = 0;
+const REFRESH_INTERVAL = 6; // Refresh session every 6 API requests
+
 /**
  * Gets or creates a shared browser instance (race-condition safe)
  * @returns {Promise<{browser: import('playwright').Browser, context: import('playwright').BrowserContext}>}
@@ -87,6 +91,24 @@ export async function closeBrowser() {
     browserInstance = null;
     browserContext = null;
     browserInitPromise = null;
+    requestCounter = 0; // Reset counter
+  }
+}
+
+/**
+ * Refreshes the session by visiting the UI page.
+ * Called every REFRESH_INTERVAL requests to prevent 403 errors.
+ */
+async function refreshSession() {
+  console.log('[MASTERCARD] Refreshing session by visiting UI page...');
+  const { context } = await getBrowser();
+  const page = await context.newPage();
+  try {
+    await page.goto(MASTERCARD_UI_PAGE, { waitUntil: 'networkidle', timeout: 5000 });
+  } catch (error) {
+    console.warn('[MASTERCARD] Failed to refresh session:', error.message);
+  } finally {
+    await page.close();
   }
 }
 
@@ -152,6 +174,12 @@ export async function fetchRate(date, fromCurr, toCurr) {
   console.log(`[MASTERCARD] Request -> ${urlStr}`);
 
   try {
+    // Check if we need to refresh the session (every 6 requests)
+    requestCounter++;
+    if (requestCounter % REFRESH_INTERVAL === 0) {
+      await refreshSession();
+    }
+    
     const { context } = await getBrowser();
     
     // Create a new page for the API request
