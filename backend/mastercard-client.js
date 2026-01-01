@@ -64,7 +64,7 @@ async function getBrowser() {
     console.log('[MASTERCARD] Visiting UI page...');
     const initPage = await browserContext.newPage();
     try {
-      await initPage.goto(MASTERCARD_UI_PAGE, { waitUntil: 'networkidle', timeout: 30000 });
+      await initPage.goto(MASTERCARD_UI_PAGE, { waitUntil: 'networkidle', timeout: 5000 });
       // Keep this page open to maintain the session
     } catch (error) {
       console.warn('[MASTERCARD] Failed to load UI page:', error.message);
@@ -158,7 +158,7 @@ export async function fetchRate(date, fromCurr, toCurr) {
     const page = await context.newPage();
     
     // Navigate directly to the API URL (like opening in a new tab)
-    const response = await page.goto(urlStr, { waitUntil: 'networkidle', timeout: 30000 });
+    const response = await page.goto(urlStr, { waitUntil: 'networkidle', timeout: 5000 });
     
     const apiStatus = response.status();
     console.log(`[MASTERCARD] Response status -> ${apiStatus}`);
