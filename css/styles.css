@@ -1298,11 +1298,17 @@ h1, h2, h3, h4, h5, h6, .font-display {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 1rem;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1200px) {
+  .stats-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -1333,9 +1339,11 @@ h1, h2, h3, h4, h5, h6, .font-display {
 
 /* Staggered entrance for each stat card */
 .stat-card:nth-child(1) { animation-delay: 0.1s; }
-.stat-card:nth-child(2) { animation-delay: 0.2s; }
-.stat-card:nth-child(3) { animation-delay: 0.3s; }
-.stat-card:nth-child(4) { animation-delay: 0.4s; }
+.stat-card:nth-child(2) { animation-delay: 0.15s; }
+.stat-card:nth-child(3) { animation-delay: 0.2s; }
+.stat-card:nth-child(4) { animation-delay: 0.25s; }
+.stat-card:nth-child(5) { animation-delay: 0.3s; }
+.stat-card:nth-child(6) { animation-delay: 0.35s; }
 
 .stat-card::before {
   content: '';
@@ -1730,6 +1738,98 @@ h1, h2, h3, h4, h5, h6, .font-display {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-tertiary);
+}
+
+/* --------------------------------
+   Series Toggle Controls
+   -------------------------------- */
+.series-toggles-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem 1rem;
+}
+
+.series-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.series-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  transition: all var(--transition-fast);
+  user-select: none;
+}
+
+.series-toggle:hover {
+  border-color: var(--accent-primary);
+  background: var(--bg-tertiary);
+}
+
+.series-toggle input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.toggle-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  transition: all var(--transition-fast);
+}
+
+.toggle-indicator.visa-rate {
+  background: #10b981;
+}
+
+.toggle-indicator.mc-rate {
+  background: #ef4444;
+}
+
+.toggle-indicator.visa-markup {
+  background: #f59e0b;
+  border: 2px dashed #f59e0b;
+  background: transparent;
+}
+
+.series-toggle input[type="checkbox"]:checked + .toggle-indicator.visa-markup {
+  background: #f59e0b;
+}
+
+.series-toggle input[type="checkbox"]:not(:checked) + .toggle-indicator {
+  opacity: 0.3;
+}
+
+.toggle-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.series-toggle input[type="checkbox"]:not(:checked) ~ .toggle-label {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+@media (max-width: 480px) {
+  .series-toggles {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .series-toggle {
+    justify-content: center;
+  }
 }
 
 /* --------------------------------

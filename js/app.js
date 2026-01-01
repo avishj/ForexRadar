@@ -2,6 +2,7 @@
  * Forex Radar - Main Application
  * 
  * Wires together all modules and handles user interactions.
+ * Supports multi-provider data (Visa and Mastercard).
  * 
  * @module app
  */
@@ -9,6 +10,9 @@
 import { currencies } from './currencies.js';
 import * as DataManager from './data-manager.js';
 import * as ChartManager from './chart-manager.js';
+
+/** @typedef {import('../shared/types.js').RateRecord} RateRecord */
+/** @typedef {import('../shared/types.js').MultiProviderStats} MultiProviderStats */
 
 // ============================================================================
 // DOM Elements
@@ -35,6 +39,8 @@ const requestArchivingLink = /** @type {HTMLAnchorElement} */ (document.getEleme
 /** @type {HTMLElement} */
 const archivingSection = /** @type {HTMLElement} */ (document.getElementById('archiving-section'));
 /** @type {HTMLElement} */
+const seriesTogglesSection = /** @type {HTMLElement} */ (document.getElementById('series-toggles'));
+/** @type {HTMLElement} */
 const notificationContainer = /** @type {HTMLElement} */ (document.getElementById('notification-container'));
 
 // Stats elements
@@ -42,6 +48,13 @@ const statCurrent = document.getElementById('stat-current');
 const statHigh = document.getElementById('stat-high');
 const statLow = document.getElementById('stat-low');
 const statMarkup = document.getElementById('stat-markup');
+const statSpread = document.getElementById('stat-spread');
+const statBetterProvider = document.getElementById('stat-better-provider');
+
+// Series toggle checkboxes
+const toggleVisaRate = /** @type {HTMLInputElement} */ (document.getElementById('toggle-visa-rate'));
+const toggleMcRate = /** @type {HTMLInputElement} */ (document.getElementById('toggle-mc-rate'));
+const toggleVisaMarkup = /** @type {HTMLInputElement} */ (document.getElementById('toggle-visa-markup'));
 
 // ============================================================================
 // State
@@ -51,7 +64,10 @@ let debounceTimer = null;
 const DEBOUNCE_MS = 300;
 
 // Track current data for stats recalculation on zoom
-let currentFullDataset = [];
+/** @type {RateRecord[]} */
+let currentVisaRecords = [];
+/** @type {RateRecord[]} */
+let currentMcRecords = [];
 let currentFromCurr = '';
 let currentToCurr = '';
 
@@ -187,12 +203,17 @@ function hideLoader() {
 }
 
 /**
- * Shows the results UI (stats + chart)
+ * Shows the results UI (stats + chart + toggles)
  */
 function showResults() {
   statsBar.classList.remove('hidden');
   chartContainer.classList.remove('hidden');
   emptyState.classList.add('hidden');
+  
+  // Show series toggles
+  if (seriesTogglesSection) {
+    seriesTogglesSection.classList.remove('hidden');
+  }
   
   // Re-trigger stat card animations
   const statCards = document.querySelectorAll('.stat-card');
@@ -210,19 +231,58 @@ function showEmptyState() {
   statsBar.classList.add('hidden');
   chartContainer.classList.add('hidden');
   emptyState.classList.remove('hidden');
+  
+  // Hide series toggles
+  if (seriesTogglesSection) {
+    seriesTogglesSection.classList.add('hidden');
+  }
 }
 
 /**
- * Updates the stats display
- * @param {Object} stats - Statistics object from DataManager
+ * Updates the stats display for multi-provider data
+ * @param {MultiProviderStats} stats - Multi-provider statistics object
  */
 function updateStats(stats) {
-  statCurrent.textContent = stats.current?.toFixed(4) ?? '-';
-  statHigh.textContent = stats.high?.toFixed(4) ?? '-';
-  statLow.textContent = stats.low?.toFixed(4) ?? '-';
-  statMarkup.textContent = (stats.avgMarkup === null || stats.avgMarkup === undefined)
+  // Current rate - prefer Visa if available, else Mastercard
+  const currentRate = stats.visa.current ?? stats.mastercard.current;
+  statCurrent.textContent = currentRate?.toFixed(4) ?? '-';
+  
+  // High/Low across both providers
+  const allHighs = [stats.visa.high, stats.mastercard.high].filter(v => v !== null);
+  const allLows = [stats.visa.low, stats.mastercard.low].filter(v => v !== null);
+  const high = allHighs.length > 0 ? Math.max(...allHighs) : null;
+  const low = allLows.length > 0 ? Math.min(...allLows) : null;
+  
+  statHigh.textContent = high?.toFixed(4) ?? '-';
+  statLow.textContent = low?.toFixed(4) ?? '-';
+  
+  // Visa markup (only Visa provides this)
+  statMarkup.textContent = (stats.visa.avgMarkup === null || stats.visa.avgMarkup === undefined)
     ? '-'
-    : `${stats.avgMarkup.toFixed(3)}%`;
+    : `${stats.visa.avgMarkup.toFixed(3)}%`;
+  
+  // Spread between MC and Visa
+  if (statSpread) {
+    if (stats.currentSpread !== null) {
+      const spreadSign = stats.currentSpread >= 0 ? '+' : '';
+      statSpread.textContent = `${spreadSign}${stats.currentSpread.toFixed(4)}`;
+      statSpread.className = 'stat-value ' + (stats.currentSpread >= 0 ? 'low' : 'high');
+    } else {
+      statSpread.textContent = '-';
+      statSpread.className = 'stat-value';
+    }
+  }
+  
+  // Better provider indicator
+  if (statBetterProvider) {
+    if (stats.betterRateProvider) {
+      statBetterProvider.textContent = stats.betterRateProvider === 'VISA' ? 'Visa' : 'MC';
+      statBetterProvider.className = 'stat-value ' + (stats.betterRateProvider === 'VISA' ? 'high' : 'accent');
+    } else {
+      statBetterProvider.textContent = '-';
+      statBetterProvider.className = 'stat-value';
+    }
+  }
 }
 
 /**
@@ -262,14 +322,19 @@ function updateArchivingLink(fromCurr, toCurr, isArchivedOnServer = false) {
  * @param {number} maxTimestamp - Maximum visible timestamp (ms)
  */
 function handleChartZoom(minTimestamp, maxTimestamp) {
-  if (currentFullDataset.length === 0) return;
+  if (currentVisaRecords.length === 0 && currentMcRecords.length === 0) return;
   
-  // Filter records to visible range
-  const visibleRecords = ChartManager.getVisibleRecords(currentFullDataset, minTimestamp, maxTimestamp);
+  // Filter records to visible range for each provider
+  const { visaRecords, mastercardRecords } = ChartManager.getVisibleRecordsByProvider(
+    currentVisaRecords, 
+    currentMcRecords, 
+    minTimestamp, 
+    maxTimestamp
+  );
   
-  if (visibleRecords.length > 0) {
-    // Recalculate stats for visible data
-    const stats = DataManager.calculateStats(visibleRecords);
+  if (visaRecords.length > 0 || mastercardRecords.length > 0) {
+    // Recalculate multi-provider stats for visible data
+    const stats = DataManager.calculateMultiProviderStats(visaRecords, mastercardRecords);
     updateStats(stats);
   }
 }
@@ -300,7 +365,7 @@ async function loadCurrencyPair() {
   showLoader('Fetching history...');
 
   try {
-    // Fetch data with progress updates
+    // Fetch data with progress updates (fetches both providers)
     const result = await DataManager.fetchRates(fromCurr, toCurr, {
       onProgress: (stage, message) => {
         loaderText.textContent = message;
@@ -315,8 +380,9 @@ async function loadCurrencyPair() {
       return;
     }
 
-    // Store full dataset for zoom stats updates
-    currentFullDataset = result.records;
+    // Store datasets for zoom stats updates
+    currentVisaRecords = result.visaRecords;
+    currentMcRecords = result.mastercardRecords;
     currentFromCurr = fromCurr;
     currentToCurr = toCurr;
 
@@ -326,8 +392,8 @@ async function loadCurrencyPair() {
     // Update archiving link visibility
     updateArchivingLink(fromCurr, toCurr, isArchivedOnServer);
 
-    // Calculate stats for full dataset
-    const stats = DataManager.calculateStats(result.records);
+    // Calculate multi-provider stats
+    const stats = DataManager.calculateMultiProviderStats(result.visaRecords, result.mastercardRecords);
 
     // Update UI
     hideLoader();
@@ -338,15 +404,15 @@ async function loadCurrencyPair() {
     // Set up zoom callback before initializing/updating chart
     ChartManager.setZoomCallback(handleChartZoom);
 
-    // Render chart
+    // Render chart with both providers
     if (ChartManager.isChartInitialized()) {
-      ChartManager.updateChart(result.records, fromCurr, toCurr);
+      ChartManager.updateChart(result.visaRecords, result.mastercardRecords, fromCurr, toCurr);
     } else {
-      ChartManager.initChart('chart', result.records, fromCurr, toCurr);
+      ChartManager.initChart('chart', result.visaRecords, result.mastercardRecords, fromCurr, toCurr);
     }
 
     // Show summary notification
-    const { fromServer, fromCache, fromLive, total } = result.stats;
+    const { fromServer, fromCache, fromLive, visaCount, mastercardCount, total } = result.stats;
     let source = [];
     if (fromServer > 0) source.push(`${fromServer} from server`);
     if (fromCache > 0) source.push(`${fromCache} cached`);
@@ -357,7 +423,12 @@ async function loadCurrencyPair() {
       showNotification(`This pair is not archived on server. Only showing last ~7 days of data.`, 'warning', 6000);
     }
     
-    showNotification(`Loaded ${total} data points (${source.join(', ')})`, 'success');
+    // Build provider summary
+    const providerSummary = [];
+    if (visaCount > 0) providerSummary.push(`${visaCount} Visa`);
+    if (mastercardCount > 0) providerSummary.push(`${mastercardCount} MC`);
+    
+    showNotification(`Loaded ${providerSummary.join(' + ')} records (${source.join(', ')})`, 'success');
 
   } catch (error) {
     hideLoader();
@@ -429,6 +500,23 @@ function init() {
   // Add event listeners with debouncing
   fromSelect.addEventListener('change', handleSelectionChange);
   toSelect.addEventListener('change', handleSelectionChange);
+
+  // Series toggle event listeners
+  if (toggleVisaRate) {
+    toggleVisaRate.addEventListener('change', () => {
+      ChartManager.setSeriesVisibility({ visaRate: toggleVisaRate.checked });
+    });
+  }
+  if (toggleMcRate) {
+    toggleMcRate.addEventListener('change', () => {
+      ChartManager.setSeriesVisibility({ mastercardRate: toggleMcRate.checked });
+    });
+  }
+  if (toggleVisaMarkup) {
+    toggleVisaMarkup.addEventListener('change', () => {
+      ChartManager.setSeriesVisibility({ visaMarkup: toggleVisaMarkup.checked });
+    });
+  }
 
   // Listen for theme changes to update chart
   window.addEventListener('themechange', () => {

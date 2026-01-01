@@ -196,7 +196,7 @@
       <div class="stat-card" data-animate>
         <div class="stat-label">
           Highest
-          <span class="info-tooltip" data-tooltip="Highest rate in the displayed time period. Green indicates favorable rate for buying foreign currency.">
+          <span class="info-tooltip" data-tooltip="Highest rate across both Visa and Mastercard in the displayed time period.">
             <svg viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><text x="10" y="14" text-anchor="middle" font-size="11" font-weight="600">?</text></svg>
           </span>
         </div>
@@ -206,7 +206,7 @@
       <div class="stat-card" data-animate>
         <div class="stat-label">
           Lowest
-          <span class="info-tooltip" data-tooltip="Lowest rate in the displayed time period. Red indicates unfavorable rate for buying foreign currency.">
+          <span class="info-tooltip" data-tooltip="Lowest rate across both Visa and Mastercard in the displayed time period.">
             <svg viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><text x="10" y="14" text-anchor="middle" font-size="11" font-weight="600">?</text></svg>
           </span>
         </div>
@@ -215,15 +215,56 @@
       
       <div class="stat-card" data-animate>
         <div class="stat-label">
-          Avg Markup
-          <span class="info-tooltip" data-tooltip="Visa's markup over the ECB mid-market rate. Your bank may charge additional fees.">
+          Avg Visa Markup
+          <span class="info-tooltip" data-tooltip="Visa's average markup over ECB mid-market rate. Mastercard does not provide markup data.">
             <svg viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><text x="10" y="14" text-anchor="middle" font-size="11" font-weight="600">?</text></svg>
           </span>
         </div>
         <div id="stat-markup" class="stat-value markup">-</div>
       </div>
+      
+      <div class="stat-card" data-animate>
+        <div class="stat-label">
+          MC vs Visa
+          <span class="info-tooltip" data-tooltip="Current rate difference (Mastercard - Visa). Negative means MC is cheaper.">
+            <svg viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><text x="10" y="14" text-anchor="middle" font-size="11" font-weight="600">?</text></svg>
+          </span>
+        </div>
+        <div id="stat-spread" class="stat-value">-</div>
+      </div>
+      
+      <div class="stat-card" data-animate>
+        <div class="stat-label">
+          Better Rate
+          <span class="info-tooltip" data-tooltip="Which provider currently offers the lower (better) rate for buyers.">
+            <svg viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><text x="10" y="14" text-anchor="middle" font-size="11" font-weight="600">?</text></svg>
+          </span>
+        </div>
+        <div id="stat-better-provider" class="stat-value">-</div>
+      </div>
     </div>
     <div id="last-updated" style="text-align: center; margin-top: 1rem; font-size: 0.75rem; color: var(--text-tertiary);"></div>
+  </section>
+
+  <!-- Series Toggles -->
+  <section id="series-toggles" class="series-toggles-container hidden">
+    <div class="series-toggles">
+      <label class="series-toggle">
+        <input type="checkbox" id="toggle-visa-rate" checked>
+        <span class="toggle-indicator visa-rate"></span>
+        <span class="toggle-label">Visa Rate</span>
+      </label>
+      <label class="series-toggle">
+        <input type="checkbox" id="toggle-mc-rate" checked>
+        <span class="toggle-indicator mc-rate"></span>
+        <span class="toggle-label">Mastercard Rate</span>
+      </label>
+      <label class="series-toggle">
+        <input type="checkbox" id="toggle-visa-markup" checked>
+        <span class="toggle-indicator visa-markup"></span>
+        <span class="toggle-label">Visa Markup</span>
+      </label>
+    </div>
   </section>
 
   <!-- Chart Container -->
@@ -263,7 +304,7 @@
   <footer class="footer">
     <div style="max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 1rem; align-items: center;">
       <!-- Data source -->
-      <p class="footer-text" style="margin: 0;">Data sourced from Visa. Historical data available from date of addition - 365 days.</p>
+      <p class="footer-text" style="margin: 0;">Data sourced from Visa and Mastercard. Historical data available from date of addition - 365 days.</p>
       
       <!-- Attribution -->
       <p style="margin: 0; font-size: 0.9rem; color: var(--text-secondary); display: flex; align-items: center; gap: 0.4rem;">
