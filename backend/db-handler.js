@@ -24,6 +24,7 @@ const DB_BASE_PATH = join(__dirname, '..', 'db');
 
 /**
  * Schema for the rates table - matches the unified schema from spec
+ * UNIQUE constraint prevents duplicate records for same date/pair/provider
  */
 const CREATE_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS rates (
@@ -33,7 +34,8 @@ const CREATE_TABLE_SQL = `
     to_curr TEXT NOT NULL,
     provider TEXT NOT NULL,
     rate REAL NOT NULL,
-    markup REAL
+    markup REAL,
+    UNIQUE(date, from_curr, to_curr, provider)
   )
 `;
 
@@ -81,16 +83,18 @@ export function openDatabase(fromCurr) {
 
 /**
  * Inserts a single rate record into the database
+ * Uses INSERT OR IGNORE to silently skip duplicates (enforced by UNIQUE constraint)
  * @param {Database.Database} db - SQLite database instance
  * @param {RateRecord} record - Rate record to insert
+ * @returns {boolean} True if inserted, false if duplicate was skipped
  */
 export function insertRate(db, record) {
   const stmt = db.prepare(`
-    INSERT INTO rates (date, from_curr, to_curr, provider, rate, markup)
+    INSERT OR IGNORE INTO rates (date, from_curr, to_curr, provider, rate, markup)
     VALUES (?, ?, ?, ?, ?, ?)
   `);
   
-  stmt.run(
+  const result = stmt.run(
     record.date,
     record.from_curr,
     record.to_curr,
@@ -98,23 +102,27 @@ export function insertRate(db, record) {
     record.rate,
     record.markup
   );
+  
+  return result.changes > 0;
 }
 
 /**
  * Inserts multiple rate records in a single transaction
+ * Uses INSERT OR IGNORE to silently skip duplicates (enforced by UNIQUE constraint)
  * @param {Database.Database} db - SQLite database instance
  * @param {RateRecord[]} records - Array of rate records to insert
- * @returns {number} Number of records inserted
+ * @returns {number} Number of records actually inserted (excluding duplicates)
  */
 export function insertRates(db, records) {
   const stmt = db.prepare(`
-    INSERT INTO rates (date, from_curr, to_curr, provider, rate, markup)
+    INSERT OR IGNORE INTO rates (date, from_curr, to_curr, provider, rate, markup)
     VALUES (?, ?, ?, ?, ?, ?)
   `);
   
   const insertMany = db.transaction((records) => {
+    let inserted = 0;
     for (const record of records) {
-      stmt.run(
+      const result = stmt.run(
         record.date,
         record.from_curr,
         record.to_curr,
@@ -122,8 +130,9 @@ export function insertRates(db, records) {
         record.rate,
         record.markup
       );
+      if (result.changes > 0) inserted++;
     }
-    return records.length;
+    return inserted;
   });
   
   return insertMany(records);
