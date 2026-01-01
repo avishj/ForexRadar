@@ -162,29 +162,47 @@ export async function getLatestDate(fromCurr, toCurr) {
 }
 
 /**
- * Checks if a rate exists in cache for a specific date and currency pair
+ * Checks if a rate exists in cache for a specific date, currency pair, and provider
  * @param {string} date - Date in "YYYY-MM-DD" format
  * @param {string} fromCurr - Source currency code
  * @param {string} toCurr - Target currency code
+ * @param {string} [provider] - Provider name (optional - if omitted, checks for any provider)
  * @returns {Promise<boolean>}
  */
-export async function rateExists(date, fromCurr, toCurr) {
+export async function rateExists(date, fromCurr, toCurr, provider) {
   const db = await openDB();
   
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(STORE_NAME, 'readonly');
     const store = transaction.objectStore(STORE_NAME);
     
-    // Try to get with primary key pattern
-    const request = store.get([date, fromCurr, toCurr, 'VISA']);
-    
-    request.onerror = () => {
-      reject(new Error(`Failed to check rate: ${request.error?.message}`));
-    };
-    
-    request.onsuccess = () => {
-      resolve(request.result !== undefined);
-    };
+    if (provider) {
+      // Check for specific provider
+      const request = store.get([date, fromCurr, toCurr, provider]);
+      
+      request.onerror = () => {
+        reject(new Error(`Failed to check rate: ${request.error?.message}`));
+      };
+      
+      request.onsuccess = () => {
+        resolve(request.result !== undefined);
+      };
+    } else {
+      // Check if any provider exists for this date/pair
+      // Use the pair index and filter by date
+      const index = store.index('pair');
+      const request = index.getAll([fromCurr, toCurr]);
+      
+      request.onerror = () => {
+        reject(new Error(`Failed to check rate: ${request.error?.message}`));
+      };
+      
+      request.onsuccess = () => {
+        const records = request.result || [];
+        const exists = records.some(r => r.date === date);
+        resolve(exists);
+      };
+    }
   });
 }
 

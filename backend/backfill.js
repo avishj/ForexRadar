@@ -27,7 +27,6 @@ import { parseArgs } from 'node:util';
 import {
   openDatabase,
   insertRate,
-  getLatestDate,
   rateExists,
   closeDatabase,
   getRecordCount
