@@ -66,17 +66,6 @@ async function getBrowser() {
       }
     });
     
-    // Visit UI page first to establish session (required for Akamai)
-    console.log('[MASTERCARD] Visiting UI page...');
-    const initPage = await browserContext.newPage();
-    try {
-      await initPage.goto(MASTERCARD_UI_PAGE, { waitUntil: 'networkidle', timeout: 5000 });
-      // Keep this page open to maintain the session
-    } catch (error) {
-      console.warn('[MASTERCARD] Failed to load UI page:', error.message);
-      await initPage.close();
-    }
-    
     return { browser: browserInstance, context: browserContext };
   })();
   
@@ -117,7 +106,16 @@ async function getApiPage() {
   
   const { context } = await getBrowser();
   apiPage = await context.newPage();
-  console.log('[MASTERCARD] Created reusable API page');
+  console.log('[MASTERCARD] Created reusable page');
+  
+  // Visit UI page first to establish session (required for Akamai)
+  console.log('[MASTERCARD] Visiting UI page to establish session...');
+  try {
+    await apiPage.goto(MASTERCARD_UI_PAGE, { waitUntil: 'networkidle', timeout: 5000 });
+  } catch (error) {
+    console.warn('[MASTERCARD] Failed to load UI page:', error.message);
+  }
+  
   return apiPage;
 }
 
@@ -127,14 +125,11 @@ async function getApiPage() {
  */
 async function refreshSession() {
   console.log('[MASTERCARD] Refreshing session by visiting UI page...');
-  const { context } = await getBrowser();
-  const page = await context.newPage();
+  const page = await getApiPage();
   try {
     await page.goto(MASTERCARD_UI_PAGE, { waitUntil: 'networkidle', timeout: 5000 });
   } catch (error) {
     console.warn('[MASTERCARD] Failed to refresh session:', error.message);
-  } finally {
-    await page.close();
   }
 }
 
