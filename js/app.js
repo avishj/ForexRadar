@@ -54,6 +54,7 @@ const statBetterProvider = document.getElementById('stat-better-provider');
 // Series toggle checkboxes
 const toggleVisaRate = /** @type {HTMLInputElement} */ (document.getElementById('toggle-visa-rate'));
 const toggleMcRate = /** @type {HTMLInputElement} */ (document.getElementById('toggle-mc-rate'));
+const toggleEcbRate = /** @type {HTMLInputElement} */ (document.getElementById('toggle-ecb-rate'));
 const toggleVisaMarkup = /** @type {HTMLInputElement} */ (document.getElementById('toggle-visa-markup'));
 
 // ============================================================================
@@ -68,6 +69,8 @@ const DEBOUNCE_MS = 300;
 let currentVisaRecords = [];
 /** @type {RateRecord[]} */
 let currentMcRecords = [];
+/** @type {RateRecord[]} */
+let currentEcbRecords = [];
 let currentFromCurr = '';
 let currentToCurr = '';
 
@@ -322,19 +325,20 @@ function updateArchivingLink(fromCurr, toCurr, isArchivedOnServer = false) {
  * @param {number} maxTimestamp - Maximum visible timestamp (ms)
  */
 function handleChartZoom(minTimestamp, maxTimestamp) {
-  if (currentVisaRecords.length === 0 && currentMcRecords.length === 0) return;
+  if (currentVisaRecords.length === 0 && currentMcRecords.length === 0 && currentEcbRecords.length === 0) return;
   
   // Filter records to visible range for each provider
-  const { visaRecords, mastercardRecords } = ChartManager.getVisibleRecordsByProvider(
+  const { visaRecords, mastercardRecords, ecbRecords } = ChartManager.getVisibleRecordsByProvider(
     currentVisaRecords, 
-    currentMcRecords, 
+    currentMcRecords,
+    currentEcbRecords,
     minTimestamp, 
     maxTimestamp
   );
   
-  if (visaRecords.length > 0 || mastercardRecords.length > 0) {
+  if (visaRecords.length > 0 || mastercardRecords.length > 0 || ecbRecords.length > 0) {
     // Recalculate multi-provider stats for visible data
-    const stats = DataManager.calculateMultiProviderStats(visaRecords, mastercardRecords);
+    const stats = DataManager.calculateMultiProviderStats(visaRecords, mastercardRecords, ecbRecords);
     updateStats(stats);
   }
 }
@@ -383,6 +387,7 @@ async function loadCurrencyPair() {
     // Store datasets for zoom stats updates
     currentVisaRecords = result.visaRecords;
     currentMcRecords = result.mastercardRecords;
+    currentEcbRecords = result.ecbRecords;
     currentFromCurr = fromCurr;
     currentToCurr = toCurr;
 
@@ -393,7 +398,7 @@ async function loadCurrencyPair() {
     updateArchivingLink(fromCurr, toCurr, isArchivedOnServer);
 
     // Calculate multi-provider stats
-    const stats = DataManager.calculateMultiProviderStats(result.visaRecords, result.mastercardRecords);
+    const stats = DataManager.calculateMultiProviderStats(result.visaRecords, result.mastercardRecords, result.ecbRecords);
 
     // Update UI
     hideLoader();
@@ -404,15 +409,15 @@ async function loadCurrencyPair() {
     // Set up zoom callback before initializing/updating chart
     ChartManager.setZoomCallback(handleChartZoom);
 
-    // Render chart with both providers
+    // Render chart with all providers
     if (ChartManager.isChartInitialized()) {
-      ChartManager.updateChart(result.visaRecords, result.mastercardRecords, fromCurr, toCurr);
+      ChartManager.updateChart(result.visaRecords, result.mastercardRecords, result.ecbRecords, fromCurr, toCurr);
     } else {
-      ChartManager.initChart('chart', result.visaRecords, result.mastercardRecords, fromCurr, toCurr);
+      ChartManager.initChart('chart', result.visaRecords, result.mastercardRecords, result.ecbRecords, fromCurr, toCurr);
     }
 
     // Show summary notification
-    const { fromServer, fromCache, fromLive, visaCount, mastercardCount, total } = result.stats;
+    const { fromServer, fromCache, fromLive, visaCount, mastercardCount, ecbCount, total } = result.stats;
     let source = [];
     if (fromServer > 0) source.push(`${fromServer} from server`);
     if (fromCache > 0) source.push(`${fromCache} cached`);
@@ -427,6 +432,7 @@ async function loadCurrencyPair() {
     const providerSummary = [];
     if (visaCount > 0) providerSummary.push(`${visaCount} Visa`);
     if (mastercardCount > 0) providerSummary.push(`${mastercardCount} MC`);
+    if (ecbCount > 0) providerSummary.push(`${ecbCount} ECB`);
     
     showNotification(`Loaded ${providerSummary.join(' + ')} records (${source.join(', ')})`, 'success');
 
@@ -510,6 +516,11 @@ function init() {
   if (toggleMcRate) {
     toggleMcRate.addEventListener('change', () => {
       ChartManager.setSeriesVisibility({ mastercardRate: toggleMcRate.checked });
+    });
+  }
+  if (toggleEcbRate) {
+    toggleEcbRate.addEventListener('change', () => {
+      ChartManager.setSeriesVisibility({ ecbRate: toggleEcbRate.checked });
     });
   }
   if (toggleVisaMarkup) {

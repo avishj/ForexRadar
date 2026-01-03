@@ -33,12 +33,14 @@ import { formatDate, getYesterday, addDays } from '../shared/utils.js';
  * @property {RateRecord[]} records - Array of rate records (all providers combined)
  * @property {RateRecord[]} visaRecords - Visa-only records
  * @property {RateRecord[]} mastercardRecords - Mastercard-only records
+ * @property {RateRecord[]} ecbRecords - ECB-only records
  * @property {Object} stats - Fetch statistics
  * @property {number} stats.fromServer - Count from server DB
  * @property {number} stats.fromCache - Count from IndexedDB
  * @property {number} stats.fromLive - Count from live API
  * @property {number} stats.visaCount - Total Visa records
  * @property {number} stats.mastercardCount - Total Mastercard records
+ * @property {number} stats.ecbCount - Total ECB records
  * @property {number} stats.total - Total record count
  * @property {boolean} stats.hasServerData - Whether server data exists for this pair
  */
@@ -207,6 +209,7 @@ export async function fetchRates(fromCurr, toCurr, options = {}) {
   // Separate by provider
   const visaRecords = records.filter(r => r.provider === 'VISA');
   const mastercardRecords = records.filter(r => r.provider === 'MASTERCARD');
+  const ecbRecords = records.filter(r => r.provider === 'ECB');
 
   // Count sources accurately
   fromServer = 0;
@@ -221,12 +224,14 @@ export async function fetchRates(fromCurr, toCurr, options = {}) {
     records,
     visaRecords,
     mastercardRecords,
+    ecbRecords,
     stats: {
       fromServer,
       fromCache,
       fromLive,
       visaCount: visaRecords.length,
       mastercardCount: mastercardRecords.length,
+      ecbCount: ecbRecords.length,
       total: records.length,
       hasServerData
     }
@@ -361,11 +366,13 @@ export function calculateStats(records) {
  * Calculates multi-provider statistics for comparison
  * @param {RateRecord[]} visaRecords - Visa rate records
  * @param {RateRecord[]} mastercardRecords - Mastercard rate records
- * @returns {MultiProviderStats} Combined statistics for both providers
+ * @param {RateRecord[]} ecbRecords - ECB rate records
+ * @returns {MultiProviderStats} Combined statistics for all providers
  */
-export function calculateMultiProviderStats(visaRecords, mastercardRecords) {
+export function calculateMultiProviderStats(visaRecords, mastercardRecords, ecbRecords = []) {
   const visaStats = calculateStats(visaRecords);
   const mcStats = calculateStats(mastercardRecords);
+  const ecbStats = calculateStats(ecbRecords);
 
   // Calculate spread (difference between MC and Visa rates)
   // Build a map of dates where we have both rates
@@ -417,6 +424,7 @@ export function calculateMultiProviderStats(visaRecords, mastercardRecords) {
   return {
     visa: visaStats,
     mastercard: mcStats,
+    ecb: ecbStats,
     avgSpread,
     currentSpread,
     betterRateProvider,
