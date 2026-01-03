@@ -6,6 +6,7 @@
   "scripts": {
     "backfill": "cd backend && node backfill.js",
     "mass-backfill": "cd backend && node mass-backfill.js",
+    "ecb-backfill": "cd backend && node ecb-backfill.js",
     "daily": "cd backend && node daily-update.js",
     "validate": "cd backend && node validate-data.js",
     "typecheck": "tsc --noEmit",
