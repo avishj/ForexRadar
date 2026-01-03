@@ -24,12 +24,14 @@ let chartInstance = null;
 // Chart color constants
 const VISA_RATE_COLOR = '#10b981';      // emerald-500
 const MC_RATE_COLOR = '#ef4444';        // red-500
+const ECB_RATE_COLOR = '#3b82f6';       // blue-500
 const VISA_MARKUP_COLOR = '#f59e0b';    // amber-500
 
 // Series indices for reference
 const SERIES_VISA_RATE = 0;
 const SERIES_MC_RATE = 1;
-const SERIES_VISA_MARKUP = 2;
+const SERIES_ECB_RATE = 2;
+const SERIES_VISA_MARKUP = 3;
 
 /** 
  * Current visibility state
@@ -38,7 +40,8 @@ const SERIES_VISA_MARKUP = 2;
 let currentVisibility = {
   visaRate: true,
   visaMarkup: true,
-  mastercardRate: true
+  mastercardRate: true,
+  ecbRate: true
 };
 
 /**
@@ -77,6 +80,13 @@ export function setSeriesVisibility(visibility) {
         chartInstance.showSeries('Visa Markup (%)');
       } else {
         chartInstance.hideSeries('Visa Markup (%)');
+      }
+    }
+    if (visibility.ecbRate !== undefined) {
+      if (visibility.ecbRate) {
+        chartInstance.showSeries('ECB Rate');
+      } else {
+        chartInstance.hideSeries('ECB Rate');
       }
     }
   }
@@ -151,6 +161,11 @@ function getChartOptions(fromCurr, toCurr) {
         data: []
       },
       {
+        name: 'ECB Rate',
+        type: 'line',
+        data: []
+      },
+      {
         name: 'Visa Markup (%)',
         type: 'line',
         data: []
@@ -159,11 +174,11 @@ function getChartOptions(fromCurr, toCurr) {
     
     stroke: {
       curve: 'smooth',
-      width: [2, 2, 1.5],
-      dashArray: [0, 0, 4]
+      width: [2, 2, 2, 1.5],
+      dashArray: [0, 0, 0, 4]
     },
     
-    colors: [VISA_RATE_COLOR, MC_RATE_COLOR, VISA_MARKUP_COLOR],
+    colors: [VISA_RATE_COLOR, MC_RATE_COLOR, ECB_RATE_COLOR, VISA_MARKUP_COLOR],
     
     xaxis: {
       type: 'datetime',
@@ -187,8 +202,8 @@ function getChartOptions(fromCurr, toCurr) {
     
     yaxis: [
       {
-        // Shared Y-axis for both Visa and Mastercard rates (left)
-        seriesName: ['Visa Rate', 'Mastercard Rate'],
+        // Shared Y-axis for Visa, Mastercard, and ECB rates (left)
+        seriesName: ['Visa Rate', 'Mastercard Rate', 'ECB Rate'],
         title: {
           text: `Rate (${fromCurr} → ${toCurr})`,
           style: {
@@ -243,8 +258,8 @@ function getChartOptions(fromCurr, toCurr) {
       y: {
         formatter: function(value, { seriesIndex }) {
           if (value === null || value === undefined) return '-';
-          // Series 0 = Visa Rate, Series 1 = MC Rate, Series 2 = Visa Markup
-          if (seriesIndex === 0 || seriesIndex === 1) {
+          // Series 0 = Visa Rate, Series 1 = MC Rate, Series 2 = ECB Rate, Series 3 = Visa Markup
+          if (seriesIndex === 0 || seriesIndex === 1 || seriesIndex === 2) {
             return value.toFixed(5);
           } else {
             return `${value.toFixed(2)}%`;
@@ -298,10 +313,11 @@ function getChartOptions(fromCurr, toCurr) {
  * @param {RateRecord[]} mastercardRecords - Array of Mastercard rate records
  * @returns {Object} Object with visaRateSeries, mcRateSeries, and visaMarkupSeries
  */
-function transformData(visaRecords, mastercardRecords) {
+function transformData(visaRecords, mastercardRecords, ecbRecords = []) {
   const visaRateSeries = [];
   const visaMarkupSeries = [];
   const mcRateSeries = [];
+  const ecbRateSeries = [];
   
   // Process Visa records
   for (const record of visaRecords) {
@@ -331,7 +347,18 @@ function transformData(visaRecords, mastercardRecords) {
     });
   }
   
-  return { visaRateSeries, mcRateSeries, visaMarkupSeries };
+  // Process ECB records
+  for (const record of ecbRecords) {
+    const [year, month, day] = record.date.split('-').map(Number);
+    const timestamp = new Date(year, month - 1, day).getTime();
+    
+    ecbRateSeries.push({
+      x: timestamp,
+      y: record.rate
+    });
+  }
+  
+  return { visaRateSeries, mcRateSeries, ecbRateSeries, visaMarkupSeries };
 }
 
 /**
@@ -353,10 +380,11 @@ export function setZoomCallback(callback) {
  * @param {string} containerId - DOM element ID for the chart
  * @param {RateRecord[]} visaRecords - Array of Visa rate records
  * @param {RateRecord[]} mastercardRecords - Array of Mastercard rate records
+ * @param {RateRecord[]} ecbRecords - Array of ECB rate records
  * @param {string} fromCurr - Source currency code
  * @param {string} toCurr - Target currency code
  */
-export function initChart(containerId, visaRecords, mastercardRecords, fromCurr, toCurr) {
+export function initChart(containerId, visaRecords, mastercardRecords, ecbRecords, fromCurr, toCurr) {
   // Destroy existing chart if any
   if (chartInstance) {
     chartInstance.destroy();
@@ -369,11 +397,12 @@ export function initChart(containerId, visaRecords, mastercardRecords, fromCurr,
     return;
   }
   
-  const { visaRateSeries, mcRateSeries, visaMarkupSeries } = transformData(visaRecords, mastercardRecords);
+  const { visaRateSeries, mcRateSeries, ecbRateSeries, visaMarkupSeries } = transformData(visaRecords, mastercardRecords, ecbRecords);
   
   const options = getChartOptions(fromCurr, toCurr);
   options.series[SERIES_VISA_RATE].data = visaRateSeries;
   options.series[SERIES_MC_RATE].data = mcRateSeries;
+  options.series[SERIES_ECB_RATE].data = ecbRateSeries;
   options.series[SERIES_VISA_MARKUP].data = visaMarkupSeries;
   
   // Add zoom/pan event listeners
@@ -398,21 +427,23 @@ export function initChart(containerId, visaRecords, mastercardRecords, fromCurr,
  * Updates the chart with new data
  * @param {RateRecord[]} visaRecords - Array of Visa rate records
  * @param {RateRecord[]} mastercardRecords - Array of Mastercard rate records
+ * @param {RateRecord[]} ecbRecords - Array of ECB rate records
  * @param {string} fromCurr - Source currency code
  * @param {string} toCurr - Target currency code
  */
-export function updateChart(visaRecords, mastercardRecords, fromCurr, toCurr) {
+export function updateChart(visaRecords, mastercardRecords, ecbRecords, fromCurr, toCurr) {
   if (!chartInstance) {
     console.error('Chart not initialized');
     return;
   }
   
-  const { visaRateSeries, mcRateSeries, visaMarkupSeries } = transformData(visaRecords, mastercardRecords);
+  const { visaRateSeries, mcRateSeries, ecbRateSeries, visaMarkupSeries } = transformData(visaRecords, mastercardRecords, ecbRecords);
   
   // Update series data
   chartInstance.updateSeries([
     { name: 'Visa Rate', data: visaRateSeries },
     { name: 'Mastercard Rate', data: mcRateSeries },
+    { name: 'ECB Rate', data: ecbRateSeries },
     { name: 'Visa Markup (%)', data: visaMarkupSeries }
   ]);
   
@@ -424,7 +455,7 @@ export function updateChart(visaRecords, mastercardRecords, fromCurr, toCurr) {
   chartInstance.updateOptions({
     yaxis: [
       {
-        seriesName: ['Visa Rate', 'Mastercard Rate'],
+        seriesName: ['Visa Rate', 'Mastercard Rate', 'ECB Rate'],
         title: {
           text: `Rate (${fromCurr} → ${toCurr})`,
           style: { color: textColor, fontWeight: 500, fontSize: '12px' }
@@ -504,7 +535,7 @@ export function refreshChartTheme(fromCurr, toCurr) {
     },
     yaxis: [
       {
-        seriesName: ['Visa Rate', 'Mastercard Rate'],
+        seriesName: ['Visa Rate', 'Mastercard Rate', 'ECB Rate'],
         title: {
           text: `Rate (${fromCurr} → ${toCurr})`,
           style: { color: textColor, fontWeight: 500, fontSize: '12px' }
@@ -557,13 +588,15 @@ export function getVisibleRecords(records, minTimestamp, maxTimestamp) {
  * Filters records by provider and visible chart range
  * @param {RateRecord[]} visaRecords - All Visa records
  * @param {RateRecord[]} mastercardRecords - All Mastercard records
+ * @param {RateRecord[]} ecbRecords - All ECB records
  * @param {number} minTimestamp - Minimum timestamp (ms)
  * @param {number} maxTimestamp - Maximum timestamp (ms)
- * @returns {{visaRecords: RateRecord[], mastercardRecords: RateRecord[]}} Filtered records by provider
+ * @returns {{visaRecords: RateRecord[], mastercardRecords: RateRecord[], ecbRecords: RateRecord[]}} Filtered records by provider
  */
-export function getVisibleRecordsByProvider(visaRecords, mastercardRecords, minTimestamp, maxTimestamp) {
+export function getVisibleRecordsByProvider(visaRecords, mastercardRecords, ecbRecords, minTimestamp, maxTimestamp) {
   return {
     visaRecords: getVisibleRecords(visaRecords, minTimestamp, maxTimestamp),
-    mastercardRecords: getVisibleRecords(mastercardRecords, minTimestamp, maxTimestamp)
+    mastercardRecords: getVisibleRecords(mastercardRecords, minTimestamp, maxTimestamp),
+    ecbRecords: getVisibleRecords(ecbRecords, minTimestamp, maxTimestamp)
   };
 }

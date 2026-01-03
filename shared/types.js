@@ -56,6 +56,7 @@
  * @typedef {Object} MultiProviderStats
  * @property {RateStats} visa
  * @property {RateStats} mastercard
+ * @property {RateStats} ecb
  * @property {number|null} avgSpread
  * @property {number|null} currentSpread
  * @property {Provider|null} betterRateProvider
@@ -67,6 +68,7 @@
  * @property {boolean} visaRate
  * @property {boolean} visaMarkup
  * @property {boolean} mastercardRate
+ * @property {boolean} ecbRate
  */
 
 /**
