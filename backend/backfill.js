@@ -195,7 +195,7 @@ async function backfillProvider(from, to, providerName, client, startDate, stopD
     }
     
     // Small delay between batches
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 100));
   }
   
   closeDatabase(db);

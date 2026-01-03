@@ -103,19 +103,9 @@ async function getApiPage() {
   if (apiPage && !apiPage.isClosed()) {
     return apiPage;
   }
-  
   const { context } = await getBrowser();
   apiPage = await context.newPage();
   console.log('[MASTERCARD] Created reusable page');
-  
-  // Visit UI page first to establish session (required for Akamai)
-  console.log('[MASTERCARD] Visiting UI page to establish session...');
-  try {
-    await apiPage.goto(MASTERCARD_UI_PAGE, { waitUntil: 'networkidle', timeout: 5000 });
-  } catch (error) {
-    console.warn('[MASTERCARD] Failed to load UI page:', error.message);
-  }
-  
   return apiPage;
 }
 
@@ -127,7 +117,7 @@ async function refreshSession() {
   console.log('[MASTERCARD] Refreshing session by visiting UI page...');
   const page = await getApiPage();
   try {
-    await page.goto(MASTERCARD_UI_PAGE, { waitUntil: 'networkidle', timeout: 5000 });
+    await page.goto(MASTERCARD_UI_PAGE, { waitUntil: 'networkidle', timeout: 3000 });
   } catch (error) {
     console.warn('[MASTERCARD] Failed to refresh session:', error.message);
   }
@@ -202,7 +192,7 @@ export async function fetchRate(date, fromCurr, toCurr) {
     if (requestCounter % PAUSE_INTERVAL === 0) {
       console.log(`[MASTERCARD] Restarting browser after ${requestCounter} requests to prevent 403s...`);
       await closeBrowser();
-      await sleep(5000); // Wait 5s before restarting
+      await sleep(3000); // Wait 3s before restarting
       // Browser will be reinitialized on next getBrowser() call
     }
     
@@ -215,7 +205,7 @@ export async function fetchRate(date, fromCurr, toCurr) {
     const page = await getApiPage();
     
     // Navigate directly to the API URL (like opening in a new tab)
-    const response = await page.goto(urlStr, { waitUntil: 'networkidle', timeout: 5000 });
+    const response = await page.goto(urlStr, { waitUntil: 'networkidle', timeout: 3000 });
     
     const apiStatus = response.status();
     console.log(`[MASTERCARD] Response status -> ${apiStatus}`);
