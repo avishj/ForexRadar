@@ -201,7 +201,7 @@ function getChartOptions(fromCurr, toCurr) {
           style: {
             colors: textColor
           },
-          formatter: (value) => value?.toFixed(4) ?? ''
+          formatter: (value) => value?.toFixed(5) ?? ''
         },
         axisBorder: {
           show: true,
@@ -245,7 +245,7 @@ function getChartOptions(fromCurr, toCurr) {
           if (value === null || value === undefined) return '-';
           // Series 0 = Visa Rate, Series 1 = MC Rate, Series 2 = Visa Markup
           if (seriesIndex === 0 || seriesIndex === 1) {
-            return value.toFixed(4);
+            return value.toFixed(5);
           } else {
             return `${value.toFixed(2)}%`;
           }
@@ -431,7 +431,7 @@ export function updateChart(visaRecords, mastercardRecords, fromCurr, toCurr) {
         },
         labels: {
           style: { colors: textColor },
-          formatter: (value) => value?.toFixed(4) ?? ''
+          formatter: (value) => value?.toFixed(5) ?? ''
         },
         axisBorder: { show: true, color: gridColor }
       },
@@ -511,7 +511,7 @@ export function refreshChartTheme(fromCurr, toCurr) {
         },
         labels: {
           style: { colors: textColor },
-          formatter: (value) => value?.toFixed(4) ?? ''
+          formatter: (value) => value?.toFixed(5) ?? ''
         },
         axisBorder: { show: true, color: gridColor }
       },
