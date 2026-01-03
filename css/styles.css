@@ -1813,6 +1813,10 @@ h1, h2, h3, h4, h5, h6, .font-display {
   background: #ef4444;
 }
 
+.toggle-indicator.ecb-rate {
+  background: #3b82f6;
+}
+
 .toggle-indicator.visa-markup {
   background: #f59e0b;
   border: 2px dashed #f59e0b;

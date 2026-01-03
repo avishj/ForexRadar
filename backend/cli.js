@@ -105,6 +105,18 @@ export function loadWatchlist() {
   }
 }
 
+/** @returns {string[]} */
+export function loadEcbWatchlist() {
+  const path = join(__dirname, 'ecb-watchlist.json');
+  try {
+    const data = JSON.parse(readFileSync(path, 'utf8'));
+    return data.currencies ?? [];
+  } catch (error) {
+    console.error(`Failed to load ECB watchlist: ${error.message}`);
+    process.exit(1);
+  }
+}
+
 /** @param {ProviderOption} provider */
 export function formatProvider(provider) {
   return provider === 'all' ? 'Visa + Mastercard' : provider.toUpperCase();

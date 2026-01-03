@@ -3,13 +3,34 @@
  * @module shared/types
  */
 
-/** @typedef {'VISA' | 'MASTERCARD'} Provider */
+/** @typedef {'VISA' | 'MASTERCARD' | 'ECB'} Provider */
 /** @typedef {'visa' | 'mastercard' | 'all'} ProviderOption */
 
 /**
  * @typedef {Object} CurrencyPair
  * @property {string} from
  * @property {string} to
+ */
+
+/**
+ * @typedef {Object} ECBRateData
+ * @property {RateRecord[]} eurTo - EUR -> Currency rates
+ * @property {RateRecord[]} toEur - Currency -> EUR rates
+ */
+
+/**
+ * @typedef {Object} ECBBackfillResult
+ * @property {string} currency
+ * @property {number} eurToInserted
+ * @property {number} toEurInserted
+ * @property {number} skipped
+ */
+
+/**
+ * @typedef {Object} DailyUpdateFailure
+ * @property {string} pair - e.g. "USD/INR"
+ * @property {Provider} provider
+ * @property {string} error
  */
 
 /**
@@ -35,6 +56,7 @@
  * @typedef {Object} MultiProviderStats
  * @property {RateStats} visa
  * @property {RateStats} mastercard
+ * @property {RateStats} ecb
  * @property {number|null} avgSpread
  * @property {number|null} currentSpread
  * @property {Provider|null} betterRateProvider
@@ -46,6 +68,7 @@
  * @property {boolean} visaRate
  * @property {boolean} visaMarkup
  * @property {boolean} mastercardRate
+ * @property {boolean} ecbRate
  */
 
 /**
