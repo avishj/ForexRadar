@@ -2,9 +2,9 @@ name: Update Data
 
 on:
   schedule:
-    # Run at 12:00 PM ET (~17:00 UTC)
-    - cron: '0 17 * * *'
-  workflow_dispatch: # Allow manual trigger
+    - cron : '59 11 * * *'
+    - cron: '59 23 * * *'
+  workflow_dispatch:
 
 jobs:
   update-rates:
