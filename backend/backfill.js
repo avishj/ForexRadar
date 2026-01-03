@@ -4,266 +4,182 @@
  * Backfill Script
  * 
  * Fetches historical exchange rate data from Visa and/or Mastercard APIs
- * and stores in SQLite.
+ * and stores in SQLite. Iterates backwards from today until hitting the
+ * end of provider history or the stop date.
  * 
- * Usage: 
- *   node backfill.js --from=USD --to=INR                    # Both providers (default)
- *   node backfill.js --from=USD --to=INR --provider=visa    # Visa only
- *   node backfill.js --from=USD --to=INR --provider=mastercard  # Mastercard only
- *   node backfill.js --from=USD --to=INR --provider=all     # Both (explicit)
- * 
- * Logic:
- * 1. Opens SQLite DB for the source currency
- * 2. Determines start date (today or yesterday based on ET time)
- * 3. For each provider, loops backwards fetching rates until:
- *    - End of history response
- *    - Or 730 days reached (in case APIs support more than advertised 365)
- * 4. Inserts new records into DB
+ * Usage:
+ *   node backfill.js --from=USD --to=INR
+ *   node backfill.js --from=USD --to=INR --provider=visa
+ *   node backfill.js --from=USD --to=INR --provider=mastercard --parallel=5
  * 
  * @module backfill
  */
 
-import { parseArgs } from 'node:util';
-import {
-  openDatabase,
-  insertRate,
-  rateExists,
-  closeDatabase,
-  getRecordCount
-} from './db-handler.js';
+import { parseBackfillArgs, formatProvider } from './cli.js';
+import { openDatabase, insertRate, rateExists, closeDatabase, getRecordCount } from './db-handler.js';
 import * as VisaClient from './visa-client.js';
 import * as MastercardClient from './mastercard-client.js';
-import { formatDate } from '../shared/utils.js';
+import { formatDate, getLatestAvailableDate } from '../shared/utils.js';
 
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
 /** @typedef {import('../shared/types.js').Provider} Provider */
+/** @typedef {import('../shared/types.js').ProviderBackfillResult} ProviderBackfillResult */
+
+const MAX_HISTORY_DAYS = 146;
+const BATCH_DELAY_MS = 100;
+
+/** @type {Record<Provider, typeof VisaClient>} */
+const CLIENTS = {
+  VISA: VisaClient,
+  MASTERCARD: MastercardClient
+};
 
 /**
- * Parses command line arguments
- * @returns {{from: string, to: string, provider: 'visa' | 'mastercard' | 'all', parallel: number}} Config
+ * Logs a rate fetch result.
  */
-function parseCliArgs() {
-  const { values } = parseArgs({
-    options: {
-      from: { type: 'string' },
-      to: { type: 'string' },
-      provider: { type: 'string', default: 'all' },
-      parallel: { type: 'string', default: '1' }
-    }
-  });
-
-  if (!values.from || !values.to) {
-    console.error('Usage: node backfill.js --from=USD --to=INR [--provider=visa|mastercard|all] [--parallel=N]');
-    process.exit(1);
-  }
-
-  const providerArg = (values.provider || 'all').toLowerCase();
-  if (!['visa', 'mastercard', 'all'].includes(providerArg)) {
-    console.error('Invalid provider. Use: visa, mastercard, or all');
-    process.exit(1);
-  }
-
-  const parallelValue = parseInt(values.parallel || '1', 10);
-  if (isNaN(parallelValue) || parallelValue < 1) {
-    console.error('Invalid parallel value. Must be a positive integer.');
-    process.exit(1);
-  }
-
-  return {
-    from: values.from.toUpperCase(),
-    to: values.to.toUpperCase(),
-    provider: /** @type {'visa' | 'mastercard' | 'all'} */ (providerArg),
-    parallel: parallelValue
-  };
-}
-
-/**
- * Gets the appropriate start date for backfilling.
- * Returns today if ET time is past 12pm, otherwise yesterday.
- * @returns {Date} Start date
- */
-function getStartDate() {
-  const now = new Date();
+function logRateResult(provider, date, record, inserted) {
+  if (!record) return;
   
-  // Convert to Eastern Time
-  const etTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
-  const etHour = etTime.getHours();
-  
-  // If past 12pm ET, use today; otherwise use yesterday
-  if (etHour >= 12) {
-    return now;
+  if (!inserted) {
+    console.log(`[${provider}] ${date}: ⊘ Already exists`);
+    return;
+  }
+
+  const rateStr = record.rate.toFixed(4);
+  if (provider === 'VISA' && record.markup !== null) {
+    console.log(`[${provider}] ${date}: ✓ ${rateStr} (markup: ${record.markup.toFixed(2)}%)`);
   } else {
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-    return yesterday;
+    console.log(`[${provider}] ${date}: ✓ ${rateStr}`);
   }
 }
 
 /**
- * Backfills data for a single provider
- * @param {string} from - Source currency
- * @param {string} to - Target currency
- * @param {Provider} providerName - Provider name
- * @param {typeof VisaClient | typeof MastercardClient} client - Provider client
- * @param {Date} startDate - Start date
- * @param {Date} stopDate - Stop date
- * @param {number} batchSize - Number of dates to fetch in parallel
- * @returns {Promise<{inserted: number, skipped: number}>} Counts
+ * Fetches and stores rates for one provider, iterating backwards through dates.
+ * @returns {Promise<ProviderBackfillResult>}
  */
-async function backfillProvider(from, to, providerName, client, startDate, stopDate, batchSize) {
-  console.log(`\n--- Backfilling ${providerName} ---`);
+async function backfillProvider(from, to, provider, startDate, stopDate, batchSize) {
+  console.log(`\n--- Backfilling ${provider} ---`);
   
+  const client = CLIENTS[provider];
   const db = openDatabase(from);
   
-  const currentDate = new Date(startDate);
-  let insertedCount = 0;
-  let skippedCount = 0;
-  const BATCH_SIZE = batchSize;
-  
-  // Loop backwards through dates in batches
+  let inserted = 0;
+  let skipped = 0;
+  let currentDate = new Date(startDate);
+
   while (currentDate >= stopDate) {
-    // Collect batch of dates to fetch
     const batch = [];
     const tempDate = new Date(currentDate);
     
-    for (let i = 0; i < BATCH_SIZE && tempDate >= stopDate; i++) {
+    for (let i = 0; i < batchSize && tempDate >= stopDate; i++) {
       const dateStr = formatDate(tempDate);
-      
-      // Skip if already exists in DB for this provider
-      if (rateExists(db, dateStr, from, to, providerName)) {
-        skippedCount++;
+      if (rateExists(db, dateStr, from, to, provider)) {
+        skipped++;
       } else {
         batch.push(new Date(tempDate));
       }
-      
       tempDate.setDate(tempDate.getDate() - 1);
     }
     
-    // Update currentDate for next batch
-    currentDate.setTime(tempDate.getTime());
+    currentDate = tempDate;
     
-    // Skip if no dates to fetch
-    if (batch.length === 0) {
-      continue;
-    }
+    if (batch.length === 0) continue;
+
+    console.log(`[${provider}] Fetching ${batch.length} dates...`);
     
-    console.log(`[${providerName}] Fetching batch of ${batch.length} dates...`);
-    
-    // Fetch all dates in parallel
     const results = await Promise.allSettled(
-      batch.map(date => 
-        client.fetchRate(date, from, to)
-          .then(record => ({ date: formatDate(date), record, error: null }))
-          .catch(error => ({ date: formatDate(date), record: null, error }))
-      )
+      batch.map(async (date) => {
+        const record = await client.fetchRate(date, from, to);
+        return { date: formatDate(date), record };
+      })
     );
+
+    let endOfHistory = false;
     
-    // Process results
-    let endOfHistoryReached = false;
     for (const result of results) {
-      if (result.status === 'fulfilled') {
-        const { date, record, error } = result.value;
-        
-        if (error) {
-          console.log(`[${providerName}] ${date}: ✗ ${error.message}`);
-        } else if (record === null) {
-          console.log(`[${providerName}] ${date}: End of history reached`);
-          endOfHistoryReached = true;
-          break;
-        } else {
-          // insertRate returns true if inserted, false if duplicate was skipped
-          const inserted = insertRate(db, record);
-          if (inserted) {
-            insertedCount++;
-            if (providerName === 'VISA' && record.markup !== null) {
-              console.log(`[${providerName}] ${date}: ✓ Rate: ${record.rate.toFixed(4)} (markup: ${record.markup.toFixed(2)}%)`);
-            } else {
-              console.log(`[${providerName}] ${date}: ✓ Rate: ${record.rate.toFixed(4)}`);
-            }
-          } else {
-            console.log(`[${providerName}] ${date}: ⊘ Already exists, skipped`);
-            skippedCount++;
-          }
-        }
-      } else {
-        console.log(`[${providerName}] Batch error: ${result.reason}`);
+      if (result.status === 'rejected') {
+        console.log(`[${provider}] Error: ${result.reason?.message || result.reason}`);
+        continue;
       }
+      
+      const { date, record } = result.value;
+      
+      if (record === null) {
+        console.log(`[${provider}] ${date}: End of history`);
+        endOfHistory = true;
+        break;
+      }
+
+      const wasInserted = insertRate(db, record);
+      if (wasInserted) {
+        inserted++;
+      } else {
+        skipped++;
+      }
+      logRateResult(provider, date, record, wasInserted);
     }
+
+    if (endOfHistory) break;
     
-    if (endOfHistoryReached) {
-      break;
-    }
-    
-    // Small delay between batches
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(r => setTimeout(r, BATCH_DELAY_MS));
   }
-  
+
   closeDatabase(db);
-  
-  return { inserted: insertedCount, skipped: skippedCount };
+  return { inserted, skipped };
 }
 
-/**
- * Main backfill function
- */
+async function safeCloseBrowser(client) {
+  try {
+    await client.closeBrowser();
+  } catch {
+    // Ignore cleanup errors
+  }
+}
+
 async function main() {
-  const { from, to, provider, parallel } = parseCliArgs();
+  const config = parseBackfillArgs();
+  const { from, to, provider, parallel } = config;
   
   console.log(`=== ForexRadar Backfill ===`);
   console.log(`Pair: ${from}/${to}`);
-  console.log(`Provider(s): ${provider === 'all' ? 'Visa + Mastercard' : provider.toUpperCase()}`);
-  console.log(`Parallel batch size: ${parallel}`);
+  console.log(`Provider(s): ${formatProvider(provider)}`);
+  console.log(`Parallel: ${parallel}`);
   
-  // Determine start date
-  const startDate = getStartDate();
-  console.log(`Starting from: ${formatDate(startDate)}`);
-  
-  // Calculate stop date (730 days ago - in case APIs support more than 365)
+  const startDate = getLatestAvailableDate();
   const stopDate = new Date(startDate);
-  stopDate.setDate(stopDate.getDate() - 730);
-  console.log(`Stop date: ${formatDate(stopDate)}`);
+  stopDate.setDate(stopDate.getDate() - MAX_HISTORY_DAYS);
   
-  /** @type {{visa?: {inserted: number, skipped: number}, mastercard?: {inserted: number, skipped: number}}} */
+  console.log(`Date range: ${formatDate(stopDate)} → ${formatDate(startDate)}`);
+  
+  /** @type {Partial<Record<Provider, ProviderBackfillResult>>} */
   const results = {};
-  
-  // Backfill Visa
+
   if (provider === 'all' || provider === 'visa') {
-    results.visa = await backfillProvider(from, to, 'VISA', VisaClient, startDate, stopDate, parallel);
-    await VisaClient.closeBrowser();
+    results.VISA = await backfillProvider(from, to, 'VISA', startDate, stopDate, parallel);
+    await safeCloseBrowser(VisaClient);
   }
-  
-  // Backfill Mastercard
+
   if (provider === 'all' || provider === 'mastercard') {
-    results.mastercard = await backfillProvider(from, to, 'MASTERCARD', MastercardClient, startDate, stopDate, parallel);
-    await MastercardClient.closeBrowser();
+    results.MASTERCARD = await backfillProvider(from, to, 'MASTERCARD', startDate, stopDate, parallel);
+    await safeCloseBrowser(MastercardClient);
   }
-  
-  // Summary
+
   const db = openDatabase(from);
   const totalRecords = getRecordCount(db, from, to);
   closeDatabase(db);
-  
+
   console.log('\n=== Summary ===');
-  if (results.visa) {
-    console.log(`Visa: ${results.visa.inserted} inserted, ${results.visa.skipped} skipped`);
+  for (const [name, res] of Object.entries(results)) {
+    console.log(`${name}: ${res.inserted} inserted, ${res.skipped} skipped`);
   }
-  if (results.mastercard) {
-    console.log(`Mastercard: ${results.mastercard.inserted} inserted, ${results.mastercard.skipped} skipped`);
-  }
-  console.log(`Total records for ${from}/${to}: ${totalRecords}`);
-  
-  // Force exit to ensure browser resources are freed
+  console.log(`Total records: ${totalRecords}`);
+
   process.exit(0);
 }
 
 main().catch(async (error) => {
-  console.error('Backfill failed:', error.message);
-  // Ensure browsers are closed on error
-  try {
-    await VisaClient.closeBrowser();
-    await MastercardClient.closeBrowser();
-  } catch (e) {
-    // Ignore cleanup errors
-  }
+  console.error(`Backfill failed: ${error.message}`);
+  await safeCloseBrowser(VisaClient);
+  await safeCloseBrowser(MastercardClient);
   process.exit(1);
 });
