@@ -417,7 +417,7 @@ async function loadCurrencyPair() {
     }
 
     // Show summary notification
-    const { fromServer, fromCache, fromLive, visaCount, mastercardCount, ecbCount, total } = result.stats;
+    const { fromServer, fromCache, fromLive, visaCount, mastercardCount, ecbCount } = result.stats;
     let source = [];
     if (fromServer > 0) source.push(`${fromServer} from server`);
     if (fromCache > 0) source.push(`${fromCache} cached`);
