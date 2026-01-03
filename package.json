@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "backfill": "cd backend && node backfill.js",
+    "mass-backfill": "cd backend && node mass-backfill.js",
     "daily": "cd backend && node daily-update.js",
     "validate": "cd backend && node validate-data.js",
     "typecheck": "tsc --noEmit",
