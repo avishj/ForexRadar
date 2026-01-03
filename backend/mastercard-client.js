@@ -56,8 +56,8 @@ async function getBrowser() {
       ]
     });
     browserContext = await browserInstance.newContext({
-      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-      viewport: { width: 1280, height: 720 },
+      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36',
+      viewport: { width: 1512, height: 982 },
       locale: 'en-GB',
       extraHTTPHeaders: {
         'Accept-Language': 'en-GB,en;q=0.9',
