@@ -55,17 +55,27 @@ async function backfillCurrency(currency) {
   
   // Insert EUR→Currency rates into EUR.db
   const eurDb = openDatabase('EUR');
-  const eurToInserted = insertRates(eurDb, data.eurTo);
-  const eurToSkipped = data.eurTo.length - eurToInserted;
-  closeDatabase(eurDb);
+  let eurToInserted = 0;
+  let eurToSkipped = 0;
+  try {
+    eurToInserted = insertRates(eurDb, data.eurTo);
+    eurToSkipped = data.eurTo.length - eurToInserted;
+  } finally {
+    closeDatabase(eurDb);
+  }
   
   console.log(`[ECB] EUR→${currency}: ${eurToInserted} inserted, ${eurToSkipped} skipped`);
   
   // Insert Currency→EUR rates into {Currency}.db
   const currDb = openDatabase(currency);
-  const toEurInserted = insertRates(currDb, data.toEur);
-  const toEurSkipped = data.toEur.length - toEurInserted;
-  closeDatabase(currDb);
+  let toEurInserted = 0;
+  let toEurSkipped = 0;
+  try {
+    toEurInserted = insertRates(currDb, data.toEur);
+    toEurSkipped = data.toEur.length - toEurInserted;
+  } finally {
+    closeDatabase(currDb);
+  }
   
   console.log(`[ECB] ${currency}→EUR: ${toEurInserted} inserted, ${toEurSkipped} skipped`);
   
