@@ -2,16 +2,14 @@
 
 /**
  * Backfill Script
- * 
- * Fetches historical exchange rate data from Visa and/or Mastercard APIs
- * and stores in SQLite. Iterates backwards from today until hitting the
- * end of provider history or the stop date.
- * 
+ *
+ * Fetches historical exchange rate data from Visa/Mastercard APIs and stores in SQLite.
+ *
  * Usage:
  *   node backfill.js --from=USD --to=INR
- *   node backfill.js --from=USD --to=INR --provider=visa
- *   node backfill.js --from=USD --to=INR --provider=mastercard --parallel=5
- * 
+ *   node backfill.js --from=USD --to=INR --provider=visa --days=180
+ *   node backfill.js --from=USD --to=INR --parallel=5 --days=30
+ *
  * @module backfill
  */
 
@@ -25,52 +23,55 @@ import { formatDate, getLatestAvailableDate } from '../shared/utils.js';
 /** @typedef {import('../shared/types.js').Provider} Provider */
 /** @typedef {import('../shared/types.js').ProviderBackfillResult} ProviderBackfillResult */
 
-const MAX_HISTORY_DAYS = 146;
 const BATCH_DELAY_MS = 100;
 
 /** @type {Record<Provider, typeof VisaClient>} */
-const CLIENTS = {
-  VISA: VisaClient,
-  MASTERCARD: MastercardClient
-};
+const CLIENTS = { VISA: VisaClient, MASTERCARD: MastercardClient };
+
+/** @type {Provider[]} */
+const PROVIDERS = ['VISA', 'MASTERCARD'];
 
 /**
- * Logs a rate fetch result.
+ * @param {Provider} provider
+ * @param {string} date
+ * @param {RateRecord|null} record
+ * @param {boolean} inserted
  */
 function logRateResult(provider, date, record, inserted) {
   if (!record) return;
-  
+
   if (!inserted) {
     console.log(`[${provider}] ${date}: ⊘ Already exists`);
     return;
   }
-
-  const rateStr = record.rate.toFixed(4);
-  if (provider === 'VISA' && record.markup !== null) {
-    console.log(`[${provider}] ${date}: ✓ ${rateStr} (markup: ${record.markup.toFixed(2)}%)`);
-  } else {
-    console.log(`[${provider}] ${date}: ✓ ${rateStr}`);
-  }
+  const markup = provider === 'VISA' && record.markup !== null
+    ? `(markup: ${record.markup}%)`
+    : '';
+  console.log(`[${provider}] ${date}: ✓ ${record.rate} ${markup}`);
 }
 
 /**
- * Fetches and stores rates for one provider, iterating backwards through dates.
+ * @param {string} from
+ * @param {string} to
+ * @param {Provider} provider
+ * @param {Date} startDate
+ * @param {Date} stopDate
+ * @param {number} batchSize
  * @returns {Promise<ProviderBackfillResult>}
  */
 async function backfillProvider(from, to, provider, startDate, stopDate, batchSize) {
   console.log(`\n--- Backfilling ${provider} ---`);
-  
+
   const client = CLIENTS[provider];
   const db = openDatabase(from);
-  
   let inserted = 0;
   let skipped = 0;
   let currentDate = new Date(startDate);
 
   while (currentDate >= stopDate) {
+    // Build batch of dates needing fetch
     const batch = [];
     const tempDate = new Date(currentDate);
-    
     for (let i = 0; i < batchSize && tempDate >= stopDate; i++) {
       const dateStr = formatDate(tempDate);
       if (rateExists(db, dateStr, from, to, provider)) {
@@ -80,30 +81,22 @@ async function backfillProvider(from, to, provider, startDate, stopDate, batchSi
       }
       tempDate.setDate(tempDate.getDate() - 1);
     }
-    
     currentDate = tempDate;
-    
     if (batch.length === 0) continue;
-
     console.log(`[${provider}] Fetching ${batch.length} dates...`);
-    
     const results = await Promise.allSettled(
-      batch.map(async (date) => {
-        const record = await client.fetchRate(date, from, to);
-        return { date: formatDate(date), record };
-      })
+      batch.map(async (date) => ({
+        date: formatDate(date),
+        record: await client.fetchRate(date, from, to)
+      }))
     );
-
     let endOfHistory = false;
-    
     for (const result of results) {
       if (result.status === 'rejected') {
         console.log(`[${provider}] Error: ${result.reason?.message || result.reason}`);
         continue;
       }
-      
       const { date, record } = result.value;
-      
       if (record === null) {
         console.log(`[${provider}] ${date}: End of history`);
         endOfHistory = true;
@@ -111,43 +104,44 @@ async function backfillProvider(from, to, provider, startDate, stopDate, batchSi
       }
 
       const wasInserted = insertRate(db, record);
-      if (wasInserted) {
-        inserted++;
-      } else {
-        skipped++;
-      }
+      wasInserted ? inserted++ : skipped++;
       logRateResult(provider, date, record, wasInserted);
     }
 
     if (endOfHistory) break;
-    
-    await new Promise(r => setTimeout(r, BATCH_DELAY_MS));
+    await new Promise((r) => setTimeout(r, BATCH_DELAY_MS));
   }
 
   closeDatabase(db);
   return { inserted, skipped };
 }
 
+/** @param {typeof VisaClient} client */
 async function safeCloseBrowser(client) {
-  try {
-    await client.closeBrowser();
-  } catch {
-    // Ignore cleanup errors
-  }
+  try { await client.closeBrowser(); } catch { /* ignore */ }
+}
+
+/**
+ * Determines which providers to run based on CLI option.
+ * @param {import('../shared/types.js').ProviderOption} option
+ * @returns {Provider[]}
+ */
+function getProvidersToRun(option) {
+  if (option === 'all') return PROVIDERS;
+  return [/** @type {Provider} */ (option.toUpperCase())];
 }
 
 async function main() {
-  const config = parseBackfillArgs();
-  const { from, to, provider, parallel } = config;
-  
-  console.log(`=== ForexRadar Backfill ===`);
+  const { from, to, provider, parallel, days } = parseBackfillArgs();
+
+  console.log('=== ForexRadar Backfill ===');
   console.log(`Pair: ${from}/${to}`);
   console.log(`Provider(s): ${formatProvider(provider)}`);
-  console.log(`Parallel: ${parallel}`);
-  
+  console.log(`Parallel: ${parallel}, Days: ${days}`);
+
   const startDate = getLatestAvailableDate();
   const stopDate = new Date(startDate);
-  stopDate.setDate(stopDate.getDate() - MAX_HISTORY_DAYS);
+  stopDate.setDate(stopDate.getDate() - days);
   
   console.log(`Date range: ${formatDate(stopDate)} → ${formatDate(startDate)}`);
   

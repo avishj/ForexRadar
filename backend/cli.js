@@ -1,8 +1,5 @@
 /**
  * CLI Utilities
- * 
- * Shared command-line parsing and validation for backend scripts.
- * 
  * @module backend/cli
  */
 
@@ -17,7 +14,27 @@ import { fileURLToPath } from 'node:url';
 /** @typedef {import('../shared/types.js').MassBackfillConfig} MassBackfillConfig */
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Defaults
 const VALID_PROVIDERS = ['visa', 'mastercard', 'all'];
+const DEFAULT_PROVIDER = 'all';
+const DEFAULT_PARALLEL = 1;
+const DEFAULT_DAYS = 365;
+
+/**
+ * Parses a positive integer from string, exits on invalid input.
+ * @param {string} value
+ * @param {string} name - Parameter name for error message
+ * @returns {number}
+ */
+function parsePositiveInt(value, name) {
+  const num = parseInt(value, 10);
+  if (!Number.isInteger(num) || num < 1) {
+    console.error(`Invalid --${name} value. Must be a positive integer.`);
+    process.exit(1);
+  }
+  return num;
+}
 
 /**
  * Validates and normalizes provider option.
@@ -27,75 +44,56 @@ const VALID_PROVIDERS = ['visa', 'mastercard', 'all'];
 function parseProvider(value) {
   const normalized = value.toLowerCase();
   if (!VALID_PROVIDERS.includes(normalized)) {
-    console.error(`Invalid provider "${value}". Use: ${VALID_PROVIDERS.join(', ')}`);
+    console.error(`Invalid --provider "${value}". Use: ${VALID_PROVIDERS.join(', ')}`);
     process.exit(1);
   }
   return /** @type {ProviderOption} */ (normalized);
 }
 
-/**
- * Validates and parses parallel count.
- * @param {string} value
- * @returns {number}
- */
-function parseParallel(value) {
-  const num = parseInt(value, 10);
-  if (!Number.isInteger(num) || num < 1) {
-    console.error('Invalid --parallel value. Must be a positive integer.');
-    process.exit(1);
-  }
-  return num;
-}
-
-/**
- * Parses CLI args for backfill.js (requires --from and --to).
- * @returns {BackfillConfig}
- */
+/** @returns {BackfillConfig} */
 export function parseBackfillArgs() {
   const { values } = parseArgs({
     options: {
       from: { type: 'string' },
       to: { type: 'string' },
-      provider: { type: 'string', default: 'all' },
-      parallel: { type: 'string', default: '1' }
+      provider: { type: 'string', default: DEFAULT_PROVIDER },
+      parallel: { type: 'string', default: String(DEFAULT_PARALLEL) },
+      days: { type: 'string', default: String(DEFAULT_DAYS) }
     }
   });
 
   if (!values.from || !values.to) {
-    console.error('Usage: node backfill.js --from=USD --to=INR [--provider=visa|mastercard|all] [--parallel=N]');
+    console.error('Usage: node backfill.js --from=USD --to=INR [--provider=visa|mastercard|all] [--parallel=N] [--days=N]');
     process.exit(1);
   }
 
   return {
     from: values.from.toUpperCase(),
     to: values.to.toUpperCase(),
-    provider: parseProvider(values.provider ?? 'all'),
-    parallel: parseParallel(values.parallel ?? '1')
+    provider: parseProvider(values.provider),
+    parallel: parsePositiveInt(values.parallel, 'parallel'),
+    days: parsePositiveInt(values.days, 'days')
   };
 }
 
-/**
- * Parses CLI args for mass-backfill.js.
- * @returns {MassBackfillConfig}
- */
+/** @returns {MassBackfillConfig} */
 export function parseMassBackfillArgs() {
   const { values } = parseArgs({
     options: {
-      provider: { type: 'string', default: 'all' },
-      parallel: { type: 'string', default: '1' }
+      provider: { type: 'string', default: DEFAULT_PROVIDER },
+      parallel: { type: 'string', default: String(DEFAULT_PARALLEL) },
+      days: { type: 'string', default: String(DEFAULT_DAYS) }
     }
   });
 
   return {
-    provider: parseProvider(values.provider ?? 'all'),
-    parallel: parseParallel(values.parallel ?? '1')
+    provider: parseProvider(values.provider),
+    parallel: parsePositiveInt(values.parallel, 'parallel'),
+    days: parsePositiveInt(values.days, 'days')
   };
 }
 
-/**
- * Loads currency pairs from watchlist.json.
- * @returns {CurrencyPair[]}
- */
+/** @returns {CurrencyPair[]} */
 export function loadWatchlist() {
   const path = join(__dirname, 'watchlist.json');
   try {
@@ -107,11 +105,7 @@ export function loadWatchlist() {
   }
 }
 
-/**
- * Formats provider for display.
- * @param {ProviderOption} provider
- * @returns {string}
- */
+/** @param {ProviderOption} provider */
 export function formatProvider(provider) {
   return provider === 'all' ? 'Visa + Mastercard' : provider.toUpperCase();
 }

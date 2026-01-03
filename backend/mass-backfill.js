@@ -2,16 +2,15 @@
 
 /**
  * Mass Backfill Orchestrator
- * 
+ *
  * Runs backfill.js for every currency pair in watchlist.json.
- * Each pair is processed serially via a child process to isolate
- * browser lifecycle and prevent memory leaks across 100+ pairs.
- * 
+ * Each pair runs in a child process to isolate browser lifecycle.
+ *
  * Usage:
  *   node mass-backfill.js
- *   node mass-backfill.js --provider=visa
- *   node mass-backfill.js --provider=mastercard --parallel=3
- * 
+ *   node mass-backfill.js --provider=visa --days=30
+ *   node mass-backfill.js --provider=mastercard --parallel=3 --days=180
+ *
  * @module mass-backfill
  */
 
@@ -29,7 +28,8 @@ const SEPARATOR = '='.repeat(60);
 const SEPARATOR_LIGHT = '-'.repeat(60);
 
 /**
- * Spawns backfill.js for a single pair and waits for completion.
+ * @param {CurrencyPair} pair
+ * @param {MassBackfillConfig} config
  * @returns {Promise<BackfillResult>}
  */
 function runBackfillForPair(pair, config) {
@@ -39,32 +39,33 @@ function runBackfillForPair(pair, config) {
       `--from=${pair.from}`,
       `--to=${pair.to}`,
       `--provider=${config.provider}`,
-      `--parallel=${config.parallel}`
+      `--parallel=${config.parallel}`,
+      `--days=${config.days}`
     ];
 
     const child = spawn('node', args, { cwd: __dirname, stdio: 'inherit' });
 
-    child.on('close', (exitCode) => {
-      resolve({ success: exitCode === 0, exitCode });
-    });
-
-    child.on('error', (error) => {
-      console.error(`Spawn error: ${error.message}`);
+    child.on('close', (exitCode) => resolve({ success: exitCode === 0, exitCode }));
+    child.on('error', (err) => {
+      console.error(`Spawn error: ${err.message}`);
       resolve({ success: false, exitCode: null });
     });
   });
 }
 
+/** @param {MassBackfillConfig} config  @param {number} pairCount */
 function printBanner(config, pairCount) {
   console.log(SEPARATOR);
   console.log('  ForexRadar Mass Backfill');
   console.log(SEPARATOR);
   console.log(`  Provider(s):  ${formatProvider(config.provider)}`);
   console.log(`  Parallel:     ${config.parallel}`);
+  console.log(`  Days:         ${config.days}`);
   console.log(`  Pairs:        ${pairCount}`);
   console.log(SEPARATOR);
 }
 
+/** @param {number} index  @param {number} total  @param {CurrencyPair} pair */
 function printProgress(index, total, pair) {
   const pct = Math.round(((index + 1) / total) * 100);
   console.log(`\n${SEPARATOR_LIGHT}`);
