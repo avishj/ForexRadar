@@ -40,19 +40,20 @@ import { formatDate } from '../shared/utils.js';
 
 /**
  * Parses command line arguments
- * @returns {{from: string, to: string, provider: 'visa' | 'mastercard' | 'all'}} Config
+ * @returns {{from: string, to: string, provider: 'visa' | 'mastercard' | 'all', parallel: number}} Config
  */
 function parseCliArgs() {
   const { values } = parseArgs({
     options: {
       from: { type: 'string' },
       to: { type: 'string' },
-      provider: { type: 'string', default: 'all' }
+      provider: { type: 'string', default: 'all' },
+      parallel: { type: 'string', default: '1' }
     }
   });
 
   if (!values.from || !values.to) {
-    console.error('Usage: node backfill.js --from=USD --to=INR [--provider=visa|mastercard|all]');
+    console.error('Usage: node backfill.js --from=USD --to=INR [--provider=visa|mastercard|all] [--parallel=N]');
     process.exit(1);
   }
 
@@ -62,10 +63,17 @@ function parseCliArgs() {
     process.exit(1);
   }
 
+  const parallelValue = parseInt(values.parallel || '1', 10);
+  if (isNaN(parallelValue) || parallelValue < 1) {
+    console.error('Invalid parallel value. Must be a positive integer.');
+    process.exit(1);
+  }
+
   return {
     from: values.from.toUpperCase(),
     to: values.to.toUpperCase(),
-    provider: /** @type {'visa' | 'mastercard' | 'all'} */ (providerArg)
+    provider: /** @type {'visa' | 'mastercard' | 'all'} */ (providerArg),
+    parallel: parallelValue
   };
 }
 
@@ -99,9 +107,10 @@ function getStartDate() {
  * @param {typeof VisaClient | typeof MastercardClient} client - Provider client
  * @param {Date} startDate - Start date
  * @param {Date} stopDate - Stop date
+ * @param {number} batchSize - Number of dates to fetch in parallel
  * @returns {Promise<{inserted: number, skipped: number}>} Counts
  */
-async function backfillProvider(from, to, providerName, client, startDate, stopDate) {
+async function backfillProvider(from, to, providerName, client, startDate, stopDate, batchSize) {
   console.log(`\n--- Backfilling ${providerName} ---`);
   
   const db = openDatabase(from);
@@ -109,7 +118,7 @@ async function backfillProvider(from, to, providerName, client, startDate, stopD
   const currentDate = new Date(startDate);
   let insertedCount = 0;
   let skippedCount = 0;
-  const BATCH_SIZE = 1;
+  const BATCH_SIZE = batchSize;
   
   // Loop backwards through dates in batches
   while (currentDate >= stopDate) {
@@ -198,11 +207,12 @@ async function backfillProvider(from, to, providerName, client, startDate, stopD
  * Main backfill function
  */
 async function main() {
-  const { from, to, provider } = parseCliArgs();
+  const { from, to, provider, parallel } = parseCliArgs();
   
   console.log(`=== ForexRadar Backfill ===`);
   console.log(`Pair: ${from}/${to}`);
   console.log(`Provider(s): ${provider === 'all' ? 'Visa + Mastercard' : provider.toUpperCase()}`);
+  console.log(`Parallel batch size: ${parallel}`);
   
   // Determine start date
   const startDate = getStartDate();
@@ -218,13 +228,13 @@ async function main() {
   
   // Backfill Visa
   if (provider === 'all' || provider === 'visa') {
-    results.visa = await backfillProvider(from, to, 'VISA', VisaClient, startDate, stopDate);
+    results.visa = await backfillProvider(from, to, 'VISA', VisaClient, startDate, stopDate, parallel);
     await VisaClient.closeBrowser();
   }
   
   // Backfill Mastercard
   if (provider === 'all' || provider === 'mastercard') {
-    results.mastercard = await backfillProvider(from, to, 'MASTERCARD', MastercardClient, startDate, stopDate);
+    results.mastercard = await backfillProvider(from, to, 'MASTERCARD', MastercardClient, startDate, stopDate, parallel);
     await MastercardClient.closeBrowser();
   }
   
