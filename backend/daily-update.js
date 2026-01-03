@@ -165,8 +165,9 @@ async function updatePair(pair, date, failures) {
   
   try {
     mcUpdated = await updatePairForProvider(pair, date, 'MASTERCARD', MastercardClient);
-  } catch {
-    // Ignore Mastercard failures
+  } catch (error) {
+    // Ignore Mastercard failures for reporting, but log for troubleshooting
+    console.log(`  [MASTERCARD] ${pair.from}/${pair.to}: Error - ${error && error.message ? error.message : String(error)}`);
   }
   
   return { visa: visaUpdated, mastercard: mcUpdated };
