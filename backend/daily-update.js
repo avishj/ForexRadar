@@ -200,12 +200,20 @@ async function updateEcbRates(currencies, failures) {
       }
       
       const eurDb = openDatabase('EUR');
-      const eurInserted = insertRates(eurDb, data.eurTo);
-      closeDatabase(eurDb);
+      let eurInserted = 0;
+      try {
+        eurInserted = insertRates(eurDb, data.eurTo);
+      } finally {
+        closeDatabase(eurDb);
+      }
       
       const currDb = openDatabase(currency);
-      const currInserted = insertRates(currDb, data.toEur);
-      closeDatabase(currDb);
+      let currInserted = 0;
+      try {
+        currInserted = insertRates(currDb, data.toEur);
+      } finally {
+        closeDatabase(currDb);
+      }
       
       if (eurInserted > 0 || currInserted > 0) {
         console.log(`  [ECB] EUR↔${currency}: +${eurInserted} EUR→${currency}, +${currInserted} ${currency}→EUR`);
