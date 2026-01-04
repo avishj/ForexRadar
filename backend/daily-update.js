@@ -15,13 +15,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import {
-  openDatabase,
-  insertRate,
-  insertRates,
-  rateExists,
-  closeDatabase
-} from './db-handler.js';
+import { store } from './csv-store.js';
 import { loadEcbWatchlist } from './cli.js';
 import * as VisaClient from './visa-client.js';
 import * as MastercardClient from './mastercard-client.js';
@@ -30,6 +24,7 @@ import { formatDate, getLatestAvailableDate } from '../shared/utils.js';
 
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
 /** @typedef {import('../shared/types.js').Provider} Provider */
+/** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
 /** @typedef {import('../shared/types.js').DailyUpdateFailure} DailyUpdateFailure */
 
 const __filename = fileURLToPath(import.meta.url);
@@ -105,15 +100,13 @@ async function updatePairForProvider(pair, date, provider, client) {
   const { from, to } = pair;
   const dateStr = formatDate(date);
   
-  const db = openDatabase(from);
+  // Check if already exists to avoid unnecessary API calls
+  if (store.has(dateStr, /** @type {CurrencyCode} */ (from), /** @type {CurrencyCode} */ (to), provider)) {
+    console.log(`  [${provider}] ${from}/${to}: Already exists for ${dateStr}, skipping`);
+    return false;
+  }
   
   try {
-    // Check if already exists to avoid unnecessary API calls
-    if (rateExists(db, dateStr, from, to, provider)) {
-      console.log(`  [${provider}] ${from}/${to}: Already exists for ${dateStr}, skipping`);
-      return false;
-    }
-    
     const record = await client.fetchRate(date, from, to);
     
     if (record === null) {
@@ -121,11 +114,10 @@ async function updatePairForProvider(pair, date, provider, client) {
       return false;
     }
     
-    // insertRate returns true if inserted, false if duplicate was skipped by UNIQUE constraint
-    // This is a safety net in case of race conditions
-    const inserted = insertRate(db, record);
+    // add() returns count of actually inserted records (handles duplicates)
+    const inserted = store.add(record);
     
-    if (!inserted) {
+    if (inserted === 0) {
       console.log(`  [${provider}] ${from}/${to}: Race condition detected, already inserted`);
       return false;
     }
@@ -141,8 +133,6 @@ async function updatePairForProvider(pair, date, provider, client) {
   } catch (error) {
     console.error(`  [${provider}] ${from}/${to}: Error - ${error.message}`);
     return false;
-  } finally {
-    closeDatabase(db);
   }
 }
 
@@ -199,21 +189,11 @@ async function updateEcbRates(currencies, failures) {
         continue;
       }
       
-      const eurDb = openDatabase('EUR');
-      let eurInserted = 0;
-      try {
-        eurInserted = insertRates(eurDb, data.eurTo);
-      } finally {
-        closeDatabase(eurDb);
-      }
+      // Insert EUR → Currency records
+      const eurInserted = store.add(data.eurTo);
       
-      const currDb = openDatabase(currency);
-      let currInserted = 0;
-      try {
-        currInserted = insertRates(currDb, data.toEur);
-      } finally {
-        closeDatabase(currDb);
-      }
+      // Insert Currency → EUR records
+      const currInserted = store.add(data.toEur);
       
       if (eurInserted > 0 || currInserted > 0) {
         console.log(`  [ECB] EUR↔${currency}: +${eurInserted} EUR→${currency}, +${currInserted} ${currency}→EUR`);
