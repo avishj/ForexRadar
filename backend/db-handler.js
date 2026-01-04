@@ -62,6 +62,20 @@ export function getDbPath(fromCurr) {
 }
 
 /**
+ * Opens a SQLite database in read-only mode (doesn't modify the file)
+ * @param {string} fromCurr - Source currency code (e.g., "USD")
+ * @returns {Database.Database | null} SQLite database instance, or null if file doesn't exist
+ */
+export function openDatabaseReadOnly(fromCurr) {
+  const dbPath = getDbPath(fromCurr);
+  if (!existsSync(dbPath)) {
+    return null;
+  }
+  const db = new Database(dbPath, { readonly: true });
+  return db;
+}
+
+/**
  * Opens or creates a SQLite database for a given source currency
  * @param {string} fromCurr - Source currency code (e.g., "USD")
  * @returns {Database.Database} SQLite database instance
@@ -201,6 +215,26 @@ export function rateExists(db, date, fromCurr, toCurr, provider) {
     const result = stmt.get(date, fromCurr, toCurr);
     return result !== undefined;
   }
+}
+
+/**
+ * Filters out records that already exist in the database
+ * @param {Database.Database | null} db - SQLite database instance (read-only), or null if DB doesn't exist
+ * @param {RateRecord[]} records - Array of rate records to check
+ * @returns {RateRecord[]} Array of records that don't exist in the database
+ */
+export function filterNewRecords(db, records) {
+  if (!db || records.length === 0) {
+    return records;
+  }
+  
+  const newRecords = [];
+  for (const record of records) {
+    if (!rateExists(db, record.date, record.from_curr, record.to_curr, record.provider)) {
+      newRecords.push(record);
+    }
+  }
+  return newRecords;
 }
 
 /**
