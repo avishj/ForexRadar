@@ -24,7 +24,7 @@ const SEPARATOR = '='.repeat(60);
 
 /**
  * Parses CLI arguments for ECB backfill
- * @returns {{ currency: string | null }}
+ * @returns {{ currency: import('../shared/types.js').CurrencyCode} | null }
  */
 function parseEcbBackfillArgs() {
   const { values } = parseArgs({
@@ -34,13 +34,13 @@ function parseEcbBackfillArgs() {
   });
   
   return {
-    currency: values.currency?.toUpperCase() ?? null
+    currency: /** @type {import('../shared/types.js').CurrencyCode | null} */ (values.currency?.toUpperCase() ?? null)
   };
 }
 
 /**
  * Backfills ECB data for a single currency
- * @param {string} currency
+ * @param {import('../shared/types.js').CurrencyCode} currency
  * @returns {Promise<ECBBackfillResult>}
  */
 async function backfillCurrency(currency) {
@@ -85,8 +85,8 @@ async function main() {
   /** @type {ECBBackfillResult[]} */
   const results = [];
   
-  for (const curr of currencies) {
-    const result = await backfillCurrency(curr);
+    for (const curr of currencies) {
+    const result = await backfillCurrency(/** @type {import('../shared/types.js').CurrencyCode} */ (curr));
     results.push(result);
   }
   

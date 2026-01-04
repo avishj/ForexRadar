@@ -397,7 +397,7 @@ export function getCurrencyList() {
 /**
  * ECB backfill result for a single currency
  * @typedef {Object} ECBBackfillResult
- * @property {CurrencyCode} currency - Currency that was backfilled
+ * @property {CurrencyCode | null} currency - Currency that was backfilled
  * @property {number} eurToInserted - EUR → Currency records inserted
  * @property {number} toEurInserted - Currency → EUR records inserted
  * @property {number} skipped - Records skipped (duplicates)
