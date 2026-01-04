@@ -26,7 +26,6 @@ import { formatDate, getLatestAvailableDate } from '../shared/utils.js';
 
 const BATCH_DELAY_MS = 100;
 
-/** @type {Record<Provider, typeof VisaClient>} */
 const CLIENTS = { VISA: VisaClient, MASTERCARD: MastercardClient };
 
 /** @type {Provider[]} */
@@ -124,7 +123,7 @@ async function safeCloseBrowser(client) {
 
 /**
  * Determines which providers to run based on CLI option.
- * @param {import('../shared/types.js').ProviderOption} option
+ * @param option
  * @returns {Provider[]}
  */
 function getProvidersToRun(option) {
