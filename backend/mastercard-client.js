@@ -163,8 +163,8 @@ function checkForApiError(data) {
  * Uses Playwright to bypass potential Cloudflare JS challenge.
  * 
  * @param {Date} date - The date to fetch the rate for
- * @param {string} fromCurr - Source currency code (e.g., "USD")
- * @param {string} toCurr - Target currency code (e.g., "INR")
+ * @param {import('../shared/types.js').CurrencyCode} fromCurr - Source currency code (e.g., "USD")
+ * @param {import('../shared/types.js').CurrencyCode} toCurr - Target currency code (e.g., "INR")
  * @returns {Promise<RateRecord|null>} Rate record or null if rate unavailable (end of history)
  * @throws {Error} If rate limited (HTTP 429/403) or other network error
  */
@@ -185,9 +185,6 @@ export async function fetchRate(date, fromCurr, toCurr) {
   console.log(`[MASTERCARD] Request -> ${urlStr}`);
 
   try {
-    // Increment request counter and handle session management
-    requestCounter++;
-    
     // Check if we need to completely restart browser (every 18 requests)
     if (requestCounter % PAUSE_INTERVAL === 0) {
       console.log(`[MASTERCARD] Restarting browser after ${requestCounter} requests to prevent 403s...`);
@@ -200,6 +197,9 @@ export async function fetchRate(date, fromCurr, toCurr) {
     if (requestCounter % REFRESH_INTERVAL === 0) {
       await refreshSession();
     }
+      
+    // Increment request counter and handle session management
+    requestCounter++;
     
     // Get or reuse the API page
     const page = await getApiPage();
@@ -295,8 +295,8 @@ export async function fetchRate(date, fromCurr, toCurr) {
  * Fetches multiple days of exchange rate data, iterating backwards from startDate.
  * Stops when hitting end of history (error response) or reaching stopDate.
  * 
- * @param {string} fromCurr - Source currency code
- * @param {string} toCurr - Target currency code
+ * @param {import('../shared/types.js').CurrencyCode} fromCurr - Source currency code
+ * @param {import('../shared/types.js').CurrencyCode} toCurr - Target currency code
  * @param {Date} startDate - Start date (most recent, works backwards)
  * @param {Date} [stopDate] - Optional stop date (oldest date to fetch)
  * @param {Function} [onProgress] - Optional callback for progress updates (daysProcessed, record)
