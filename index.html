@@ -33,9 +33,6 @@
   
   <!-- ApexCharts -->
   <script src="https://cdn.jsdelivr.net/npm/apexcharts@4.5.0/dist/apexcharts.min.js"></script>
-  
-  <!-- sql.js -->
-  <script src="https://sql.js.org/dist/sql-wasm.js"></script>
 </head>
 
 <body>
@@ -244,6 +241,18 @@
       </div>
     </div>
     <div id="last-updated" style="text-align: center; margin-top: 1rem; font-size: 0.75rem; color: var(--text-tertiary);"></div>
+  </section>
+
+  <!-- Time Range Selector -->
+  <section id="time-range-selector" class="time-range-container hidden">
+    <div class="time-range-buttons">
+      <button class="time-range-btn" data-range="1m">1M</button>
+      <button class="time-range-btn" data-range="3m">3M</button>
+      <button class="time-range-btn" data-range="6m">6M</button>
+      <button class="time-range-btn active" data-range="1y">1Y</button>
+      <button class="time-range-btn" data-range="5y">5Y</button>
+      <button class="time-range-btn" data-range="all">All</button>
+    </div>
   </section>
 
   <!-- Series Toggles -->

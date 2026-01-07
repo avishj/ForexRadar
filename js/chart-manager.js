@@ -368,11 +368,92 @@ function transformData(visaRecords, mastercardRecords, ecbRecords = []) {
 let onZoomCallback = null;
 
 /**
+ * Stores current records for Y-axis recalculation on zoom
+ */
+let currentVisaRecords = [];
+let currentMcRecords = [];
+let currentEcbRecords = [];
+
+/**
  * Sets the zoom event callback
  * @param {Function} callback - Function to call on zoom/pan
  */
 export function setZoomCallback(callback) {
   onZoomCallback = callback;
+}
+
+/**
+ * Updates Y-axis limits based on visible data range
+ * @param {number} minTimestamp - Minimum visible timestamp
+ * @param {number} maxTimestamp - Maximum visible timestamp
+ */
+function updateYAxisLimits(minTimestamp, maxTimestamp) {
+  if (!chartInstance) return;
+  
+  // Get visible records
+  const visibleVisa = getVisibleRecords(currentVisaRecords, minTimestamp, maxTimestamp);
+  const visibleMc = getVisibleRecords(currentMcRecords, minTimestamp, maxTimestamp);
+  const visibleEcb = getVisibleRecords(currentEcbRecords, minTimestamp, maxTimestamp);
+  
+  // Calculate rate range (left Y-axis)
+  const allRates = [
+    ...visibleVisa.map(r => r.rate),
+    ...visibleMc.map(r => r.rate),
+    ...visibleEcb.map(r => r.rate)
+  ].filter(r => r !== null && r !== undefined);
+  
+  // Calculate markup range (right Y-axis)
+  const allMarkups = visibleVisa
+    .map(r => r.markup)
+    .filter(m => m !== null && m !== undefined);
+  
+  if (allRates.length === 0) return;
+  
+  // Add padding (5% on each side)
+  const rateMin = Math.min(...allRates);
+  const rateMax = Math.max(...allRates);
+  const ratePadding = (rateMax - rateMin) * 0.05 || 0.0001;
+  
+  let markupMin = 0;
+  let markupMax = 1;
+  if (allMarkups.length > 0) {
+    markupMin = Math.min(...allMarkups);
+    markupMax = Math.max(...allMarkups);
+    const markupPadding = (markupMax - markupMin) * 0.05 || 0.01;
+    markupMin = Math.max(0, markupMin - markupPadding);
+    markupMax = markupMax + markupPadding;
+  }
+  
+  const dark = isDarkMode();
+  const textColor = dark ? '#a1a1aa' : '#52525b';
+  const gridColor = dark ? '#27272a' : '#e4e4e7';
+  
+  // Update chart with new Y-axis limits
+  chartInstance.updateOptions({
+    yaxis: [
+      {
+        seriesName: ['Visa Rate', 'Mastercard Rate', 'ECB Rate'],
+        min: rateMin - ratePadding,
+        max: rateMax + ratePadding,
+        labels: {
+          style: { colors: textColor },
+          formatter: (value) => value?.toFixed(5) ?? ''
+        },
+        axisBorder: { show: true, color: gridColor }
+      },
+      {
+        seriesName: 'Visa Markup (%)',
+        opposite: true,
+        min: markupMin,
+        max: markupMax,
+        labels: {
+          style: { colors: VISA_MARKUP_COLOR },
+          formatter: (value) => (value === null || value === undefined) ? '' : `${value.toFixed(2)}%`
+        },
+        axisBorder: { show: true, color: VISA_MARKUP_COLOR }
+      }
+    ]
+  }, false, false);
 }
 
 /**
@@ -399,6 +480,11 @@ export function initChart(containerId, visaRecords, mastercardRecords, ecbRecord
   
   const { visaRateSeries, mcRateSeries, ecbRateSeries, visaMarkupSeries } = transformData(visaRecords, mastercardRecords, ecbRecords);
   
+  // Store records for Y-axis recalculation on zoom
+  currentVisaRecords = visaRecords;
+  currentMcRecords = mastercardRecords;
+  currentEcbRecords = ecbRecords;
+  
   const options = getChartOptions(fromCurr, toCurr);
   options.series[SERIES_VISA_RATE].data = visaRateSeries;
   options.series[SERIES_MC_RATE].data = mcRateSeries;
@@ -408,11 +494,17 @@ export function initChart(containerId, visaRecords, mastercardRecords, ecbRecord
   // Add zoom/pan event listeners
   options.chart.events = {
     zoomed: (chartContext, { xaxis }) => {
+      // Update Y-axis limits for visible range
+      updateYAxisLimits(xaxis.min, xaxis.max);
+      // Call external callback for stats update
       if (onZoomCallback) {
         onZoomCallback(xaxis.min, xaxis.max);
       }
     },
     scrolled: (chartContext, { xaxis }) => {
+      // Update Y-axis limits for visible range
+      updateYAxisLimits(xaxis.min, xaxis.max);
+      // Call external callback for stats update
       if (onZoomCallback) {
         onZoomCallback(xaxis.min, xaxis.max);
       }
@@ -436,6 +528,11 @@ export function updateChart(visaRecords, mastercardRecords, ecbRecords, fromCurr
     console.error('Chart not initialized');
     return;
   }
+  
+  // Store records for Y-axis recalculation on zoom
+  currentVisaRecords = visaRecords;
+  currentMcRecords = mastercardRecords;
+  currentEcbRecords = ecbRecords;
   
   const { visaRateSeries, mcRateSeries, ecbRateSeries, visaMarkupSeries } = transformData(visaRecords, mastercardRecords, ecbRecords);
   

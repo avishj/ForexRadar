@@ -3,23 +3,28 @@
  * 
  * Orchestrates data fetching from multiple sources and providers:
  * 
- * Sources:
- * 1. Server Database (SQLite via sql.js) - Long-term historical data
- * 2. Client Cache (IndexedDB) - Recently fetched live data
- * 3. Live API (Visa, Mastercard) - Fresh data for gaps
+ * Sources (in order of priority):
+ * 1. IndexedDB Cache (via StorageManager) - fastest, local
+ * 2. Server CSV files (via CSVReader) - historical data
+ * 3. Live API (Visa, Mastercard) - fresh data for gaps
  * 
  * Providers:
  * - Visa: Exchange rate + markup percentage
  * - Mastercard: Exchange rate only (no markup)
+ * - ECB: Official European Central Bank rates
  * 
  * Implements the Progressive Enhancement pattern:
- * Local Cache -> Server DB -> Live API
+ * IndexedDB Cache -> Server CSV -> Live API (for gaps)
+ * 
+ * Cache Freshness:
+ * - Server data is refreshed automatically after UTC 12:00
+ * - Live data fills gaps between server data and yesterday
  * 
  * @module data-manager
  */
 
-import * as ServerDB from './server-db-loader.js';
-import * as Storage from './storage-manager.js';
+import { csvReader } from './csv-reader.js';
+import * as StorageManager from './storage-manager.js';
 import * as VisaClient from './visa-client.js';
 import * as MastercardClient from './mastercard-client.js';
 import { formatDate, getYesterday, addDays } from '../shared/utils.js';
@@ -27,6 +32,7 @@ import { formatDate, getYesterday, addDays } from '../shared/utils.js';
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
 /** @typedef {import('../shared/types.js').Provider} Provider */
 /** @typedef {import('../shared/types.js').MultiProviderStats} MultiProviderStats */
+/** @typedef {import('../shared/types.js').DateRange} DateRange */
 
 /**
  * @typedef {Object} FetchResult
@@ -35,8 +41,8 @@ import { formatDate, getYesterday, addDays } from '../shared/utils.js';
  * @property {RateRecord[]} mastercardRecords - Mastercard-only records
  * @property {RateRecord[]} ecbRecords - ECB-only records
  * @property {Object} stats - Fetch statistics
- * @property {number} stats.fromServer - Count from server DB
- * @property {number} stats.fromCache - Count from IndexedDB
+ * @property {number} stats.fromCache - Count from IndexedDB cache
+ * @property {number} stats.fromServer - Count from server CSV
  * @property {number} stats.fromLive - Count from live API
  * @property {number} stats.visaCount - Total Visa records
  * @property {number} stats.mastercardCount - Total Mastercard records
@@ -64,15 +70,60 @@ function makeRecordKey(date, provider) {
 }
 
 /**
+ * Calculates the start date based on a date range
+ * @param {DateRange} range - Date range specification
+ * @returns {string|null} Start date string or null for "all"
+ */
+function getStartDateFromRange(range) {
+  if (range.all) {
+    return null; // No start date filtering
+  }
+  
+  const now = new Date();
+  let startDate = new Date(now);
+  
+  if (range.months) {
+    startDate.setMonth(startDate.getMonth() - range.months);
+  } else if (range.years) {
+    startDate.setFullYear(startDate.getFullYear() - range.years);
+  }
+  
+  return formatDate(startDate);
+}
+
+/**
+ * Filters records by date range
+ * @param {RateRecord[]} records - Records to filter
+ * @param {DateRange} range - Date range specification
+ * @returns {RateRecord[]} Filtered records
+ */
+function filterByRange(records, range) {
+  const startDate = getStartDateFromRange(range);
+  
+  if (!startDate) {
+    return records; // Return all
+  }
+  
+  return records.filter(r => r.date >= startDate);
+}
+
+/**
  * Fetches rate data for a currency pair from all available sources and providers.
- * Implements the hybrid fetch strategy from the spec.
+ * 
+ * Flow:
+ * 1. Load data from IndexedDB cache (StorageManager)
+ * 2. If cache is stale (after UTC 12:00), fetch from server CSV and update cache
+ * 3. Check for gaps between latest data and yesterday
+ * 4. Fetch live API data to fill gaps
+ * 5. Save live data to cache
  * 
  * @param {string} fromCurr - Source currency code
  * @param {string} toCurr - Target currency code
+ * @param {DateRange} range - Date range to fetch: { months: 1 } | { years: 1 } | { all: true }
  * @param {FetchOptions} [options] - Fetch options
  * @returns {Promise<FetchResult>} Merged rate records and stats
  */
-export async function fetchRates(fromCurr, toCurr, options = {}) {
+export async function fetchRates(fromCurr, toCurr, range, options = {}) {
   const { 
     onProgress, 
     skipLive = false,
@@ -92,66 +143,93 @@ export async function fetchRates(fromCurr, toCurr, options = {}) {
   /** @type {Map<string, 'cache'|'server'|'live'>} Track source of each record */
   const recordSources = new Map();
   
-  let fromServer = 0;
   let fromCache = 0;
+  let fromServer = 0;
   let fromLive = 0;
   let hasServerData = false;
 
-  // Step 1: Load Cache Data first
-  notify('cache', 'Loading cached data...');
+  // Step 1: Load data from IndexedDB cache
+  notify('cache', 'Checking cached data...');
   
   try {
-    const cacheRecords = await Storage.getRatesForPair(fromCurr, toCurr);
-    for (const record of cacheRecords) {
+    const cachedRecords = await StorageManager.getRatesForPair(fromCurr, toCurr);
+    
+    for (const record of cachedRecords) {
       const key = makeRecordKey(record.date, record.provider);
       mergedData.set(key, record);
       recordSources.set(key, 'cache');
     }
-    notify('cache', `Loaded ${cacheRecords.length} records from cache`);
+    
+    fromCache = cachedRecords.length;
+    
+    if (fromCache > 0) {
+      notify('cache', `Loaded ${fromCache} cached records`);
+    }
   } catch (error) {
     notify('cache', `Cache unavailable: ${error.message}`);
   }
 
-  // Step 2: Load Server Data (may overwrite cache with fresher data)
-  notify('server', 'Loading server data...');
+  // Step 2: Check if we need to refresh from server
+  const needsRefresh = StorageManager.needsServerRefresh(fromCurr);
   
-  try {
-    const serverRecords = await ServerDB.queryRates(fromCurr, toCurr);
-    hasServerData = serverRecords.length > 0;
-    for (const record of serverRecords) {
-      const key = makeRecordKey(record.date, record.provider);
-      const wasInCache = mergedData.has(key);
-      mergedData.set(key, record);
-      // Only mark as 'server' if it wasn't already in cache
-      if (!wasInCache) {
-        recordSources.set(key, 'server');
-      }
-    }
-    notify('server', `Loaded ${serverRecords.length} records from server`);
+  if (needsRefresh) {
+    notify('server', 'Fetching server data...');
     
-    // Cache server data in IndexedDB for offline access
-    if (serverRecords.length > 0) {
-      try {
-        await Storage.saveRates(serverRecords);
-      } catch (cacheError) {
-        // Non-fatal: cache save failure shouldn't stop data flow
-        console.warn('Failed to cache server data:', cacheError);
+    try {
+      // Fetch all data for this currency pair from server
+      const { visa, mastercard, ecb } = await csvReader.fetchRatesByProvider(fromCurr, toCurr);
+      
+      const serverRecords = [...visa, ...mastercard, ...ecb];
+      hasServerData = serverRecords.length > 0;
+      
+      if (hasServerData) {
+        // Save to cache
+        await StorageManager.saveRates(serverRecords);
+        
+        // Mark new records from server (overwrite cache source)
+        for (const record of serverRecords) {
+          const key = makeRecordKey(record.date, record.provider);
+          
+          // If this was already in cache, don't count it again
+          if (!mergedData.has(key)) {
+            fromServer++;
+          } else if (recordSources.get(key) === 'cache') {
+            // Already had it from cache, but server confirmed it
+            // Don't change source - it was already counted as cache
+          }
+          
+          mergedData.set(key, record);
+          // Only mark as server if it wasn't in cache
+          if (!recordSources.has(key)) {
+            recordSources.set(key, 'server');
+          }
+        }
+        
+        // Mark this currency as refreshed
+        StorageManager.markServerRefreshed(fromCurr);
+        notify('server', `Fetched ${serverRecords.length} records from server`);
+      } else {
+        notify('server', 'No server data available for this pair');
       }
+    } catch (error) {
+      notify('server', `Server error: ${error.message}`);
     }
-  } catch (error) {
-    notify('server', `Server data unavailable: ${error.message}`);
+  } else {
+    notify('server', 'Server data is up to date');
+    // Mark server data as existing if we have cached data
+    hasServerData = fromCache > 0;
   }
 
-  // Step 3: Check for gaps and fetch live data from both providers
+  // Step 3: Check for gaps and fetch live data from Visa/Mastercard
   if (!skipLive && (fetchVisa || fetchMastercard)) {
     const yesterday = getYesterday();
     const yesterdayStr = formatDate(yesterday);
     
-    // Find the latest date we have for each provider
+    // Find the latest date we have for each provider (from merged data)
     let latestVisaDate = null;
     let latestMcDate = null;
     
-    for (const [key, record] of mergedData.entries()) {
+    for (const [, record] of mergedData.entries()) {
       if (record.provider === 'VISA') {
         if (!latestVisaDate || record.date > latestVisaDate) {
           latestVisaDate = record.date;
@@ -203,21 +281,28 @@ export async function fetchRates(fromCurr, toCurr, options = {}) {
   }
 
   // Convert map to sorted array
-  const records = Array.from(mergedData.values())
+  let records = Array.from(mergedData.values())
     .sort((a, b) => a.date.localeCompare(b.date));
 
-  // Separate by provider
+  // Apply date range filter
+  records = filterByRange(records, range);
+
+  // Separate by provider (after filtering)
   const visaRecords = records.filter(r => r.provider === 'VISA');
   const mastercardRecords = records.filter(r => r.provider === 'MASTERCARD');
   const ecbRecords = records.filter(r => r.provider === 'ECB');
 
-  // Count sources accurately
-  fromServer = 0;
-  fromCache = 0;
-  for (const [key, source] of recordSources.entries()) {
-    if (source === 'cache') fromCache++;
-    else if (source === 'server') fromServer++;
-    // fromLive is already counted during fetch
+  // Recount sources after filtering
+  let filteredFromCache = 0;
+  let filteredFromServer = 0;
+  let filteredFromLive = 0;
+  
+  for (const record of records) {
+    const key = makeRecordKey(record.date, record.provider);
+    const source = recordSources.get(key);
+    if (source === 'cache') filteredFromCache++;
+    else if (source === 'server') filteredFromServer++;
+    else if (source === 'live') filteredFromLive++;
   }
 
   return {
@@ -226,9 +311,9 @@ export async function fetchRates(fromCurr, toCurr, options = {}) {
     mastercardRecords,
     ecbRecords,
     stats: {
-      fromServer,
-      fromCache,
-      fromLive,
+      fromCache: filteredFromCache,
+      fromServer: filteredFromServer,
+      fromLive: filteredFromLive,
       visaCount: visaRecords.length,
       mastercardCount: mastercardRecords.length,
       ecbCount: ecbRecords.length,
@@ -296,8 +381,8 @@ async function fetchLiveDataForProvider(
         break;
       }
 
-      // Save to cache immediately
-      await Storage.saveRate(record);
+      // Save to IndexedDB cache immediately
+      await StorageManager.saveRate(record);
       
       // Add to merged data
       mergedData.set(key, record);
@@ -433,9 +518,39 @@ export function calculateMultiProviderStats(visaRecords, mastercardRecords, ecbR
 }
 
 /**
- * Clears all cached data (both IndexedDB and in-memory)
+ * Clears all cached data (IndexedDB + cache timestamps)
  */
 export async function clearAllCaches() {
-  await Storage.clearCache();
-  ServerDB.clearCache();
+  await StorageManager.clearCache();
+}
+
+/**
+ * Checks if the cache has data for a currency pair
+ * @param {string} fromCurr - Source currency
+ * @param {string} toCurr - Target currency
+ * @returns {Promise<boolean>} True if cache has data
+ */
+export async function hasCachedData(fromCurr, toCurr) {
+  const count = await StorageManager.getRecordCount(fromCurr, toCurr);
+  return count > 0;
+}
+
+/**
+ * Gets the latest cached date for a provider
+ * @param {string} fromCurr - Source currency
+ * @param {string} toCurr - Target currency
+ * @param {Provider} provider - Provider name
+ * @returns {Promise<string|null>} Latest date or null
+ */
+export async function getLatestCachedDate(fromCurr, toCurr, provider) {
+  return StorageManager.getLatestDateForProvider(fromCurr, toCurr, provider);
+}
+
+/**
+ * Checks if server data exists for a currency (without fetching)
+ * @param {string} fromCurr - Source currency code
+ * @returns {Promise<boolean>} True if server has data for this currency
+ */
+export async function hasServerData(fromCurr) {
+  return csvReader.hasDataForCurrency(fromCurr);
 }

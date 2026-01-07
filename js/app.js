@@ -41,6 +41,8 @@ const archivingSection = /** @type {HTMLElement} */ (document.getElementById('ar
 /** @type {HTMLElement} */
 const seriesTogglesSection = /** @type {HTMLElement} */ (document.getElementById('series-toggles'));
 /** @type {HTMLElement} */
+const timeRangeSection = /** @type {HTMLElement} */ (document.getElementById('time-range-selector'));
+/** @type {HTMLElement} */
 const notificationContainer = /** @type {HTMLElement} */ (document.getElementById('notification-container'));
 
 // Stats elements
@@ -56,6 +58,12 @@ const toggleVisaRate = /** @type {HTMLInputElement} */ (document.getElementById(
 const toggleMcRate = /** @type {HTMLInputElement} */ (document.getElementById('toggle-mc-rate'));
 const toggleEcbRate = /** @type {HTMLInputElement} */ (document.getElementById('toggle-ecb-rate'));
 const toggleVisaMarkup = /** @type {HTMLInputElement} */ (document.getElementById('toggle-visa-markup'));
+
+// Series toggle containers (parent labels)
+const toggleVisaRateContainer = toggleVisaRate?.closest('.series-toggle');
+const toggleMcRateContainer = toggleMcRate?.closest('.series-toggle');
+const toggleEcbRateContainer = toggleEcbRate?.closest('.series-toggle');
+const toggleVisaMarkupContainer = toggleVisaMarkup?.closest('.series-toggle');
 
 // ============================================================================
 // State
@@ -73,6 +81,29 @@ let currentMcRecords = [];
 let currentEcbRecords = [];
 let currentFromCurr = '';
 let currentToCurr = '';
+
+/** 
+ * Current time range selection
+ * @type {'1m'|'3m'|'6m'|'1y'|'5y'|'all'} 
+ */
+let currentTimeRange = '1y';
+
+/**
+ * Converts time range key to DateRange object for data-manager
+ * @param {'1m'|'3m'|'6m'|'1y'|'5y'|'all'} rangeKey
+ * @returns {import('../shared/types.js').DateRange}
+ */
+function parseTimeRange(rangeKey) {
+  switch (rangeKey) {
+    case '1m': return { months: 1 };
+    case '3m': return { months: 3 };
+    case '6m': return { months: 6 };
+    case '1y': return { years: 1 };
+    case '5y': return { years: 5 };
+    case 'all': return { all: true };
+    default: return { years: 1 };
+  }
+}
 
 // ============================================================================
 // Notifications
@@ -213,6 +244,11 @@ function showResults() {
   chartContainer.classList.remove('hidden');
   emptyState.classList.add('hidden');
   
+  // Show time range selector
+  if (timeRangeSection) {
+    timeRangeSection.classList.remove('hidden');
+  }
+  
   // Show series toggles
   if (seriesTogglesSection) {
     seriesTogglesSection.classList.remove('hidden');
@@ -234,6 +270,11 @@ function showEmptyState() {
   statsBar.classList.add('hidden');
   chartContainer.classList.add('hidden');
   emptyState.classList.remove('hidden');
+  
+  // Hide time range selector
+  if (timeRangeSection) {
+    timeRangeSection.classList.add('hidden');
+  }
   
   // Hide series toggles
   if (seriesTogglesSection) {
@@ -301,6 +342,33 @@ function updateLastUpdated(dateStr) {
 }
 
 /**
+ * Updates provider toggle visibility based on available data
+ * @param {RateRecord[]} visaRecords - Visible Visa records
+ * @param {RateRecord[]} mastercardRecords - Visible Mastercard records
+ * @param {RateRecord[]} ecbRecords - Visible ECB records
+ */
+function updateToggleVisibility(visaRecords, mastercardRecords, ecbRecords) {
+  const hasVisa = visaRecords.length > 0;
+  const hasMc = mastercardRecords.length > 0;
+  const hasEcb = ecbRecords.length > 0;
+  const hasVisaMarkup = visaRecords.some(r => r.markup !== null && r.markup !== undefined);
+  
+  // Show/hide toggle containers
+  if (toggleVisaRateContainer) {
+    /** @type {HTMLElement} */ (toggleVisaRateContainer).style.display = hasVisa ? '' : 'none';
+  }
+  if (toggleMcRateContainer) {
+    /** @type {HTMLElement} */ (toggleMcRateContainer).style.display = hasMc ? '' : 'none';
+  }
+  if (toggleEcbRateContainer) {
+    /** @type {HTMLElement} */ (toggleEcbRateContainer).style.display = hasEcb ? '' : 'none';
+  }
+  if (toggleVisaMarkupContainer) {
+    /** @type {HTMLElement} */ (toggleVisaMarkupContainer).style.display = hasVisaMarkup ? '' : 'none';
+  }
+}
+
+/**
  * Updates the Request Archiving link and visibility based on server availability
  * @param {string} fromCurr - Source currency
  * @param {string} toCurr - Target currency
@@ -327,6 +395,10 @@ function updateArchivingLink(fromCurr, toCurr, isArchivedOnServer = false) {
 function handleChartZoom(minTimestamp, maxTimestamp) {
   if (currentVisaRecords.length === 0 && currentMcRecords.length === 0 && currentEcbRecords.length === 0) return;
   
+  // Deactivate time range buttons on manual zoom
+  const timeRangeButtons = document.querySelectorAll('.time-range-btn');
+  timeRangeButtons.forEach(btn => btn.classList.remove('active'));
+  
   // Filter records to visible range for each provider
   const { visaRecords, mastercardRecords, ecbRecords } = ChartManager.getVisibleRecordsByProvider(
     currentVisaRecords, 
@@ -335,6 +407,23 @@ function handleChartZoom(minTimestamp, maxTimestamp) {
     minTimestamp, 
     maxTimestamp
   );
+  
+  // Check data availability in visible range
+  const hasVisa = visaRecords.length > 0;
+  const hasMc = mastercardRecords.length > 0;
+  const hasEcb = ecbRecords.length > 0;
+  const hasVisaMarkup = visaRecords.some(r => r.markup !== null && r.markup !== undefined);
+  
+  // Update toggle visibility based on visible data
+  updateToggleVisibility(visaRecords, mastercardRecords, ecbRecords);
+  
+  // Update chart legend visibility to match data availability
+  ChartManager.setSeriesVisibility({
+    visaRate: hasVisa,
+    mastercardRate: hasMc,
+    ecbRate: hasEcb,
+    visaMarkup: hasVisaMarkup
+  });
   
   if (visaRecords.length > 0 || mastercardRecords.length > 0 || ecbRecords.length > 0) {
     // Recalculate multi-provider stats for visible data
@@ -369,8 +458,11 @@ async function loadCurrencyPair() {
   showLoader('Fetching history...');
 
   try {
-    // Fetch data with progress updates (fetches both providers)
-    const result = await DataManager.fetchRates(fromCurr, toCurr, {
+    // Convert time range key to DateRange object
+    const range = parseTimeRange(currentTimeRange);
+    
+    // Fetch data with progress updates (fetches all providers)
+    const result = await DataManager.fetchRates(fromCurr, toCurr, range, {
       onProgress: (stage, message) => {
         loaderText.textContent = message;
       }
@@ -415,12 +507,27 @@ async function loadCurrencyPair() {
     } else {
       ChartManager.initChart('chart', result.visaRecords, result.mastercardRecords, result.ecbRecords, fromCurr, toCurr);
     }
+    
+    // Update toggle visibility based on available data for full range
+    updateToggleVisibility(result.visaRecords, result.mastercardRecords, result.ecbRecords);
+    
+    // Restore full series visibility based on full data availability
+    const hasVisa = result.visaRecords.length > 0;
+    const hasMc = result.mastercardRecords.length > 0;
+    const hasEcb = result.ecbRecords.length > 0;
+    const hasVisaMarkup = result.visaRecords.some(r => r.markup !== null && r.markup !== undefined);
+    ChartManager.setSeriesVisibility({
+      visaRate: hasVisa,
+      mastercardRate: hasMc,
+      ecbRate: hasEcb,
+      visaMarkup: hasVisaMarkup
+    });
 
     // Show summary notification
-    const { fromServer, fromCache, fromLive, visaCount, mastercardCount, ecbCount } = result.stats;
+    const { fromCache, fromServer, fromLive, visaCount, mastercardCount, ecbCount } = result.stats;
     let source = [];
-    if (fromServer > 0) source.push(`${fromServer} from server`);
     if (fromCache > 0) source.push(`${fromCache} cached`);
+    if (fromServer > 0) source.push(`${fromServer} from server`);
     if (fromLive > 0) source.push(`${fromLive} live`);
     
     // Show special notification if not archived on server
@@ -527,6 +634,42 @@ function init() {
     toggleVisaMarkup.addEventListener('change', () => {
       ChartManager.setSeriesVisibility({ visaMarkup: toggleVisaMarkup.checked });
     });
+  }
+
+  // Time range button event listeners
+  const timeRangeButtons = document.querySelectorAll('.time-range-btn');
+  timeRangeButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      // Update active state
+      timeRangeButtons.forEach(btn => btn.classList.remove('active'));
+      button.classList.add('active');
+      
+      // Update current range and reload
+      const rangeKey = /** @type {'1m'|'3m'|'6m'|'1y'|'5y'|'all'} */ (button.getAttribute('data-range'));
+      if (rangeKey && rangeKey !== currentTimeRange) {
+        currentTimeRange = rangeKey;
+        localStorage.setItem('forexRadar_timeRange', rangeKey);
+        loadCurrencyPair();
+      }
+    });
+  });
+  
+  // Restore last time range selection
+  try {
+    const savedRange = localStorage.getItem('forexRadar_timeRange');
+    if (savedRange && ['1m', '3m', '6m', '1y', '5y', 'all'].includes(savedRange)) {
+      currentTimeRange = /** @type {'1m'|'3m'|'6m'|'1y'|'5y'|'all'} */ (savedRange);
+      // Update button active state
+      timeRangeButtons.forEach(btn => {
+        if (btn.getAttribute('data-range') === savedRange) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error restoring time range:', error);
   }
 
   // Listen for theme changes to update chart
