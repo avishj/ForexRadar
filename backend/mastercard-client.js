@@ -117,7 +117,7 @@ async function refreshSession() {
   console.log('[MASTERCARD] Refreshing session by visiting UI page...');
   const page = await getApiPage();
   try {
-    await page.goto(MASTERCARD_UI_PAGE, { waitUntil: 'networkidle', timeout: 3000 });
+    await page.goto(MASTERCARD_UI_PAGE, { timeout: 1000 });
   } catch (error) {
     console.warn('[MASTERCARD] Failed to refresh session:', error.message);
   }
@@ -189,7 +189,7 @@ export async function fetchRate(date, fromCurr, toCurr) {
     if (requestCounter % PAUSE_INTERVAL === 0) {
       console.log(`[MASTERCARD] Restarting browser after ${requestCounter} requests to prevent 403s...`);
       await closeBrowser();
-      await sleep(3000); // Wait 3s before restarting
+      await sleep(200); // Wait 0.2s before restarting
       // Browser will be reinitialized on next getBrowser() call
     }
     
