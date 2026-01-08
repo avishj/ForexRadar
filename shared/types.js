@@ -47,6 +47,18 @@ export function isProvider(value) {
  */
 
 // ============================================================================
+// BATCH REQUEST TYPES
+// ============================================================================
+
+/**
+ * Batch request for fetching exchange rate data
+ * @typedef {Object} BatchRequest
+ * @property {string} date - Date in YYYY-MM-DD format
+ * @property {CurrencyCode} from - Source currency code
+ * @property {CurrencyCode} to - Target currency code
+ */
+
+// ============================================================================
 // CURRENCY TYPES
 // ============================================================================
 
