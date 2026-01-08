@@ -1,0 +1,28 @@
+# Bun Configuration
+# https://bun.sh/docs/runtime/bunfig
+
+[install]
+# Automatically install dependencies on bun run if package.json changed
+auto = true
+
+# Use exact versions by default
+exact = true
+
+# Production mode
+production = false
+
+[install.cache]
+# Cache directory for packages
+# dir = "~/.bun/install/cache"
+
+[test]
+# Test configuration
+# preload = ["./setup.ts"]
+
+[run]
+# Shell to use for scripts
+shell = "system"
+
+# Whether to automatically restart on file changes  
+# watch = false
+telemetry = false
