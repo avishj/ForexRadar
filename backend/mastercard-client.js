@@ -216,9 +216,10 @@ export async function fetchRate(date, fromCurr, toCurr) {
 
     // Handle HTTP errors
     if (apiStatus === 403) {
-      console.error(`[MASTERCARD] 403 Forbidden - Pausing for 20 minutes...`);
-      await sleep(20 * 60 * 1000); // Wait 20 minutes
-      console.log(`[MASTERCARD] Resuming after 20-minute pause`);
+      console.error(`[MASTERCARD] 403 Forbidden - Pausing for 10 minutes...`);
+      await closeBrowser();
+      await sleep(10 * 60 * 1000); // Wait 10 minutes
+      console.log(`[MASTERCARD] Resuming after 10-minute pause`);
       throw new Error(`Rate limited: HTTP ${apiStatus}`);
     }
     
