@@ -141,7 +141,8 @@ export async function fetchBatch(requests) {
 				console.log(`[MASTERCARD] Restarting browser after ${requestCounter} requests`);
 				await closeBrowser();
 				await sleep(config.sessionRefreshDelayMs);
-			} else if (requestCounter % config.sessionRefreshInterval === 0) {
+            }
+            if (requestCounter % config.sessionRefreshInterval === 0) {
 				await refreshSession();
 			}
 
