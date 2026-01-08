@@ -74,6 +74,7 @@ function makeRecordKey(date, provider) {
  * @param {DateRange} range - Date range specification
  * @returns {string|null} Start date string or null for "all"
  */
+// @
 function getStartDateFromRange(range) {
   if (range.all) {
     return null; // No start date filtering

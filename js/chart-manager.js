@@ -21,6 +21,12 @@
 /** @type {ApexCharts|null} */
 let chartInstance = null;
 
+/** @type {number|undefined} */
+let maxDataTimestamp = undefined;
+
+/** @type {number|undefined} */
+let minDataTimestamp = undefined;
+
 // Chart color constants
 const VISA_RATE_COLOR = '#10b981';      // emerald-500
 const MC_RATE_COLOR = '#ef4444';        // red-500
@@ -120,6 +126,8 @@ function getChartOptions(fromCurr, toCurr) {
       fontFamily: '"DM Sans", system-ui, sans-serif',
       background: bgColor,
       foreColor: textColor,
+      offsetX: 0,
+      offsetY: 0,
       toolbar: {
         show: true,
         offsetX: 0,
@@ -182,18 +190,49 @@ function getChartOptions(fromCurr, toCurr) {
     
     xaxis: {
       type: 'datetime',
+      tickPlacement: 'on',
       labels: {
         datetimeUTC: false,
-        format: 'MMM dd',
+        format: 'yyyy-MM-dd',
+        rotate: -45,
+        rotateAlways: false,
+        hideOverlappingLabels: true,
+        trim: false,
         style: {
           colors: textColor
+        },
+        offsetX: 0,
+        offsetY: 0,
+        formatter: function(value, timestamp) {
+          if (!timestamp) return value;
+          
+          // Always show min and max labels
+          const isMinLabel = minDataTimestamp !== undefined && Math.abs(timestamp - minDataTimestamp) < 86400000; // Within 1 day
+          const isMaxLabel = maxDataTimestamp !== undefined && Math.abs(timestamp - maxDataTimestamp) < 86400000; // Within 1 day
+          
+          // Hide labels beyond max
+          if (maxDataTimestamp !== undefined && timestamp > maxDataTimestamp && !isMaxLabel) {
+            return '';
+          }
+          
+          // Format timestamp as yyyy-MM-dd
+          const date = new Date(timestamp);
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
         }
       },
       axisBorder: {
-        color: gridColor
+        color: gridColor,
+        offsetX: 0,
+        offsetY: 0
       },
       axisTicks: {
         color: gridColor
+      },
+      crosshairs: {
+        width: 1
       },
       tooltip: {
         enabled: false
@@ -485,11 +524,83 @@ export function initChart(containerId, visaRecords, mastercardRecords, ecbRecord
   currentMcRecords = mastercardRecords;
   currentEcbRecords = ecbRecords;
   
+  // Calculate min/max timestamps from actual data
+  const allTimestamps = [
+    ...visaRateSeries.map(p => p.x),
+    ...mcRateSeries.map(p => p.x),
+    ...ecbRateSeries.map(p => p.x)
+  ].filter(t => t !== null && t !== undefined);
+  
+  const minTimestamp = allTimestamps.length > 0 ? Math.min(...allTimestamps) : undefined;
+  const maxTimestamp = allTimestamps.length > 0 ? Math.max(...allTimestamps) : undefined;
+  
+  // Store timestamps for label formatter and annotations
+  minDataTimestamp = minTimestamp;
+  maxDataTimestamp = maxTimestamp;
+  
+  console.log('initChart - Data Range:', {
+    minTimestamp,
+    maxTimestamp,
+    minDate: minTimestamp ? new Date(minTimestamp).toISOString() : 'N/A',
+    maxDate: maxTimestamp ? new Date(maxTimestamp).toISOString() : 'N/A',
+    dataPointCount: allTimestamps.length
+  });
+  
   const options = getChartOptions(fromCurr, toCurr);
   options.series[SERIES_VISA_RATE].data = visaRateSeries;
   options.series[SERIES_MC_RATE].data = mcRateSeries;
   options.series[SERIES_ECB_RATE].data = ecbRateSeries;
   options.series[SERIES_VISA_MARKUP].data = visaMarkupSeries;
+  
+  // Set explicit xaxis bounds to clip graph beyond data range
+  if (minTimestamp !== undefined && maxTimestamp !== undefined) {
+    options.xaxis.min = minTimestamp;
+    options.xaxis.max = maxTimestamp;
+    
+    // Generate custom ticks to ensure min and max are included
+    const dataRange = maxTimestamp - minTimestamp;
+    const dayInMs = 24 * 60 * 60 * 1000;
+    const daysInRange = dataRange / dayInMs;
+    
+    // Calculate appropriate number of ticks based on range
+    let tickCount;
+    if (daysInRange <= 7) {
+      tickCount = Math.ceil(daysInRange) + 1; // Daily ticks
+    } else if (daysInRange <= 31) {
+      tickCount = 8; // ~Every 4 days
+    } else if (daysInRange <= 90) {
+      tickCount = 10; // ~Every 9 days
+    } else if (daysInRange <= 180) {
+      tickCount = 12; // ~Every 15 days
+    } else if (daysInRange <= 365) {
+      tickCount = 13; // ~Monthly
+    } else {
+      tickCount = Math.min(Math.ceil(daysInRange / 30), 20); // ~Monthly, max 20 ticks
+    }
+    
+    // Generate tick values including min and max
+    const ticks = [];
+    for (let i = 0; i <= tickCount; i++) {
+      const tick = minTimestamp + (dataRange * i / tickCount);
+      ticks.push(tick);
+    }
+    
+    // Ensure exact min and max are in the ticks
+    if (ticks[0] !== minTimestamp) ticks[0] = minTimestamp;
+    if (ticks[ticks.length - 1] !== maxTimestamp) ticks[ticks.length - 1] = maxTimestamp;
+    
+    // Use custom tick values
+    options.xaxis.tickAmount = tickCount;
+    
+    console.log('Setting xaxis bounds:', {
+      min: minTimestamp,
+      max: maxTimestamp,
+      minDate: new Date(minTimestamp).toISOString(),
+      maxDate: new Date(maxTimestamp).toISOString(),
+      tickCount,
+      daysInRange
+    });
+  }
   
   // Add zoom/pan event listeners
   options.chart.events = {
@@ -536,6 +647,19 @@ export function updateChart(visaRecords, mastercardRecords, ecbRecords, fromCurr
   
   const { visaRateSeries, mcRateSeries, ecbRateSeries, visaMarkupSeries } = transformData(visaRecords, mastercardRecords, ecbRecords);
   
+  // Calculate min/max timestamps from actual data
+  const allTimestamps = [
+    ...visaRateSeries.map(p => p.x),
+    ...mcRateSeries.map(p => p.x),
+    ...ecbRateSeries.map(p => p.x)
+  ].filter(t => t !== null && t !== undefined);
+  
+  const minTimestamp = allTimestamps.length > 0 ? Math.min(...allTimestamps) : undefined;
+  const maxTimestamp = allTimestamps.length > 0 ? Math.max(...allTimestamps) : undefined;
+  
+  // Store max timestamp for label formatter
+  maxDataTimestamp = maxTimestamp;
+  
   // Update series data
   chartInstance.updateSeries([
     { name: 'Visa Rate', data: visaRateSeries },
@@ -548,8 +672,8 @@ export function updateChart(visaRecords, mastercardRecords, ecbRecords, fromCurr
   const textColor = dark ? '#a1a1aa' : '#52525b';
   const gridColor = dark ? '#27272a' : '#e4e4e7';
   
-  // Update Y-axis title
-  chartInstance.updateOptions({
+  // Update options including xaxis bounds
+  const updateOptions = {
     yaxis: [
       {
         seriesName: ['Visa Rate', 'Mastercard Rate', 'ECB Rate'],
@@ -577,7 +701,17 @@ export function updateChart(visaRecords, mastercardRecords, ecbRecords, fromCurr
         axisBorder: { show: true, color: VISA_MARKUP_COLOR }
       }
     ]
-  }, false, false);
+  };
+  
+  // Set explicit xaxis bounds to clip graph beyond data range
+  if (minTimestamp !== undefined && maxTimestamp !== undefined) {
+    updateOptions.xaxis = {
+      min: minTimestamp,
+      max: maxTimestamp
+    };
+  }
+  
+  chartInstance.updateOptions(updateOptions, false, false);
 }
 
 /**

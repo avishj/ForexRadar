@@ -1510,6 +1510,10 @@ h1, h2, h3, h4, h5, h6, .font-display {
   transition: all var(--transition-base);
 }
 
+#chart {
+  width: 100%;
+}
+
 .chart-card:hover {
   box-shadow: var(--shadow-xl);
 }
