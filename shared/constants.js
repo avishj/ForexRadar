@@ -36,7 +36,7 @@ export const PROVIDER_CONFIG = {
 		// Completely restart browser every N requests to prevent 403s
 		browserRestartInterval: 18,
 		// How long to pause after receiving HTTP 403
-		pauseOnForbiddenMs: 10 * 60 * 1000, // 10 minutes
+		pauseOnForbiddenMs: 2 * 60 * 1000, // 2 minutes
 		// Small delay after session refresh
 		sessionRefreshDelayMs: 200
 	},
