@@ -8,11 +8,11 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-/** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
-/** @typedef {import('../shared/types.js').CurrencyPair} CurrencyPair */
-/** @typedef {import('../shared/types.js').BackfillConfig} BackfillConfig */
-/** @typedef {import('../shared/types.js').MassBackfillConfig} MassBackfillConfig */
-/** @typedef {import('../shared/types.js').ProviderOption} ProviderOption */
+/** @typedef {import('../../shared/types.js').CurrencyPair} CurrencyPair */
+/** @typedef {import('../../shared/types.js').CurrencyCode} CurrencyCode */
+/** @typedef {import('../../shared/types.js').BackfillConfig} BackfillConfig */
+/** @typedef {import('../../shared/types.js').MassBackfillConfig} MassBackfillConfig */
+/** @typedef {import('../../shared/types.js').ProviderOption} ProviderOption */
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 

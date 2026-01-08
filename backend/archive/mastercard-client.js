@@ -13,10 +13,10 @@
  */
 
 import { chromium } from 'playwright';
-import { formatDate } from '../shared/utils.js';
+import { formatDate } from "../../shared/utils.js";
 
-/** @typedef {import('../shared/types.js').RateRecord} RateRecord */
-/** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
+/** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
+/** @typedef {import('../../shared/types.js').CurrencyCode} CurrencyCode */
 
 const MASTERCARD_API_BASE = 'https://www.mastercard.co.in/settlement/currencyrate/conversion-rate';
 const MASTERCARD_UI_PAGE = 'https://www.mastercard.co.in/content/mastercardcom/global/en/personal/get-support/convert-currency.html';
@@ -304,8 +304,8 @@ export async function fetchRate(date, fromCurr, toCurr) {
  * Fetches multiple days of exchange rate data, iterating backwards from startDate.
  * Stops when hitting end of history (error response) or reaching stopDate.
  * 
- * @param {import('../shared/types.js').CurrencyCode} fromCurr - Source currency code
- * @param {import('../shared/types.js').CurrencyCode} toCurr - Target currency code
+ * @param {CurrencyCode} fromCurr - Source currency code
+ * @param {CurrencyCode} toCurr - Target currency code
  * @param {Date} startDate - Start date (most recent, works backwards)
  * @param {Date} [stopDate] - Optional stop date (oldest date to fetch)
  * @param {Function} [onProgress] - Optional callback for progress updates (daysProcessed, record)
