@@ -2,7 +2,13 @@
  * IndexedDB Storage Manager
  * 
  * Handles client-side caching of exchange rate data using IndexedDB.
- * Used for "Lazy Loaded" pairs (0-365 days) fetched live by the browser.
+ * Unified cache for all data sources (server CSV, live API).
+ * Tracks cache staleness per source currency using localStorage.
+ * 
+ * Cache Staleness Rules:
+ * - Data is considered stale after UTC 12:00 (when ECB typically updates)
+ * - Each source currency has its own refresh timestamp
+ * - Staleness check: has UTC 12:00 passed since last refresh?
  * 
  * Database: ForexRadarDB
  * Store: rates
@@ -11,13 +17,106 @@
  */
 
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
+/** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
+/** @typedef {import('../shared/types.js').Provider} Provider */
 
 const DB_NAME = 'ForexRadarDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'rates';
+const REFRESH_KEY_PREFIX = 'forexRadar_serverRefresh_';
 
 /** @type {IDBDatabase|null} */
 let dbInstance = null;
+
+// ============================================================================
+// Cache Staleness Functions
+// ============================================================================
+
+/**
+ * Get the most recent UTC 12:00 that has passed.
+ * @returns {Date}
+ */
+function getLastUTC12pm() {
+  const now = new Date();
+  const utc12Today = new Date(Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(),
+    12, 0, 0, 0
+  ));
+
+  // If UTC 12:00 today hasn't happened yet, use yesterday's
+  if (now < utc12Today) {
+    utc12Today.setUTCDate(utc12Today.getUTCDate() - 1);
+  }
+
+  return utc12Today;
+}
+
+/**
+ * Check if server data needs refresh for a source currency.
+ * Data is stale if the last refresh was before the most recent UTC 12:00.
+ * 
+ * @param {string} fromCurr - Source currency code
+ * @returns {boolean} True if data needs refresh from server
+ */
+export function needsServerRefresh(fromCurr) {
+  const key = REFRESH_KEY_PREFIX + fromCurr;
+  const lastRefresh = localStorage.getItem(key);
+
+  if (!lastRefresh) {
+    return true; // Never fetched, needs refresh
+  }
+
+  const lastRefreshDate = new Date(lastRefresh);
+  const lastUTC12pm = getLastUTC12pm();
+
+  // Stale if last refresh was before the most recent UTC 12:00
+  return lastRefreshDate < lastUTC12pm;
+}
+
+/**
+ * Mark server data as refreshed for a source currency.
+ * Called after successfully fetching and caching server data.
+ * 
+ * @param {string} fromCurr - Source currency code
+ */
+export function markServerRefreshed(fromCurr) {
+  const key = REFRESH_KEY_PREFIX + fromCurr;
+  localStorage.setItem(key, new Date().toISOString());
+}
+
+/**
+ * Get the last server refresh timestamp for a currency.
+ * 
+ * @param {string} fromCurr - Source currency code
+ * @returns {Date | null}
+ */
+export function getLastServerRefresh(fromCurr) {
+  const key = REFRESH_KEY_PREFIX + fromCurr;
+  const lastRefresh = localStorage.getItem(key);
+  return lastRefresh ? new Date(lastRefresh) : null;
+}
+
+/**
+ * Clear all server refresh timestamps.
+ */
+export function clearAllRefreshTimestamps() {
+  const keysToRemove = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith(REFRESH_KEY_PREFIX)) {
+      keysToRemove.push(key);
+    }
+  }
+  for (const key of keysToRemove) {
+    localStorage.removeItem(key);
+  }
+}
+
+// ============================================================================
+// IndexedDB Functions
+// ============================================================================
 
 /**
  * Opens the IndexedDB database, creating it if necessary
@@ -207,13 +306,13 @@ export async function rateExists(date, fromCurr, toCurr, provider) {
 }
 
 /**
- * Clears all cached rates (useful for debugging/testing)
+ * Clears all cached rates and refresh timestamps
  * @returns {Promise<void>}
  */
 export async function clearCache() {
   const db = await openDB();
   
-  return new Promise((resolve, reject) => {
+  await new Promise((resolve, reject) => {
     const transaction = db.transaction(STORE_NAME, 'readwrite');
     const store = transaction.objectStore(STORE_NAME);
     
@@ -227,6 +326,9 @@ export async function clearCache() {
       resolve();
     };
   });
+  
+  // Also clear refresh timestamps
+  clearAllRefreshTimestamps();
 }
 
 /**
@@ -238,4 +340,38 @@ export async function clearCache() {
 export async function getRecordCount(fromCurr, toCurr) {
   const records = await getRatesForPair(fromCurr, toCurr);
   return records.length;
+}
+
+/**
+ * Gets the latest date for a specific provider in cache
+ * @param {string} fromCurr - Source currency code
+ * @param {string} toCurr - Target currency code
+ * @param {Provider} provider - Provider name
+ * @returns {Promise<string|null>} Latest date or null
+ */
+export async function getLatestDateForProvider(fromCurr, toCurr, provider) {
+  const records = await getRatesForPair(fromCurr, toCurr);
+  const providerRecords = records.filter(r => r.provider === provider);
+  
+  if (providerRecords.length === 0) {
+    return null;
+  }
+  
+  return providerRecords[providerRecords.length - 1].date;
+}
+
+/**
+ * Gets rates for a currency pair split by provider
+ * @param {string} fromCurr - Source currency code
+ * @param {string} toCurr - Target currency code
+ * @returns {Promise<{visa: RateRecord[], mastercard: RateRecord[], ecb: RateRecord[]}>}
+ */
+export async function getRatesByProvider(fromCurr, toCurr) {
+  const records = await getRatesForPair(fromCurr, toCurr);
+  
+  return {
+    visa: records.filter(r => r.provider === 'VISA'),
+    mastercard: records.filter(r => r.provider === 'MASTERCARD'),
+    ecb: records.filter(r => r.provider === 'ECB')
+  };
 }

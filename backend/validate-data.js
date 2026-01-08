@@ -3,142 +3,133 @@
 /**
  * Data Validation Script
  * 
- * Queries the SQLite database to verify archived data.
+ * Queries the CSV store to verify archived data.
  * 
  * Usage: node validate-data.js --from=USD --to=INR [--limit=10]
  */
 
 import { parseArgs } from 'node:util';
-import { openDatabase, closeDatabase } from './db-handler.js';
+import { store } from './csv-store.js';
 
+/** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
+/** @typedef {import('../shared/types.js').RateRecord} RateRecord */
+
+/**
+ * @returns {{ from: CurrencyCode, to: CurrencyCode, limit: number }}
+ */
 function parseCliArgs() {
   const { values } = parseArgs({
     options: {
       from: { type: 'string' },
       to: { type: 'string' },
-      limit: { type: 'string' },
-      cleanup: { type: 'boolean' }
+      limit: { type: 'string' }
     }
   });
 
   if (!values.from || !values.to) {
-    console.error('Usage: node validate-data.js --from=USD --to=INR [--limit=10] [--cleanup]');
+    console.error('Usage: node validate-data.js --from=USD --to=INR [--limit=10]');
     process.exit(1);
   }
 
   return {
-    from: values.from.toUpperCase(),
-    to: values.to.toUpperCase(),
-    limit: values.limit ? parseInt(values.limit) : 10,
-    cleanup: values.cleanup || false
+    from: /** @type {CurrencyCode} */ (values.from.toUpperCase()),
+    to: /** @type {CurrencyCode} */ (values.to.toUpperCase()),
+    limit: values.limit ? parseInt(values.limit) : 10
   };
 }
 
+/**
+ * Find duplicate records (same date + provider appearing multiple times)
+ * @param {RateRecord[]} records
+ * @returns {Array<{date: string, provider: string, count: number}>}
+ */
+function findDuplicates(records) {
+  /** @type {Map<string, number>} */
+  const counts = new Map();
+  
+  for (const record of records) {
+    const key = `${record.date}|${record.provider}`;
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  
+  /** @type {Array<{date: string, provider: string, count: number}>} */
+  const duplicates = [];
+  
+  for (const [key, count] of counts) {
+    if (count > 1) {
+      const [date, provider] = key.split('|');
+      duplicates.push({ date, provider, count });
+    }
+  }
+  
+  return duplicates.sort((a, b) => b.date.localeCompare(a.date));
+}
+
+/**
+ * Find missing dates in a range
+ * @param {string[]} dates - Sorted date strings (YYYY-MM-DD)
+ * @returns {string[]}
+ */
+function findMissingDates(dates) {
+  if (dates.length < 2) return [];
+  
+  const dateSet = new Set(dates);
+  const missingDates = [];
+  const start = new Date(dates[0]);
+  const end = new Date(dates[dates.length - 1]);
+  
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const dateStr = d.toISOString().split('T')[0];
+    if (!dateSet.has(dateStr)) {
+      missingDates.push(dateStr);
+    }
+  }
+  
+  return missingDates;
+}
+
 function main() {
-  const { from, to, limit, cleanup } = parseCliArgs();
+  const { from, to, limit } = parseCliArgs();
 
   console.log(`Validating data for ${from}/${to}...\n`);
 
-  const db = openDatabase(from);
-
-  // Get total count
-  const countStmt = db.prepare(`
-    SELECT COUNT(*) as count
-    FROM rates
-    WHERE from_curr = ? AND to_curr = ?
-  `);
-  const { count } = countStmt.get(from, to);
+  // Get all records for the pair
+  const records = store.getAll(from, to);
+  const count = records.length;
 
   console.log(`Total records: ${count}`);
 
   if (count === 0) {
     console.log('No data found!');
-    closeDatabase(db);
     return;
   }
 
   // Get date range
-  const rangeStmt = db.prepare(`
-    SELECT MIN(date) as earliest, MAX(date) as latest
-    FROM rates
-    WHERE from_curr = ? AND to_curr = ?
-  `);
-  const { earliest, latest } = rangeStmt.get(from, to);
+  const earliest = store.oldestDate(from, to);
+  const latest = store.latestDate(from, to);
 
   console.log(`Oldest archived date: ${earliest}`);
   console.log(`Latest archived date: ${latest}\n`);
 
   // Check for duplicates (same date + provider appearing multiple times)
-  const dupeStmt = db.prepare(`
-    SELECT date, provider, COUNT(*) as dupe_count
-    FROM rates
-    WHERE from_curr = ? AND to_curr = ?
-    GROUP BY date, provider
-    HAVING COUNT(*) > 1
-    ORDER BY date DESC, provider
-  `);
-  const duplicates = dupeStmt.all(from, to);
+  const duplicates = findDuplicates(records);
 
   if (duplicates.length > 0) {
-    console.log(`⚠️  Found ${duplicates.length} duplicate records (same date + provider):`);
+    console.log(`Found ${duplicates.length} duplicate records (same date + provider):`);
     console.table(duplicates);
     console.log('');
-
-    if (cleanup) {
-      console.log('🧹 Cleaning up duplicates...');
-      
-      // For each duplicate, keep only the first record (by rowid) and delete the rest
-      const cleanupStmt = db.prepare(`
-        DELETE FROM rates
-        WHERE rowid NOT IN (
-          SELECT MIN(rowid)
-          FROM rates
-          WHERE from_curr = ? AND to_curr = ? AND date = ? AND provider = ?
-        )
-        AND from_curr = ? AND to_curr = ? AND date = ? AND provider = ?
-      `);
-
-      let totalDeleted = 0;
-      for (const { date, provider } of duplicates) {
-        const result = cleanupStmt.run(from, to, date, provider, from, to, date, provider);
-        totalDeleted += result.changes;
-      }
-
-      console.log(`✓ Deleted ${totalDeleted} duplicate records\n`);
-      
-      // Recount after cleanup
-      const newCount = countStmt.get(from, to).count;
-      console.log(`Records after cleanup: ${newCount}\n`);
-    }
+    console.log('Note: CSV storage prevents duplicates on write. These indicate data integrity issues.');
+    console.log('');
   } else {
     console.log('✓ No duplicate dates found\n');
   }
 
   // Check for missing dates in range
-  const allDatesStmt = db.prepare(`
-    SELECT DISTINCT date
-    FROM rates
-    WHERE from_curr = ? AND to_curr = ?
-    ORDER BY date ASC
-  `);
-  const allDates = allDatesStmt.all(from, to).map(row => row.date);
-
-  const missingDates = [];
-  if (allDates.length > 1) {
-    const start = new Date(earliest);
-    const end = new Date(latest);
-    const dateSet = new Set(allDates);
-
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      const dateStr = d.toISOString().split('T')[0];
-      if (!dateSet.has(dateStr)) {
-        missingDates.push(dateStr);
-      }
-    }
-  }
+  const uniqueDates = [...new Set(records.map(r => r.date))].sort();
+  const missingDates = findMissingDates(uniqueDates);
 
   if (missingDates.length > 0) {
-    console.log(`⚠️  Found ${missingDates.length} missing dates in range:`);
+    console.log(`Found ${missingDates.length} missing dates in range:`);
     if (missingDates.length <= 20) {
       console.log(missingDates.join(', '));
     } else {
@@ -150,33 +141,38 @@ function main() {
   }
 
   // Summary
-  // @ts-ignore
-  const expectedDays = Math.floor((new Date(latest) - new Date(earliest)) / (1000 * 60 * 60 * 24)) + 1;
-  const uniqueDates = allDates.length;
-  const coverage = ((uniqueDates / expectedDays) * 100).toFixed(1);
+  const expectedDays = earliest && latest
+    ? Math.floor((new Date(latest).getTime() - new Date(earliest).getTime()) / (1000 * 60 * 60 * 24)) + 1
+    : 0;
+  const coverage = expectedDays > 0 ? ((uniqueDates.length / expectedDays) * 100).toFixed(1) : '0.0';
 
   console.log('=== SUMMARY ===');
   console.log(`Expected days in range: ${expectedDays}`);
-  console.log(`Unique dates with data: ${uniqueDates}`);
+  console.log(`Unique dates with data: ${uniqueDates.length}`);
   console.log(`Coverage: ${coverage}%`);
   console.log(`Total records: ${count}`);
   console.log(`Duplicate records: ${duplicates.length} (same date+provider)`);
   console.log(`Missing dates: ${missingDates.length}\n`);
+  // Get provider breakdown
+  const providerCounts = store.countByProvider(from, to);
+  console.log('Records by provider:');
+  for (const [provider, providerCount] of Object.entries(providerCounts)) {
+    if (providerCount > 0) {
+      console.log(`  ${provider}: ${providerCount}`);
+    }
+  }
+  console.log('');
 
-  // Get sample records (properly sorted)
+  // Get sample records (most recent)
   console.log(`Sample records (${limit} most recent):`);
-  const sampleStmt = db.prepare(`
-    SELECT date, rate, markup, provider
-    FROM rates
-    WHERE from_curr = ? AND to_curr = ?
-    ORDER BY date DESC
-    LIMIT ?
-  `);
-  const records = sampleStmt.all(from, to, limit);
+  const sample = records.slice(-limit).reverse().map(r => ({
+    date: r.date,
+    rate: r.rate,
+    markup: r.markup,
+    provider: r.provider
+  }));
 
-  console.table(records);
-
-  closeDatabase(db);
+  console.table(sample);
 }
 
 main();

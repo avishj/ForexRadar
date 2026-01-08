@@ -15,16 +15,17 @@
 
 import { parseArgs } from 'node:util';
 import { loadEcbWatchlist } from './cli.js';
-import { openDatabase, openDatabaseReadOnly, insertRates, closeDatabase, filterNewRecords } from './db-handler.js';
+import { store } from './csv-store.js';
 import * as EcbClient from './ecb-client.js';
 
 /** @typedef {import('../shared/types.js').ECBBackfillResult} ECBBackfillResult */
+/** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
 
 const SEPARATOR = '='.repeat(60);
 
 /**
  * Parses CLI arguments for ECB backfill
- * @returns {{ currency: string | null }}
+ * @returns {{ currency: CurrencyCode} | null }
  */
 function parseEcbBackfillArgs() {
   const { values } = parseArgs({
@@ -34,13 +35,13 @@ function parseEcbBackfillArgs() {
   });
   
   return {
-    currency: values.currency?.toUpperCase() ?? null
+    currency: /** @type {CurrencyCode | null} */ (values.currency?.toUpperCase() ?? null)
   };
 }
 
 /**
  * Backfills ECB data for a single currency
- * @param {string} currency
+ * @param {CurrencyCode} currency
  * @returns {Promise<ECBBackfillResult>}
  */
 async function backfillCurrency(currency) {
@@ -53,44 +54,14 @@ async function backfillCurrency(currency) {
     return { currency, eurToInserted: 0, toEurInserted: 0, skipped: 0 };
   }
   
-  // Check EUR→Currency: filter out existing records before opening DB for writing
-  let eurToInserted = 0;
-  let eurToSkipped = data.eurTo.length;
-  const eurDbReadOnly = openDatabaseReadOnly('EUR');
-  const newEurToRecords = filterNewRecords(eurDbReadOnly, data.eurTo);
-  if (eurDbReadOnly) closeDatabase(eurDbReadOnly);
-  
-  // Only open EUR.db for writing if there are new records
-  if (newEurToRecords.length > 0) {
-    const eurDb = openDatabase('EUR');
-    try {
-      eurToInserted = insertRates(eurDb, newEurToRecords);
-      eurToSkipped = data.eurTo.length - eurToInserted;
-    } finally {
-      closeDatabase(eurDb);
-    }
-  }
-  
+  // Insert EUR → Currency records
+  const eurToInserted = store.add(data.eurTo);
+  const eurToSkipped = data.eurTo.length - eurToInserted;
   console.log(`[ECB] EUR→${currency}: ${eurToInserted} inserted, ${eurToSkipped} skipped`);
   
-  // Check Currency→EUR: filter out existing records before opening DB for writing
-  let toEurInserted = 0;
-  let toEurSkipped = data.toEur.length;
-  const currDbReadOnly = openDatabaseReadOnly(currency);
-  const newToEurRecords = filterNewRecords(currDbReadOnly, data.toEur);
-  if (currDbReadOnly) closeDatabase(currDbReadOnly);
-  
-  // Only open {Currency}.db for writing if there are new records
-  if (newToEurRecords.length > 0) {
-    const currDb = openDatabase(currency);
-    try {
-      toEurInserted = insertRates(currDb, newToEurRecords);
-      toEurSkipped = data.toEur.length - toEurInserted;
-    } finally {
-      closeDatabase(currDb);
-    }
-  }
-  
+  // Insert Currency → EUR records
+  const toEurInserted = store.add(data.toEur);
+  const toEurSkipped = data.toEur.length - toEurInserted;
   console.log(`[ECB] ${currency}→EUR: ${toEurInserted} inserted, ${toEurSkipped} skipped`);
   
   return {
@@ -115,8 +86,8 @@ async function main() {
   /** @type {ECBBackfillResult[]} */
   const results = [];
   
-  for (const curr of currencies) {
-    const result = await backfillCurrency(curr);
+    for (const curr of currencies) {
+    const result = await backfillCurrency(/** @type {CurrencyCode} */ (curr));
     results.push(result);
   }
   

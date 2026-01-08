@@ -11,6 +11,7 @@ import { formatDate } from '../shared/utils.js';
 
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
 /** @typedef {import('../shared/types.js').ECBRateData} ECBRateData */
+/** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
 
 const ECB_BASE_URL = 'https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html';
 
@@ -38,7 +39,7 @@ function extractRates(html, varName) {
 }
 
 /**
- * @param {string} currency
+ * @param {CurrencyCode} currency
  * @returns {Promise<ECBRateData|null>}
  */
 export async function fetchAllRates(currency) {

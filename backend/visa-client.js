@@ -13,6 +13,7 @@ import { formatDate, formatDateForApi } from '../shared/utils.js';
 
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
 /** @typedef {import('../shared/types.js').Provider} Provider */
+/** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
 
 const VISA_API_BASE = 'https://www.visa.co.in/cmsapi/fx/rates';
 /** @type {Provider} */
@@ -74,8 +75,8 @@ export async function closeBrowser() {
  * To get rate for A→B, we send from=B&to=A.
  * 
  * @param {Date} date - The date to fetch the rate for
- * @param {string} fromCurr - Source currency code (e.g., "USD")
- * @param {string} toCurr - Target currency code (e.g., "INR")
+ * @param {CurrencyCode} fromCurr - Source currency code (e.g., "USD")
+ * @param {CurrencyCode} toCurr - Target currency code (e.g., "INR")
  * @returns {Promise<RateRecord|null>} Rate record or null if rate unavailable (HTTP 500 = end of history)
  * @throws {Error} If rate limited (HTTP 429/403) or other network error
  */
@@ -189,8 +190,8 @@ export async function fetchRate(date, fromCurr, toCurr) {
  * Fetches multiple days of exchange rate data, iterating backwards from startDate.
  * Stops when hitting HTTP 500 (end of history) or reaching stopDate.
  * 
- * @param {string} fromCurr - Source currency code
- * @param {string} toCurr - Target currency code
+ * @param {CurrencyCode} fromCurr - Source currency code
+ * @param {CurrencyCode} toCurr - Target currency code
  * @param {Date} startDate - Start date (most recent, works backwards)
  * @param {Date} [stopDate] - Optional stop date (oldest date to fetch)
  * @param {Function} [onProgress] - Optional callback for progress updates (daysProcessed, record)

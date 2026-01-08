@@ -3,7 +3,7 @@
 /**
  * Backfill Script
  *
- * Fetches historical exchange rate data from Visa/Mastercard APIs and stores in SQLite.
+ * Fetches historical exchange rate data from Visa/Mastercard APIs and stores in CSV.
  *
  * Usage:
  *   node backfill.js --from=USD --to=INR
@@ -14,18 +14,18 @@
  */
 
 import { parseBackfillArgs, formatProvider } from './cli.js';
-import { openDatabase, insertRate, rateExists, closeDatabase, getRecordCount } from './db-handler.js';
+import { store } from './csv-store.js';
 import * as VisaClient from './visa-client.js';
 import * as MastercardClient from './mastercard-client.js';
 import { formatDate, getLatestAvailableDate } from '../shared/utils.js';
 
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
 /** @typedef {import('../shared/types.js').Provider} Provider */
+/** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
 /** @typedef {import('../shared/types.js').ProviderBackfillResult} ProviderBackfillResult */
 
 const BATCH_DELAY_MS = 100;
 
-/** @type {Record<Provider, typeof VisaClient>} */
 const CLIENTS = { VISA: VisaClient, MASTERCARD: MastercardClient };
 
 /** @type {Provider[]} */
@@ -63,7 +63,8 @@ async function backfillProvider(from, to, provider, startDate, stopDate, batchSi
   console.log(`\n--- Backfilling ${provider} ---`);
 
   const client = CLIENTS[provider];
-  const db = openDatabase(from);
+  const fromCurr = /** @type {CurrencyCode} */ (from);
+  const toCurr = /** @type {CurrencyCode} */ (to);
   let inserted = 0;
   let skipped = 0;
   let currentDate = new Date(startDate);
@@ -74,7 +75,7 @@ async function backfillProvider(from, to, provider, startDate, stopDate, batchSi
     const tempDate = new Date(currentDate);
     for (let i = 0; i < batchSize && tempDate >= stopDate; i++) {
       const dateStr = formatDate(tempDate);
-      if (rateExists(db, dateStr, from, to, provider)) {
+      if (store.has(dateStr, fromCurr, toCurr, provider)) {
         skipped++;
       } else {
         batch.push(new Date(tempDate));
@@ -103,7 +104,7 @@ async function backfillProvider(from, to, provider, startDate, stopDate, batchSi
         break;
       }
 
-      const wasInserted = insertRate(db, record);
+      const wasInserted = store.add(record) > 0;
       wasInserted ? inserted++ : skipped++;
       logRateResult(provider, date, record, wasInserted);
     }
@@ -112,7 +113,6 @@ async function backfillProvider(from, to, provider, startDate, stopDate, batchSi
     await new Promise((r) => setTimeout(r, BATCH_DELAY_MS));
   }
 
-  closeDatabase(db);
   return { inserted, skipped };
 }
 
@@ -123,7 +123,7 @@ async function safeCloseBrowser(client) {
 
 /**
  * Determines which providers to run based on CLI option.
- * @param {import('../shared/types.js').ProviderOption} option
+ * @param option
  * @returns {Provider[]}
  */
 function getProvidersToRun(option) {
@@ -158,9 +158,7 @@ async function main() {
     await safeCloseBrowser(MastercardClient);
   }
 
-  const db = openDatabase(from);
-  const totalRecords = getRecordCount(db, from, to);
-  closeDatabase(db);
+  const totalRecords = store.count(/** @type {CurrencyCode} */ (from), /** @type {CurrencyCode} */ (to));
 
   console.log('\n=== Summary ===');
   for (const [name, res] of Object.entries(results)) {

@@ -8,10 +8,11 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-/** @typedef {import('../shared/types.js').ProviderOption} ProviderOption */
+/** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
 /** @typedef {import('../shared/types.js').CurrencyPair} CurrencyPair */
 /** @typedef {import('../shared/types.js').BackfillConfig} BackfillConfig */
 /** @typedef {import('../shared/types.js').MassBackfillConfig} MassBackfillConfig */
+/** @typedef {import('../shared/types.js').ProviderOption} ProviderOption */
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -54,8 +55,8 @@ function parseProvider(value) {
 export function parseBackfillArgs() {
   const { values } = parseArgs({
     options: {
-      from: { type: 'string' },
-      to: { type: 'string' },
+      from: { /** @typedef {CurrencyCode} */ type: 'string' },
+      to: { /** @typedef {CurrencyCode} */ type: 'string' },
       provider: { type: 'string', default: DEFAULT_PROVIDER },
       parallel: { type: 'string', default: String(DEFAULT_PARALLEL) },
       days: { type: 'string', default: String(DEFAULT_DAYS) }
@@ -68,8 +69,8 @@ export function parseBackfillArgs() {
   }
 
   return {
-    from: values.from.toUpperCase(),
-    to: values.to.toUpperCase(),
+    from: /** @type {CurrencyCode} */ (values.from.toUpperCase()),
+    to: /** @type {CurrencyCode} */ (values.to.toUpperCase()),
     provider: parseProvider(values.provider),
     parallel: parsePositiveInt(values.parallel, 'parallel'),
     days: parsePositiveInt(values.days, 'days')
