@@ -13,6 +13,8 @@ import * as ChartManager from './chart-manager.js';
 
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
 /** @typedef {import('../shared/types.js').MultiProviderStats} MultiProviderStats */
+/** @typedef {import('../shared/types.js').DateRange} DateRange */
+/** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
 
 // ============================================================================
 // DOM Elements
@@ -91,7 +93,7 @@ let currentTimeRange = '1y';
 /**
  * Converts time range key to DateRange object for data-manager
  * @param {'1m'|'3m'|'6m'|'1y'|'5y'|'all'} rangeKey
- * @returns {import('../shared/types.js').DateRange}
+ * @returns {DateRange}
  */
 function parseTimeRange(rangeKey) {
   switch (rangeKey) {
@@ -462,11 +464,16 @@ async function loadCurrencyPair() {
     const range = parseTimeRange(currentTimeRange);
     
     // Fetch data with progress updates (fetches all providers)
-    const result = await DataManager.fetchRates(fromCurr, toCurr, range, {
-      onProgress: (stage, message) => {
-        loaderText.textContent = message;
+    const result = await DataManager.fetchRates(
+      /** @type {CurrencyCode} */ (fromCurr),
+      /** @type {CurrencyCode} */ (toCurr),
+      range,
+      {
+        onProgress: (stage, message) => {
+          loaderText.textContent = message;
+        }
       }
-    });
+    );
 
     if (result.records.length === 0) {
       hideLoader();

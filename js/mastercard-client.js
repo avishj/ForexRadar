@@ -14,6 +14,7 @@
 import { formatDate } from '../shared/utils.js';
 
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
+/** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
 
 const MASTERCARD_API_BASE = 'https://www.mastercard.co.in/settlement/currencyrate/conversion-rate';
 const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
@@ -49,8 +50,8 @@ function checkForApiError(data) {
  * Fetches exchange rate from Mastercard API for a specific date and currency pair.
  * 
  * @param {Date} date - The date to fetch the rate for
- * @param {string} fromCurr - Source currency code
- * @param {string} toCurr - Target currency code
+ * @param {CurrencyCode} fromCurr - Source currency code
+ * @param {CurrencyCode} toCurr - Target currency code
  * @returns {Promise<RateRecord|null>} Rate record or null if unavailable (end of history)
  */
 export async function fetchRate(date, fromCurr, toCurr) {

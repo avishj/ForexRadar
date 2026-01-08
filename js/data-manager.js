@@ -30,9 +30,11 @@ import * as MastercardClient from './mastercard-client.js';
 import { formatDate, getYesterday, addDays } from '../shared/utils.js';
 
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
+/** @typedef {import('../shared/types.js').RateStats} RateStats */
 /** @typedef {import('../shared/types.js').Provider} Provider */
 /** @typedef {import('../shared/types.js').MultiProviderStats} MultiProviderStats */
 /** @typedef {import('../shared/types.js').DateRange} DateRange */
+/** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
 
 /**
  * @typedef {Object} FetchResult
@@ -74,9 +76,8 @@ function makeRecordKey(date, provider) {
  * @param {DateRange} range - Date range specification
  * @returns {string|null} Start date string or null for "all"
  */
-// @
 function getStartDateFromRange(range) {
-  if (range.all) {
+  if ("all" in range && range.all) {
     return null; // No start date filtering
   }
   
@@ -85,9 +86,9 @@ function getStartDateFromRange(range) {
   now.setHours(23, 59, 59, 999); // End of today
   let startDate = new Date(now);
   
-  if (range.months) {
+  if ("months" in range && range.months) {
     startDate.setMonth(startDate.getMonth() - range.months);
-  } else if (range.years) {
+  } else if ("years" in range && range.years) {
     startDate.setFullYear(startDate.getFullYear() - range.years);
   }
   
@@ -123,8 +124,8 @@ function filterByRange(records, range) {
  * 4. Fetch live API data to fill gaps
  * 5. Save live data to cache
  * 
- * @param {string} fromCurr - Source currency code
- * @param {string} toCurr - Target currency code
+ * @param {CurrencyCode} fromCurr - Source currency code
+ * @param {CurrencyCode} toCurr - Target currency code
  * @param {DateRange} range - Date range to fetch: { months: 1 } | { years: 1 } | { all: true }
  * @param {FetchOptions} [options] - Fetch options
  * @returns {Promise<FetchResult>} Merged rate records and stats
@@ -333,8 +334,8 @@ export async function fetchRates(fromCurr, toCurr, range, options = {}) {
  * Fetches live data for a specific provider
  * @param {Provider} providerName - Provider name
  * @param {typeof VisaClient | typeof MastercardClient} client - Provider client module
- * @param {string} fromCurr - Source currency
- * @param {string} toCurr - Target currency
+ * @param {CurrencyCode} fromCurr - Source currency
+ * @param {CurrencyCode} toCurr - Target currency
  * @param {string} yesterdayStr - Yesterday's date string
  * @param {string|null} latestDate - Latest date we have for this provider
  * @param {boolean} hasServerData - Whether server data exists
@@ -423,7 +424,7 @@ async function fetchLiveDataForProvider(
 /**
  * Gets statistics for a single provider's dataset
  * @param {RateRecord[]} records - Array of rate records
- * @returns {import('../shared/types.js').RateStats} Statistics object
+ * @returns {RateStats} Statistics object
  */
 export function calculateStats(records) {
   if (records.length === 0) {
@@ -554,7 +555,7 @@ export async function getLatestCachedDate(fromCurr, toCurr, provider) {
 
 /**
  * Checks if server data exists for a currency (without fetching)
- * @param {string} fromCurr - Source currency code
+ * @param {CurrencyCode} fromCurr - Source currency code
  * @returns {Promise<boolean>} True if server has data for this currency
  */
 export async function hasServerData(fromCurr) {

@@ -16,6 +16,7 @@ import { chromium } from 'playwright';
 import { formatDate } from '../shared/utils.js';
 
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
+/** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
 
 const MASTERCARD_API_BASE = 'https://www.mastercard.co.in/settlement/currencyrate/conversion-rate';
 const MASTERCARD_UI_PAGE = 'https://www.mastercard.co.in/content/mastercardcom/global/en/personal/get-support/convert-currency.html';
@@ -163,8 +164,8 @@ function checkForApiError(data) {
  * Uses Playwright to bypass potential Cloudflare JS challenge.
  * 
  * @param {Date} date - The date to fetch the rate for
- * @param {import('../shared/types.js').CurrencyCode} fromCurr - Source currency code (e.g., "USD")
- * @param {import('../shared/types.js').CurrencyCode} toCurr - Target currency code (e.g., "INR")
+ * @param {CurrencyCode} fromCurr - Source currency code (e.g., "USD")
+ * @param {CurrencyCode} toCurr - Target currency code (e.g., "INR")
  * @returns {Promise<RateRecord|null>} Rate record or null if rate unavailable (end of history)
  * @throws {Error} If rate limited (HTTP 429/403) or other network error
  */

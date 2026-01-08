@@ -10,6 +10,7 @@
 import { formatDate, formatDateForApi } from '../shared/utils.js';
 
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
+/** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
 
 const VISA_API_BASE = 'https://www.visa.co.in/cmsapi/fx/rates';
 const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
@@ -19,8 +20,8 @@ const PROVIDER_NAME = 'VISA';
  * Fetches exchange rate from Visa API for a specific date and currency pair.
  * 
  * @param {Date} date - The date to fetch the rate for
- * @param {string} fromCurr - Source currency code
- * @param {string} toCurr - Target currency code
+ * @param {CurrencyCode} fromCurr - Source currency code
+ * @param {CurrencyCode} toCurr - Target currency code
  * @returns {Promise<RateRecord|null>} Rate record or null if unavailable
  */
 export async function fetchRate(date, fromCurr, toCurr) {

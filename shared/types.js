@@ -41,6 +41,11 @@ export function isProvider(value) {
   return PROVIDERS.includes(/** @type {Provider} */ (value));
 }
 
+/**
+ * Provider option for CLI commands (lowercase variants + 'all')
+ * @typedef {'visa' | 'mastercard' | 'all'} ProviderOption
+ */
+
 // ============================================================================
 // CURRENCY TYPES
 // ============================================================================

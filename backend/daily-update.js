@@ -25,6 +25,7 @@ import { formatDate, getLatestAvailableDate } from '../shared/utils.js';
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
 /** @typedef {import('../shared/types.js').Provider} Provider */
 /** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
+/** @typedef {import('../shared/types.js').CurrencyPair} CurrencyPair */
 /** @typedef {import('../shared/types.js').DailyUpdateFailure} DailyUpdateFailure */
 
 const __filename = fileURLToPath(import.meta.url);
@@ -32,7 +33,7 @@ const __dirname = dirname(__filename);
 
 /**
  * Loads the watchlist configuration
- * @returns {Array<{from: string, to: string}>} Array of currency pairs
+ * @returns {CurrencyPair[]} Array of currency pairs
  */
 function loadWatchlist() {
   const watchlistPath = join(__dirname, 'watchlist.json');
@@ -90,7 +91,7 @@ async function createGitHubIssue(failures, dateStr) {
 
 /**
  * Updates rate for a single currency pair and provider
- * @param {{from: string, to: string}} pair 
+ * @param {{from: CurrencyCode, to: CurrencyCode}} pair 
  * @param {Date} date 
  * @param {Provider} provider
  * @param {typeof VisaClient | typeof MastercardClient} client
@@ -138,7 +139,7 @@ async function updatePairForProvider(pair, date, provider, client) {
 
 /**
  * Updates rates for a single currency pair from all providers
- * @param {{from: string, to: string}} pair 
+ * @param {{from: CurrencyCode, to: CurrencyCode}} pair 
  * @param {Date} date 
  * @param {DailyUpdateFailure[]} failures
  * @returns {Promise<{visa: boolean, mastercard: boolean}>}
@@ -177,7 +178,7 @@ async function updateEcbRates(currencies, failures) {
   
   for (const currency of currencies) {
     try {
-      const data = await EcbClient.fetchAllRates(currency);
+      const data = await EcbClient.fetchAllRates(/** @type {CurrencyCode} */ (currency));
       
       if (!data) {
         failures.push({
@@ -243,7 +244,11 @@ async function main() {
   console.log('--- Visa/Mastercard Updates ---');
   for (const pair of watchlist) {
     console.log(`Processing ${pair.from}/${pair.to}...`);
-    const result = await updatePair(pair, latestAvailableDate, failures);
+    const result = await updatePair(
+      /** @type {{from: CurrencyCode, to: CurrencyCode}} */ (pair),
+      latestAvailableDate,
+      failures
+    );
     if (result.visa) visaUpdatedCount++;
     if (result.mastercard) mcUpdatedCount++;
   }

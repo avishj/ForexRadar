@@ -19,12 +19,13 @@ import { store } from './csv-store.js';
 import * as EcbClient from './ecb-client.js';
 
 /** @typedef {import('../shared/types.js').ECBBackfillResult} ECBBackfillResult */
+/** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
 
 const SEPARATOR = '='.repeat(60);
 
 /**
  * Parses CLI arguments for ECB backfill
- * @returns {{ currency: import('../shared/types.js').CurrencyCode} | null }
+ * @returns {{ currency: CurrencyCode} | null }
  */
 function parseEcbBackfillArgs() {
   const { values } = parseArgs({
@@ -34,13 +35,13 @@ function parseEcbBackfillArgs() {
   });
   
   return {
-    currency: /** @type {import('../shared/types.js').CurrencyCode | null} */ (values.currency?.toUpperCase() ?? null)
+    currency: /** @type {CurrencyCode | null} */ (values.currency?.toUpperCase() ?? null)
   };
 }
 
 /**
  * Backfills ECB data for a single currency
- * @param {import('../shared/types.js').CurrencyCode} currency
+ * @param {CurrencyCode} currency
  * @returns {Promise<ECBBackfillResult>}
  */
 async function backfillCurrency(currency) {
@@ -86,7 +87,7 @@ async function main() {
   const results = [];
   
     for (const curr of currencies) {
-    const result = await backfillCurrency(/** @type {import('../shared/types.js').CurrencyCode} */ (curr));
+    const result = await backfillCurrency(/** @type {CurrencyCode} */ (curr));
     results.push(result);
   }
   
