@@ -38,7 +38,9 @@ export const PROVIDER_CONFIG = {
 		// How long to pause after receiving HTTP 403
 		pauseOnForbiddenMs: 2 * 60 * 1000, // 2 minutes
 		// Small delay after session refresh
-		sessionRefreshDelayMs: 200
+		sessionRefreshDelayMs: 200,
+		// Small delay between batches to avoid overwhelming the API
+		batchDelayMs: 300
 	},
 	ECB: {}
 };

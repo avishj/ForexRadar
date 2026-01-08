@@ -156,7 +156,7 @@ export async function fetchBatch(requests) {
 				url.searchParams.set("bankFee", "0");
 				url.searchParams.set("transAmt", "1");
 
-				const response = await page.goto(url.toString(), { waitUntil: "networkidle", timeout: 3000 });
+				const response = await page.goto(url.toString(), { waitUntil: "domcontentloaded", timeout: 5000 });
 				const apiStatus = response.status();
 				const apiResponse = await page.content();
 
@@ -216,7 +216,8 @@ export async function fetchBatch(requests) {
 				const inserted = store.add(record);
 				if (inserted > 0) {
 					console.log(`[MASTERCARD] SAVED ${date} ${from}/${to}: ${rate}`);
-				}
+                }
+                await sleep(config.batchDelayMs);
 			} catch (error) {
 				console.error(`[MASTERCARD] FAILED ${date} ${from}/${to}: ${error.message}`);
 			}
