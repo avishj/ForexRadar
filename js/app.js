@@ -389,10 +389,10 @@ function updateArchivingLink(fromCurr, toCurr, isArchivedOnServer = false) {
 
 /**
  * Handles chart zoom/pan events to update stats based on visible data range
- * @param {number} minTimestamp - Minimum visible timestamp (ms)
- * @param {number} maxTimestamp - Maximum visible timestamp (ms)
+ * @param {string} minDate - Minimum visible date (YYYY-MM-DD)
+ * @param {string} maxDate - Maximum visible date (YYYY-MM-DD)
  */
-function handleChartZoom(minTimestamp, maxTimestamp) {
+function handleChartZoom(minDate, maxDate) {
   if (currentVisaRecords.length === 0 && currentMcRecords.length === 0 && currentEcbRecords.length === 0) return;
   
   // Deactivate time range buttons on manual zoom
@@ -404,8 +404,8 @@ function handleChartZoom(minTimestamp, maxTimestamp) {
     currentVisaRecords, 
     currentMcRecords,
     currentEcbRecords,
-    minTimestamp, 
-    maxTimestamp
+    minDate, 
+    maxDate
   );
   
   // Check data availability in visible range

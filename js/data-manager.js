@@ -80,7 +80,9 @@ function getStartDateFromRange(range) {
     return null; // No start date filtering
   }
   
+  // Start from end of today to ensure we include today's data
   const now = new Date();
+  now.setHours(23, 59, 59, 999); // End of today
   let startDate = new Date(now);
   
   if (range.months) {
@@ -88,6 +90,9 @@ function getStartDateFromRange(range) {
   } else if (range.years) {
     startDate.setFullYear(startDate.getFullYear() - range.years);
   }
+  
+  // Set to beginning of the start day
+  startDate.setHours(0, 0, 0, 0);
   
   return formatDate(startDate);
 }

@@ -22,10 +22,10 @@
 let chartInstance = null;
 
 /** @type {number|undefined} */
-let maxDataTimestamp = undefined;
+let minDataTimestamp = undefined;
 
 /** @type {number|undefined} */
-let minDataTimestamp = undefined;
+let maxDataTimestamp = undefined;
 
 // Chart color constants
 const VISA_RATE_COLOR = '#10b981';      // emerald-500
@@ -192,8 +192,6 @@ function getChartOptions(fromCurr, toCurr) {
       type: 'datetime',
       tickPlacement: 'on',
       labels: {
-        datetimeUTC: false,
-        format: 'yyyy-MM-dd',
         rotate: -45,
         rotateAlways: false,
         hideOverlappingLabels: true,
@@ -201,17 +199,18 @@ function getChartOptions(fromCurr, toCurr) {
         style: {
           colors: textColor
         },
+        datetimeUTC: false,
+        format: 'yyyy-MM-dd',
         offsetX: 0,
         offsetY: 0,
         formatter: function(value, timestamp) {
-          if (!timestamp) return value;
+          if (!timestamp) return '';
           
-          // Always show min and max labels
-          const isMinLabel = minDataTimestamp !== undefined && Math.abs(timestamp - minDataTimestamp) < 86400000; // Within 1 day
-          const isMaxLabel = maxDataTimestamp !== undefined && Math.abs(timestamp - maxDataTimestamp) < 86400000; // Within 1 day
-          
-          // Hide labels beyond max
-          if (maxDataTimestamp !== undefined && timestamp > maxDataTimestamp && !isMaxLabel) {
+          // Hide labels beyond min/max data range
+          if (minDataTimestamp !== undefined && timestamp < minDataTimestamp - 43200000) {
+            return '';
+          }
+          if (maxDataTimestamp !== undefined && timestamp > maxDataTimestamp + 43200000) {
             return '';
           }
           
@@ -352,48 +351,85 @@ function getChartOptions(fromCurr, toCurr) {
  * @param {RateRecord[]} mastercardRecords - Array of Mastercard rate records
  * @returns {Object} Object with visaRateSeries, mcRateSeries, and visaMarkupSeries
  */
+/**
+ * Converts a YYYY-MM-DD date string to midnight UTC timestamp
+ * @param {string} dateStr - Date in YYYY-MM-DD format
+ * @returns {number} Timestamp at midnight UTC
+ */
+function dateToMidnightUTC(dateStr) {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return Date.UTC(year, month - 1, day);
+}
+
+/**
+ * Converts a timestamp to YYYY-MM-DD date string
+ * @param {number} timestamp - Timestamp in milliseconds
+ * @returns {string} Date in YYYY-MM-DD format
+ */
+function timestampToDateStr(timestamp) {
+  const d = new Date(timestamp);
+  const year = d.getUTCFullYear();
+  const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function transformData(visaRecords, mastercardRecords, ecbRecords = []) {
+  // Collect all unique dates across all providers
+  const allDates = new Set();
+  for (const record of visaRecords) allDates.add(record.date);
+  for (const record of mastercardRecords) allDates.add(record.date);
+  for (const record of ecbRecords) allDates.add(record.date);
+  
+  // Sort dates chronologically
+  const sortedDates = [...allDates].sort();
+  
+  // Create lookup maps for each provider
+  const visaMap = new Map();
+  for (const record of visaRecords) {
+    visaMap.set(record.date, record);
+  }
+  
+  const mcMap = new Map();
+  for (const record of mastercardRecords) {
+    mcMap.set(record.date, record);
+  }
+  
+  const ecbMap = new Map();
+  for (const record of ecbRecords) {
+    ecbMap.set(record.date, record);
+  }
+  
+  // Build series with null for missing dates, using midnight UTC timestamps
   const visaRateSeries = [];
   const visaMarkupSeries = [];
   const mcRateSeries = [];
   const ecbRateSeries = [];
   
-  // Process Visa records
-  for (const record of visaRecords) {
-    // Parse YYYY-MM-DD as local time (not UTC) to avoid timezone offset issues
-    const [year, month, day] = record.date.split('-').map(Number);
-    const timestamp = new Date(year, month - 1, day).getTime();
+  for (const date of sortedDates) {
+    const timestamp = dateToMidnightUTC(date);
+    const visaRecord = visaMap.get(date);
+    const mcRecord = mcMap.get(date);
+    const ecbRecord = ecbMap.get(date);
     
     visaRateSeries.push({
       x: timestamp,
-      y: record.rate
+      y: visaRecord ? visaRecord.rate : null
     });
     
     visaMarkupSeries.push({
       x: timestamp,
-      y: record.markup
+      y: visaRecord ? visaRecord.markup : null
     });
-  }
-  
-  // Process Mastercard records
-  for (const record of mastercardRecords) {
-    const [year, month, day] = record.date.split('-').map(Number);
-    const timestamp = new Date(year, month - 1, day).getTime();
     
     mcRateSeries.push({
       x: timestamp,
-      y: record.rate
+      y: mcRecord ? mcRecord.rate : null
     });
-  }
-  
-  // Process ECB records
-  for (const record of ecbRecords) {
-    const [year, month, day] = record.date.split('-').map(Number);
-    const timestamp = new Date(year, month - 1, day).getTime();
     
     ecbRateSeries.push({
       x: timestamp,
-      y: record.rate
+      y: ecbRecord ? ecbRecord.rate : null
     });
   }
   
@@ -429,10 +465,14 @@ export function setZoomCallback(callback) {
 function updateYAxisLimits(minTimestamp, maxTimestamp) {
   if (!chartInstance) return;
   
+  // Convert timestamps to date strings for filtering
+  const minDate = timestampToDateStr(minTimestamp);
+  const maxDate = timestampToDateStr(maxTimestamp);
+  
   // Get visible records
-  const visibleVisa = getVisibleRecords(currentVisaRecords, minTimestamp, maxTimestamp);
-  const visibleMc = getVisibleRecords(currentMcRecords, minTimestamp, maxTimestamp);
-  const visibleEcb = getVisibleRecords(currentEcbRecords, minTimestamp, maxTimestamp);
+  const visibleVisa = getVisibleRecords(currentVisaRecords, minDate, maxDate);
+  const visibleMc = getVisibleRecords(currentMcRecords, minDate, maxDate);
+  const visibleEcb = getVisibleRecords(currentEcbRecords, minDate, maxDate);
   
   // Calculate rate range (left Y-axis)
   const allRates = [
@@ -524,26 +564,21 @@ export function initChart(containerId, visaRecords, mastercardRecords, ecbRecord
   currentMcRecords = mastercardRecords;
   currentEcbRecords = ecbRecords;
   
-  // Calculate min/max timestamps from actual data
-  const allTimestamps = [
+  // Get all unique dates from data
+  const allDates = [
     ...visaRateSeries.map(p => p.x),
     ...mcRateSeries.map(p => p.x),
     ...ecbRateSeries.map(p => p.x)
-  ].filter(t => t !== null && t !== undefined);
+  ].filter(d => d !== null && d !== undefined);
   
-  const minTimestamp = allTimestamps.length > 0 ? Math.min(...allTimestamps) : undefined;
-  const maxTimestamp = allTimestamps.length > 0 ? Math.max(...allTimestamps) : undefined;
-  
-  // Store timestamps for label formatter and annotations
-  minDataTimestamp = minTimestamp;
-  maxDataTimestamp = maxTimestamp;
+  const uniqueDates = [...new Set(allDates)].sort();
+  const minDate = uniqueDates.length > 0 ? uniqueDates[0] : undefined;
+  const maxDate = uniqueDates.length > 0 ? uniqueDates[uniqueDates.length - 1] : undefined;
   
   console.log('initChart - Data Range:', {
-    minTimestamp,
-    maxTimestamp,
-    minDate: minTimestamp ? new Date(minTimestamp).toISOString() : 'N/A',
-    maxDate: maxTimestamp ? new Date(maxTimestamp).toISOString() : 'N/A',
-    dataPointCount: allTimestamps.length
+    minDate,
+    maxDate,
+    dataPointCount: uniqueDates.length
   });
   
   const options = getChartOptions(fromCurr, toCurr);
@@ -552,72 +587,89 @@ export function initChart(containerId, visaRecords, mastercardRecords, ecbRecord
   options.series[SERIES_ECB_RATE].data = ecbRateSeries;
   options.series[SERIES_VISA_MARKUP].data = visaMarkupSeries;
   
-  // Set explicit xaxis bounds to clip graph beyond data range
-  if (minTimestamp !== undefined && maxTimestamp !== undefined) {
+  // Set xaxis min/max to clamp axis to data range
+  if (uniqueDates.length > 0) {
+    const minTimestamp = uniqueDates[0];
+    const maxTimestamp = uniqueDates[uniqueDates.length - 1];
+    
+    // Store for label formatter
+    minDataTimestamp = minTimestamp;
+    maxDataTimestamp = maxTimestamp;
+    
     options.xaxis.min = minTimestamp;
     options.xaxis.max = maxTimestamp;
     
-    // Generate custom ticks to ensure min and max are included
+    // Calculate appropriate tickAmount based on date range
     const dataRange = maxTimestamp - minTimestamp;
     const dayInMs = 24 * 60 * 60 * 1000;
     const daysInRange = dataRange / dayInMs;
     
-    // Calculate appropriate number of ticks based on range
     let tickCount;
     if (daysInRange <= 7) {
-      tickCount = Math.ceil(daysInRange) + 1; // Daily ticks
+      tickCount = Math.ceil(daysInRange) + 1;
     } else if (daysInRange <= 31) {
-      tickCount = 8; // ~Every 4 days
+      tickCount = 8;
     } else if (daysInRange <= 90) {
-      tickCount = 10; // ~Every 9 days
+      tickCount = 10;
     } else if (daysInRange <= 180) {
-      tickCount = 12; // ~Every 15 days
+      tickCount = 12;
     } else if (daysInRange <= 365) {
-      tickCount = 13; // ~Monthly
+      tickCount = 13;
     } else {
-      tickCount = Math.min(Math.ceil(daysInRange / 30), 20); // ~Monthly, max 20 ticks
+      tickCount = Math.min(Math.ceil(daysInRange / 30), 20);
     }
     
-    // Generate tick values including min and max
-    const ticks = [];
-    for (let i = 0; i <= tickCount; i++) {
-      const tick = minTimestamp + (dataRange * i / tickCount);
-      ticks.push(tick);
-    }
-    
-    // Ensure exact min and max are in the ticks
-    if (ticks[0] !== minTimestamp) ticks[0] = minTimestamp;
-    if (ticks[ticks.length - 1] !== maxTimestamp) ticks[ticks.length - 1] = maxTimestamp;
-    
-    // Use custom tick values
     options.xaxis.tickAmount = tickCount;
     
-    console.log('Setting xaxis bounds:', {
-      min: minTimestamp,
-      max: maxTimestamp,
-      minDate: new Date(minTimestamp).toISOString(),
-      maxDate: new Date(maxTimestamp).toISOString(),
-      tickCount,
-      daysInRange
+    console.log('Chart data range:', {
+      totalDates: uniqueDates.length,
+      firstTimestamp: minTimestamp,
+      lastTimestamp: maxTimestamp,
+      daysInRange: daysInRange.toFixed(1),
+      tickCount
     });
   }
   
   // Add zoom/pan event listeners
   options.chart.events = {
     zoomed: (chartContext, { xaxis }) => {
+      // For datetime axis, min/max are timestamps
+      const minTs = xaxis.min;
+      const maxTs = xaxis.max;
+      
+      if (!minTs || !maxTs) return;
+      
+      // Update stored timestamps for label formatter
+      minDataTimestamp = minTs;
+      maxDataTimestamp = maxTs;
+      
       // Update Y-axis limits for visible range
-      updateYAxisLimits(xaxis.min, xaxis.max);
-      // Call external callback for stats update
+      updateYAxisLimits(minTs, maxTs);
+      // Call external callback for stats update (convert to date strings)
       if (onZoomCallback) {
-        onZoomCallback(xaxis.min, xaxis.max);
+        const minDate = timestampToDateStr(minTs);
+        const maxDate = timestampToDateStr(maxTs);
+        onZoomCallback(minDate, maxDate);
       }
     },
     scrolled: (chartContext, { xaxis }) => {
+      // For datetime axis, min/max are timestamps
+      const minTs = xaxis.min;
+      const maxTs = xaxis.max;
+      
+      if (!minTs || !maxTs) return;
+      
+      // Update stored timestamps for label formatter
+      minDataTimestamp = minTs;
+      maxDataTimestamp = maxTs;
+      
       // Update Y-axis limits for visible range
-      updateYAxisLimits(xaxis.min, xaxis.max);
-      // Call external callback for stats update
+      updateYAxisLimits(minTs, maxTs);
+      // Call external callback for stats update (convert to date strings)
       if (onZoomCallback) {
-        onZoomCallback(xaxis.min, xaxis.max);
+        const minDate = timestampToDateStr(minTs);
+        const maxDate = timestampToDateStr(maxTs);
+        onZoomCallback(minDate, maxDate);
       }
     }
   };
@@ -647,18 +699,42 @@ export function updateChart(visaRecords, mastercardRecords, ecbRecords, fromCurr
   
   const { visaRateSeries, mcRateSeries, ecbRateSeries, visaMarkupSeries } = transformData(visaRecords, mastercardRecords, ecbRecords);
   
-  // Calculate min/max timestamps from actual data
-  const allTimestamps = [
+  // Get all unique dates from data
+  const allDates = [
     ...visaRateSeries.map(p => p.x),
     ...mcRateSeries.map(p => p.x),
     ...ecbRateSeries.map(p => p.x)
-  ].filter(t => t !== null && t !== undefined);
+  ].filter(d => d !== null && d !== undefined);
   
-  const minTimestamp = allTimestamps.length > 0 ? Math.min(...allTimestamps) : undefined;
-  const maxTimestamp = allTimestamps.length > 0 ? Math.max(...allTimestamps) : undefined;
+  const uniqueDates = [...new Set(allDates)].sort((a, b) => a - b);
+  const minTimestamp = uniqueDates.length > 0 ? uniqueDates[0] : undefined;
+  const maxTimestamp = uniqueDates.length > 0 ? uniqueDates[uniqueDates.length - 1] : undefined;
   
-  // Store max timestamp for label formatter
+  // Store for label formatter
+  minDataTimestamp = minTimestamp;
   maxDataTimestamp = maxTimestamp;
+  
+  // Calculate tickAmount based on date range
+  let tickCount = 10;
+  if (minTimestamp !== undefined && maxTimestamp !== undefined) {
+    const dataRange = maxTimestamp - minTimestamp;
+    const dayInMs = 24 * 60 * 60 * 1000;
+    const daysInRange = dataRange / dayInMs;
+    
+    if (daysInRange <= 7) {
+      tickCount = Math.ceil(daysInRange) + 1;
+    } else if (daysInRange <= 31) {
+      tickCount = 8;
+    } else if (daysInRange <= 90) {
+      tickCount = 10;
+    } else if (daysInRange <= 180) {
+      tickCount = 12;
+    } else if (daysInRange <= 365) {
+      tickCount = 13;
+    } else {
+      tickCount = Math.min(Math.ceil(daysInRange / 30), 20);
+    }
+  }
   
   // Update series data
   chartInstance.updateSeries([
@@ -674,6 +750,11 @@ export function updateChart(visaRecords, mastercardRecords, ecbRecords, fromCurr
   
   // Update options including xaxis bounds
   const updateOptions = {
+    xaxis: {
+      min: minTimestamp,
+      max: maxTimestamp,
+      tickAmount: tickCount
+    },
     yaxis: [
       {
         seriesName: ['Visa Rate', 'Mastercard Rate', 'ECB Rate'],
@@ -702,14 +783,6 @@ export function updateChart(visaRecords, mastercardRecords, ecbRecords, fromCurr
       }
     ]
   };
-  
-  // Set explicit xaxis bounds to clip graph beyond data range
-  if (minTimestamp !== undefined && maxTimestamp !== undefined) {
-    updateOptions.xaxis = {
-      min: minTimestamp,
-      max: maxTimestamp
-    };
-  }
   
   chartInstance.updateOptions(updateOptions, false, false);
 }
@@ -803,15 +876,13 @@ export function refreshChartTheme(fromCurr, toCurr) {
 /**
  * Filters records based on visible chart range
  * @param {RateRecord[]} records - All records
- * @param {number} minTimestamp - Minimum timestamp (ms)
- * @param {number} maxTimestamp - Maximum timestamp (ms)
+ * @param {string} minDate - Minimum date (YYYY-MM-DD)
+ * @param {string} maxDate - Maximum date (YYYY-MM-DD)
  * @returns {RateRecord[]} Filtered records
  */
-export function getVisibleRecords(records, minTimestamp, maxTimestamp) {
+export function getVisibleRecords(records, minDate, maxDate) {
   return records.filter(record => {
-    const [year, month, day] = record.date.split('-').map(Number);
-    const timestamp = new Date(year, month - 1, day).getTime();
-    return timestamp >= minTimestamp && timestamp <= maxTimestamp;
+    return record.date >= minDate && record.date <= maxDate;
   });
 }
 
@@ -820,14 +891,14 @@ export function getVisibleRecords(records, minTimestamp, maxTimestamp) {
  * @param {RateRecord[]} visaRecords - All Visa records
  * @param {RateRecord[]} mastercardRecords - All Mastercard records
  * @param {RateRecord[]} ecbRecords - All ECB records
- * @param {number} minTimestamp - Minimum timestamp (ms)
- * @param {number} maxTimestamp - Maximum timestamp (ms)
+ * @param {string} minDate - Minimum date (YYYY-MM-DD)
+ * @param {string} maxDate - Maximum date (YYYY-MM-DD)
  * @returns {{visaRecords: RateRecord[], mastercardRecords: RateRecord[], ecbRecords: RateRecord[]}} Filtered records by provider
  */
-export function getVisibleRecordsByProvider(visaRecords, mastercardRecords, ecbRecords, minTimestamp, maxTimestamp) {
+export function getVisibleRecordsByProvider(visaRecords, mastercardRecords, ecbRecords, minDate, maxDate) {
   return {
-    visaRecords: getVisibleRecords(visaRecords, minTimestamp, maxTimestamp),
-    mastercardRecords: getVisibleRecords(mastercardRecords, minTimestamp, maxTimestamp),
-    ecbRecords: getVisibleRecords(ecbRecords, minTimestamp, maxTimestamp)
+    visaRecords: getVisibleRecords(visaRecords, minDate, maxDate),
+    mastercardRecords: getVisibleRecords(mastercardRecords, minDate, maxDate),
+    ecbRecords: getVisibleRecords(ecbRecords, minDate, maxDate)
   };
 }
