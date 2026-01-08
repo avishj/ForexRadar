@@ -10,6 +10,7 @@
 
 import { parseArgs } from 'node:util';
 import { store } from './csv-store.js';
+import { parseDate } from '../shared/utils.js';
 
 /** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
@@ -75,10 +76,10 @@ function findMissingDates(dates) {
   
   const dateSet = new Set(dates);
   const missingDates = [];
-  const start = new Date(dates[0]);
-  const end = new Date(dates[dates.length - 1]);
-  
-  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+  const start = parseDate(dates[0]);
+  const end = parseDate(dates[dates.length - 1]);
+
+  for (let d = start; d <= end; d.setDate(d.getDate() + 1)) {
     const dateStr = d.toISOString().split('T')[0];
     if (!dateSet.has(dateStr)) {
       missingDates.push(dateStr);
@@ -142,7 +143,7 @@ function main() {
 
   // Summary
   const expectedDays = earliest && latest
-    ? Math.floor((new Date(latest).getTime() - new Date(earliest).getTime()) / (1000 * 60 * 60 * 24)) + 1
+    ? Math.floor((parseDate(latest).getTime() - parseDate(earliest).getTime()) / (1000 * 60 * 60 * 24)) + 1
     : 0;
   const coverage = expectedDays > 0 ? ((uniqueDates.length / expectedDays) * 100).toFixed(1) : '0.0';
 
