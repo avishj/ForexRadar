@@ -4,29 +4,30 @@
   "description": "Track historical Visa and Mastercard exchange rates",
   "type": "module",
   "scripts": {
-    "backfill": "cd backend && node backfill.js",
-    "mass-backfill": "cd backend && node mass-backfill.js",
-    "ecb-backfill": "cd backend && node ecb-backfill.js",
-    "daily": "cd backend && node daily-update.js",
-    "validate": "cd backend && node validate-data.js",
-    "typecheck": "tsc --noEmit",
-    "typecheck:frontend": "tsc --project jsconfig.json --noEmit",
-    "typecheck:backend": "tsc --project backend/jsconfig.json --noEmit",
-    "check": "npm run typecheck",
-    "postinstall": "cd backend && npx playwright install firefox chromium"
+    "backfill": "cd backend && bun run backfill.js",
+    "mass-backfill": "cd backend && bun run mass-backfill.js",
+    "ecb-backfill": "cd backend && bun run ecb-backfill.js",
+    "daily": "cd backend && bun run daily-update.js",
+    "validate": "cd backend && bun run validate-data.js",
+    "typecheck": "bunx tsc --noEmit",
+    "typecheck:frontend": "bunx tsc --project jsconfig.json --noEmit",
+    "typecheck:backend": "bunx tsc --project backend/jsconfig.json --noEmit",
+    "check": "bun run typecheck",
+    "postinstall": "cd backend && bunx playwright install firefox chromium"
   },
   "dependencies": {
     "better-sqlite3": "^11.7.0",
     "playwright": "^1.40.0"
   },
   "devDependencies": {
+    "@types/bun": "^1.1.14",
     "@types/node": "^20.0.0",
     "@types/sql.js": "^1.4.9",
     "apexcharts": "^3.45.0",
     "typescript": "^5.0.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "bun": ">=1.3.5"
   },
   "repository": {
     "type": "git",
