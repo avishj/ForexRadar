@@ -40,7 +40,7 @@ export const PROVIDER_CONFIG = {
 		// Small delay after session refresh
 		sessionRefreshDelayMs: 200,
 		// Small delay between batches to avoid overwhelming the API
-		batchDelayMs: 300
+		batchDelayMs: 750
 	},
 	ECB: {}
 };
