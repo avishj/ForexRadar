@@ -14,15 +14,15 @@
  */
 
 import { parseBackfillArgs, formatProvider } from './cli.js';
-import { store } from './csv-store.js';
+import { store } from '../csv-store.js';
 import * as VisaClient from './visa-client.js';
 import * as MastercardClient from './mastercard-client.js';
-import { formatDate, getLatestAvailableDate } from '../shared/utils.js';
+import { formatDate, getLatestAvailableDate } from '../../shared/utils.js';
 
-/** @typedef {import('../shared/types.js').RateRecord} RateRecord */
-/** @typedef {import('../shared/types.js').Provider} Provider */
-/** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
-/** @typedef {import('../shared/types.js').ProviderBackfillResult} ProviderBackfillResult */
+/** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
+/** @typedef {import('../../shared/types.js').Provider} Provider */
+/** @typedef {import('../../shared/types.js').CurrencyCode} CurrencyCode */
+/** @typedef {import('../../shared/types.js').ProviderBackfillResult} ProviderBackfillResult */
 
 const BATCH_DELAY_MS = 100;
 

@@ -19,9 +19,9 @@ import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseMassBackfillArgs, loadWatchlist, formatProvider } from './cli.js';
 
-/** @typedef {import('../shared/types.js').CurrencyPair} CurrencyPair */
-/** @typedef {import('../shared/types.js').MassBackfillConfig} MassBackfillConfig */
-/** @typedef {import('../shared/types.js').BackfillResult} BackfillResult */
+/** @typedef {import('../../shared/types.js').CurrencyPair} CurrencyPair */
+/** @typedef {import('../../shared/types.js').MassBackfillConfig} MassBackfillConfig */
+/** @typedef {import('../../shared/types.js').BackfillResult} BackfillResult */
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SEPARATOR = '='.repeat(60);

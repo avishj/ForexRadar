@@ -93,6 +93,33 @@ export function getYearsInRange(startDate, endDate) {
   return years;
 }
 
+/**
+ * Get date range for backfill (latest available date backwards by N days)
+ * @param {number} days - Number of days to go back
+ * @returns {{ startDate: string, endDate: string }} Date range in YYYY-MM-DD format
+ */
+export function getDateRange(days) {
+	const latestAvailable = getLatestAvailableDate();
+	const startDate = formatDate(latestAvailable);
+
+	const endDate = new Date(latestAvailable);
+	endDate.setDate(endDate.getDate() - (days - 1));
+
+	return { startDate, endDate: formatDate(endDate) };
+}
+
+/**
+ * Determine which providers to check based on CLI option
+ * @param {string} providerOption - 'all', 'visa', or 'mastercard'
+ * @returns {string[]} Array of provider names in uppercase
+ */
+export function getProvidersToCheck(providerOption) {
+  if (providerOption === 'all') {
+    return ['VISA', 'MASTERCARD'];
+  }
+  return [providerOption.toUpperCase()];
+}
+
 // ============================================================================
 // DATE AVAILABILITY (for API data fetching)
 // ============================================================================

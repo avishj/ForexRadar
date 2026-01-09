@@ -9,11 +9,11 @@
  */
 
 import { firefox } from 'playwright';
-import { formatDate, formatDateForApi } from '../shared/utils.js';
+import { formatDate, formatDateForApi } from "../../shared/utils.js";
 
-/** @typedef {import('../shared/types.js').RateRecord} RateRecord */
-/** @typedef {import('../shared/types.js').Provider} Provider */
-/** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
+/** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
+/** @typedef {import('../../shared/types.js').Provider} Provider */
+/** @typedef {import('../../shared/types.js').CurrencyCode} CurrencyCode */
 
 const VISA_API_BASE = 'https://www.visa.co.in/cmsapi/fx/rates';
 /** @type {Provider} */
