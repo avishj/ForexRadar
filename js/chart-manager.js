@@ -293,16 +293,74 @@ function getChartOptions(fromCurr, toCurr) {
       x: {
         format: 'MMM dd, yyyy'
       },
-      y: {
-        formatter: function(value, { seriesIndex }) {
-          if (value === null || value === undefined) return '-';
-          // Series 0 = Visa Rate, Series 1 = MC Rate, Series 2 = ECB Rate, Series 3 = Visa Markup
-          if (seriesIndex === 0 || seriesIndex === 1 || seriesIndex === 2) {
-            return value.toFixed(5);
-          } else {
-            return `${value.toFixed(2)}%`;
-          }
+      custom: function({ series, seriesIndex, dataPointIndex, w }) {
+        // Custom tooltip to ensure all series are displayed even when some have null values
+        const date = new Date(w.globals.seriesX[0][dataPointIndex]);
+        const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        
+        let tooltipHTML = `<div class="apexcharts-tooltip-title" style="font-family: DM Sans, sans-serif; font-size: 12px;">${dateStr}</div>`;
+        
+        // Series 0: Visa Rate
+        const visaRate = series[0][dataPointIndex];
+        if (visaRate !== null && visaRate !== undefined) {
+          tooltipHTML += `
+            <div class="apexcharts-tooltip-series-group apexcharts-active" style="order: 1; display: flex;">
+              <span class="apexcharts-tooltip-marker" style="background-color: ${VISA_RATE_COLOR};"></span>
+              <div class="apexcharts-tooltip-text" style="font-family: DM Sans, sans-serif; font-size: 12px;">
+                <div class="apexcharts-tooltip-y-group">
+                  <span class="apexcharts-tooltip-text-y-label">Visa Rate: </span>
+                  <span class="apexcharts-tooltip-text-y-value">${visaRate.toFixed(5)}</span>
+                </div>
+              </div>
+            </div>`;
         }
+        
+        // Series 1: Mastercard Rate
+        const mcRate = series[1][dataPointIndex];
+        if (mcRate !== null && mcRate !== undefined) {
+          tooltipHTML += `
+            <div class="apexcharts-tooltip-series-group apexcharts-active" style="order: 2; display: flex;">
+              <span class="apexcharts-tooltip-marker" style="background-color: ${MC_RATE_COLOR};"></span>
+              <div class="apexcharts-tooltip-text" style="font-family: DM Sans, sans-serif; font-size: 12px;">
+                <div class="apexcharts-tooltip-y-group">
+                  <span class="apexcharts-tooltip-text-y-label">Mastercard Rate: </span>
+                  <span class="apexcharts-tooltip-text-y-value">${mcRate.toFixed(5)}</span>
+                </div>
+              </div>
+            </div>`;
+        }
+        
+        // Series 2: ECB Rate
+        const ecbRate = series[2][dataPointIndex];
+        if (ecbRate !== null && ecbRate !== undefined) {
+          tooltipHTML += `
+            <div class="apexcharts-tooltip-series-group apexcharts-active" style="order: 3; display: flex;">
+              <span class="apexcharts-tooltip-marker" style="background-color: ${ECB_RATE_COLOR};"></span>
+              <div class="apexcharts-tooltip-text" style="font-family: DM Sans, sans-serif; font-size: 12px;">
+                <div class="apexcharts-tooltip-y-group">
+                  <span class="apexcharts-tooltip-text-y-label">ECB Rate: </span>
+                  <span class="apexcharts-tooltip-text-y-value">${ecbRate.toFixed(5)}</span>
+                </div>
+              </div>
+            </div>`;
+        }
+        
+        // Series 3: Visa Markup
+        const visaMarkup = series[3][dataPointIndex];
+        if (visaMarkup !== null && visaMarkup !== undefined) {
+          tooltipHTML += `
+            <div class="apexcharts-tooltip-series-group apexcharts-active" style="order: 4; display: flex;">
+              <span class="apexcharts-tooltip-marker" style="background-color: ${VISA_MARKUP_COLOR};"></span>
+              <div class="apexcharts-tooltip-text" style="font-family: DM Sans, sans-serif; font-size: 12px;">
+                <div class="apexcharts-tooltip-y-group">
+                  <span class="apexcharts-tooltip-text-y-label">Visa Markup (%): </span>
+                  <span class="apexcharts-tooltip-text-y-value">${visaMarkup.toFixed(2)}%</span>
+                </div>
+              </div>
+            </div>`;
+        }
+        
+        return tooltipHTML;
       }
     },
     
