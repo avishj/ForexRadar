@@ -74,7 +74,7 @@ async function backfillCurrency(currency) {
 
 async function main() {
   const { currency } = parseEcbBackfillArgs();
-  const currencies = currency ? [currency] : loadEcbWatchlist();
+  const currencies = currency ? [currency] : await loadEcbWatchlist();
   
   console.log(SEPARATOR);
   console.log('  ForexRadar ECB Backfill');
