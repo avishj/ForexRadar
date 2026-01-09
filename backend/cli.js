@@ -46,6 +46,18 @@ export async function loadWatchlist() {
 	return data.pairs || [];
 }
 
+/** @returns {Promise<string[]>} */
+export async function loadEcbWatchlist() {
+  const path = `${import.meta.dir}/ecb-watchlist.json`;
+  try {
+    const data = await Bun.file(path).json();
+    return data.currencies ?? [];
+  } catch (error) {
+    console.error(`Failed to load ECB watchlist: ${error.message}`);
+    process.exit(1);
+  }
+}
+
 /**
  * Format provider option for display
  * @param {ProviderOption} provider
