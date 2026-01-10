@@ -5,10 +5,10 @@
  * 
  * Queries the CSV store to verify archived data.
  * 
- * Usage: node validate-data.js --from=USD --to=INR [--limit=10]
+ * Usage: bun validate-data.js --from=USD --to=INR [--limit=10]
  */
 
-import { parseArgs } from 'node:util';
+import { parseArgs } from 'util';
 import { store } from './csv-store.js';
 import { parseDate } from '../shared/utils.js';
 
@@ -28,7 +28,7 @@ function parseCliArgs() {
   });
 
   if (!values.from || !values.to) {
-    console.error('Usage: node validate-data.js --from=USD --to=INR [--limit=10]');
+    console.error('Usage: bun validate-data.js --from=USD --to=INR [--limit=10]');
     process.exit(1);
   }
 
