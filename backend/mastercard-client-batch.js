@@ -130,7 +130,7 @@ async function refreshSession() {
 	console.log("[MASTERCARD] Refreshing session");
 	const page = await getApiPage();
 	try {
-		await page.goto(MASTERCARD_UI_PAGE, { timeout: 1000 });
+		await page.goto(MASTERCARD_UI_PAGE, { timeout: 10000 });
 		await sleep(config.sessionRefreshDelayMs);
 	} catch (error) {
 		console.warn("[MASTERCARD] Session refresh failed:", error.message);
