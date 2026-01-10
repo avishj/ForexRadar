@@ -8,8 +8,12 @@
  */
 
 import { chromium } from "playwright";
-import { PROVIDER_CONFIG } from "../shared/constants.js";
+import { PROVIDER_CONFIG, USER_AGENTS } from "../shared/constants.js";
 import { store } from "./csv-store.js";
+
+// Select a random user agent at script startup (stays consistent for session)
+const SESSION_USER_AGENT = USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
+console.log(`[MASTERCARD] Using User-Agent: ${SESSION_USER_AGENT}.`);
 
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
 /** @typedef {import('../shared/types.js').Provider} Provider */
@@ -32,11 +36,28 @@ let browserInitPromise = null;
 let apiPage = null;
 
 /**
+ * Resets all browser state (called on unexpected disconnect)
+ */
+function resetBrowserState() {
+	browserInstance = null;
+	browserContext = null;
+	browserInitPromise = null;
+	apiPage = null;
+}
+
+/**
  * Gets or creates a shared browser instance (race-condition safe)
  */
 async function getBrowser() {
-	if (browserInstance) {
+	// Check if existing browser is still alive
+	if (browserInstance && browserInstance.isConnected()) {
 		return { browser: browserInstance, context: browserContext };
+	}
+
+	// Browser died unexpectedly - reset state
+	if (browserInstance && !browserInstance.isConnected()) {
+		console.warn("[MASTERCARD] Browser disconnected unexpectedly, resetting state");
+		resetBrowserState();
 	}
 
 	if (browserInitPromise) {
@@ -47,17 +68,40 @@ async function getBrowser() {
 		console.log("[MASTERCARD] Launching Chromium browser...");
 		browserInstance = await chromium.launch({
 			headless: false, // Akamai bot detection blocks headless mode
-			args: ["--disable-blink-features=AutomationControlled"]
+			args: [
+				"--disable-blink-features=AutomationControlled",
+				// Stability flags to prevent random crashes
+				"--disable-gpu",
+				"--disable-dev-shm-usage",
+				"--disable-background-timer-throttling",
+				"--disable-backgrounding-occluded-windows",
+				"--disable-renderer-backgrounding",
+				"--no-sandbox",
+				"--disable-web-security",
+				"--disable-extensions",
+				"--disable-plugins",
+				"--disable-default-apps",
+				"--disable-sync",
+				"--disable-translate",
+				"--max_old_space_size=2048",
+				"--js-flags=--max-old-space-size=2048"
+			]
 		});
 		browserContext = await browserInstance.newContext({
-			userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
-			viewport: { width: 1920, height: 1080 },
-			locale: "en-GB",
+			userAgent: SESSION_USER_AGENT,
+			viewport: { width: 1512, height: 984 },
+			locale: "en-US",
 			extraHTTPHeaders: {
 				"Accept-Language": "en-GB,en;q=0.9",
 				DNT: "1",
 				"Sec-GPC": "1"
 			}
+		});
+
+		// Auto-reset state if browser crashes unexpectedly
+		browserInstance.on("disconnected", () => {
+			console.warn("[MASTERCARD] Browser disconnected event fired, resetting state");
+			resetBrowserState();
 		});
 
 		return { browser: browserInstance, context: browserContext };
@@ -67,16 +111,21 @@ async function getBrowser() {
 }
 
 /**
- * Closes the shared browser instance
+ * Closes the shared browser instance with timeout protection
  */
 async function closeBrowser() {
 	if (browserInstance) {
 		console.log("[MASTERCARD] Closing browser...");
-		await browserInstance.close();
-		browserInstance = null;
-		browserContext = null;
-		browserInitPromise = null;
-		apiPage = null;
+		const browser = browserInstance;
+		// Reset state immediately so we don't try to reuse a closing browser
+		resetBrowserState();
+		try {
+			// Try graceful close with 3 second timeout
+			await Promise.race([browser.close(), new Promise((_, reject) => setTimeout(() => reject(new Error("Close timeout")), 3000))]);
+			console.log("[MASTERCARD] Browser closed");
+		} catch (error) {
+			console.warn("[MASTERCARD] Browser close timed out, continuing (process may need manual cleanup)");
+		}
 	}
 }
 
@@ -91,7 +140,8 @@ function sleep(ms) {
  * Gets or creates a reusable page for API requests
  */
 async function getApiPage() {
-	if (apiPage && !apiPage.isClosed()) {
+	// Must check browser connection FIRST - page.isClosed() returns false when browser crashed
+	if (apiPage && browserInstance?.isConnected() && !apiPage.isClosed()) {
 		return apiPage;
 	}
 	const { context } = await getBrowser();
@@ -106,10 +156,14 @@ async function refreshSession() {
 	console.log("[MASTERCARD] Refreshing session");
 	const page = await getApiPage();
 	try {
-		await page.goto(MASTERCARD_UI_PAGE, { timeout: 1000 });
+		// Use domcontentloaded - we just need cookies, not full page render
+		await page.goto(MASTERCARD_UI_PAGE, { timeout: 15000, waitUntil: "domcontentloaded" });
 		await sleep(config.sessionRefreshDelayMs);
 	} catch (error) {
 		console.warn("[MASTERCARD] Session refresh failed:", error.message);
+		// Page is likely in a broken state - close it so a fresh one is created
+		await page.close();
+		apiPage = null;
 	}
 }
 
@@ -141,8 +195,8 @@ export async function fetchBatch(requests) {
 				console.log(`[MASTERCARD] Restarting browser after ${requestCounter} requests`);
 				await closeBrowser();
 				await sleep(config.sessionRefreshDelayMs);
-            }
-            if (requestCounter % config.sessionRefreshInterval === 0) {
+			}
+			if (requestCounter % config.sessionRefreshInterval === 0) {
 				await refreshSession();
 			}
 
@@ -156,7 +210,8 @@ export async function fetchBatch(requests) {
 				url.searchParams.set("bankFee", "0");
 				url.searchParams.set("transAmt", "1");
 
-				const response = await page.goto(url.toString(), { waitUntil: "domcontentloaded", timeout: 5000 });
+				// Use 'domcontentloaded' - API returns JSON, no need to wait for all resources
+				const response = await page.goto(url.toString(), { timeout: 10000, waitUntil: "domcontentloaded" });
 				const apiStatus = response.status();
 				const apiResponse = await page.content();
 
@@ -216,10 +271,16 @@ export async function fetchBatch(requests) {
 				const inserted = store.add(record);
 				if (inserted > 0) {
 					console.log(`[MASTERCARD] SAVED ${date} ${from}/${to}: ${rate}`);
-                }
-                await sleep(config.batchDelayMs);
+				}
+				await sleep(config.batchDelayMs);
 			} catch (error) {
 				console.error(`[MASTERCARD] FAILED ${date} ${from}/${to}: ${error.message}`);
+				// On timeout errors, restart the browser - session is likely dead
+				if (error.message.includes("Timeout")) {
+					console.log("[MASTERCARD] Timeout detected - restarting browser");
+					await closeBrowser();
+					await sleep(config.sessionRefreshDelayMs);
+				}
 			}
 
 			requestCounter++;
