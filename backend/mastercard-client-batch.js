@@ -75,7 +75,16 @@ async function getBrowser() {
 				"--disable-dev-shm-usage",
 				"--disable-background-timer-throttling",
 				"--disable-backgrounding-occluded-windows",
-				"--disable-renderer-backgrounding"
+				"--disable-renderer-backgrounding",
+				"--no-sandbox",
+				"--disable-web-security",
+				"--disable-extensions",
+				"--disable-plugins",
+				"--disable-default-apps",
+				"--disable-sync",
+				"--disable-translate",
+				"--max_old_space_size=2048",
+				"--js-flags=--max-old-space-size=2048"
 			]
 		});
 		browserContext = await browserInstance.newContext({
@@ -112,10 +121,7 @@ async function closeBrowser() {
 		resetBrowserState();
 		try {
 			// Try graceful close with 3 second timeout
-			await Promise.race([
-				browser.close(),
-				new Promise((_, reject) => setTimeout(() => reject(new Error("Close timeout")), 3000))
-			]);
+			await Promise.race([browser.close(), new Promise((_, reject) => setTimeout(() => reject(new Error("Close timeout")), 3000))]);
 			console.log("[MASTERCARD] Browser closed");
 		} catch (error) {
 			console.warn("[MASTERCARD] Browser close timed out, continuing (process may need manual cleanup)");
@@ -189,8 +195,8 @@ export async function fetchBatch(requests) {
 				console.log(`[MASTERCARD] Restarting browser after ${requestCounter} requests`);
 				await closeBrowser();
 				await sleep(config.sessionRefreshDelayMs);
-            }
-            if (requestCounter % config.sessionRefreshInterval === 0) {
+			}
+			if (requestCounter % config.sessionRefreshInterval === 0) {
 				await refreshSession();
 			}
 
@@ -265,8 +271,8 @@ export async function fetchBatch(requests) {
 				const inserted = store.add(record);
 				if (inserted > 0) {
 					console.log(`[MASTERCARD] SAVED ${date} ${from}/${to}: ${rate}`);
-                }
-                await sleep(config.batchDelayMs);
+				}
+				await sleep(config.batchDelayMs);
 			} catch (error) {
 				console.error(`[MASTERCARD] FAILED ${date} ${from}/${to}: ${error.message}`);
 				// On timeout errors, restart the browser - session is likely dead
