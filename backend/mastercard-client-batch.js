@@ -8,8 +8,12 @@
  */
 
 import { chromium } from "playwright";
-import { PROVIDER_CONFIG } from "../shared/constants.js";
+import { PROVIDER_CONFIG, USER_AGENTS } from "../shared/constants.js";
 import { store } from "./csv-store.js";
+
+// Select a random user agent at script startup (stays consistent for session)
+const SESSION_USER_AGENT = USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
+console.log(`[MASTERCARD] Using User-Agent: ${SESSION_USER_AGENT}.`);
 
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
 /** @typedef {import('../shared/types.js').Provider} Provider */
@@ -75,9 +79,9 @@ async function getBrowser() {
 			]
 		});
 		browserContext = await browserInstance.newContext({
-			userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
-			viewport: { width: 1920, height: 1080 },
-			locale: "en-GB",
+			userAgent: SESSION_USER_AGENT,
+			viewport: { width: 1512, height: 984 },
+			locale: "en-US",
 			extraHTTPHeaders: {
 				"Accept-Language": "en-GB,en;q=0.9",
 				DNT: "1",
