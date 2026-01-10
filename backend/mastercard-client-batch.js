@@ -183,7 +183,7 @@ export async function fetchBatch(requests) {
 				url.searchParams.set("bankFee", "0");
 				url.searchParams.set("transAmt", "1");
 
-				const response = await page.goto(url.toString(), { waitUntil: "domcontentloaded", timeout: 5000 });
+				const response = await page.goto(url.toString(), { timeout: 10000 });
 				const apiStatus = response.status();
 				const apiResponse = await page.content();
 
