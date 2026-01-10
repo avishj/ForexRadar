@@ -3,9 +3,11 @@
 /**
  * Daily Update Script
  * 
- * Entry point for GitHub Actions. Iterates through the watchlist
- * and fetches yesterday's rates for each currency pair from
- * Visa, Mastercard, and ECB providers.
+ * Entry point for GitHub Actions. Fetches yesterday's rates for all
+ * currency pairs in the watchlist from Visa, Mastercard, and ECB providers.
+ * 
+ * Reuses batch processing logic from the orchestrator. After batch execution,
+ * checks for still-missing data to detect failures.
  * 
  * Creates GitHub issues automatically on Visa or ECB failures.
  * 
@@ -13,9 +15,8 @@
  */
 
 import { store } from './csv-store.js';
-import { loadEcbWatchlist } from './cli.js';
-import * as VisaClient from './visa-client-batch.js';
-import * as MastercardClient from './mastercard-client-batch.js';
+import { loadWatchlist, loadEcbWatchlist } from './cli.js';
+import { analyzeGaps, groupByProvider, executeProviderBatch } from './backfill-orchestrator.js';
 import * as EcbClient from './ecb-client.js';
 import { formatDate, getLatestAvailableDate } from '../shared/utils.js';
 
@@ -24,16 +25,7 @@ import { formatDate, getLatestAvailableDate } from '../shared/utils.js';
 /** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
 /** @typedef {import('../shared/types.js').CurrencyPair} CurrencyPair */
 /** @typedef {import('../shared/types.js').DailyUpdateFailure} DailyUpdateFailure */
-
-/**
- * Loads the watchlist configuration
- * @returns {Promise<CurrencyPair[]>} Array of currency pairs
- */
-async function loadWatchlist() {
-  const watchlistPath = `${import.meta.dir}/watchlist.json`;
-  const config = await Bun.file(watchlistPath).json();
-  return config.pairs || [];
-}
+/** @typedef {import('../shared/types.js').BatchRequest} BatchRequest */
 
 /**
  * Creates a GitHub issue for daily update failures
@@ -72,81 +64,6 @@ async function createGitHubIssue(failures, dateStr) {
 }
 
 /**
- * Updates rate for a single currency pair and provider
- * @param {{from: CurrencyCode, to: CurrencyCode}} pair 
- * @param {Date} date 
- * @param {Provider} provider
- * @param {typeof VisaClient | typeof MastercardClient} client
- * @returns {Promise<boolean>} True if updated, false if skipped/failed
- */
-async function updatePairForProvider(pair, date, provider, client) {
-  const { from, to } = pair;
-  const dateStr = formatDate(date);
-  
-  // Check if already exists to avoid unnecessary API calls
-  if (store.has(dateStr, /** @type {CurrencyCode} */ (from), /** @type {CurrencyCode} */ (to), provider)) {
-    console.log(`  [${provider}] ${from}/${to}: Already exists for ${dateStr}, skipping`);
-    return false;
-  }
-  
-  try {
-    const record = await client.fetchRate(date, from, to);
-    
-    if (record === null) {
-      console.log(`  [${provider}] ${from}/${to}: No data available for ${dateStr}`);
-      return false;
-    }
-    
-    // add() returns count of actually inserted records (handles duplicates)
-    const inserted = store.add(record);
-    
-    if (inserted === 0) {
-      console.log(`  [${provider}] ${from}/${to}: Race condition detected, already inserted`);
-      return false;
-    }
-    
-    // Format output based on provider (MC doesn't have markup)
-    if (provider === 'VISA' && record.markup !== null) {
-      console.log(`  [${provider}] ${from}/${to}: ${record.rate.toFixed(4)} (markup: ${record.markup.toFixed(2)}%)`);
-    } else {
-      console.log(`  [${provider}] ${from}/${to}: ${record.rate.toFixed(4)}`);
-    }
-    return true;
-    
-  } catch (error) {
-    console.error(`  [${provider}] ${from}/${to}: Error - ${error.message}`);
-    return false;
-  }
-}
-
-/**
- * Updates rates for a single currency pair from all providers
- * @param {{from: CurrencyCode, to: CurrencyCode}} pair 
- * @param {Date} date 
- * @param {DailyUpdateFailure[]} failures
- * @returns {Promise<{visa: boolean, mastercard: boolean}>}
- */
-async function updatePair(pair, date, failures) {
-  let visaUpdated = false;
-  let mcUpdated = false;
-  
-  try {
-    visaUpdated = await updatePairForProvider(pair, date, 'VISA', VisaClient);
-  } catch (error) {
-    failures.push({ pair: `${pair.from}/${pair.to}`, provider: 'VISA', error: error.message });
-  }
-  
-  try {
-    mcUpdated = await updatePairForProvider(pair, date, 'MASTERCARD', MastercardClient);
-  } catch (error) {
-    // Ignore Mastercard failures for reporting, but log for troubleshooting
-    console.log(`  [MASTERCARD] ${pair.from}/${pair.to}: Error - ${error && error.message ? error.message : String(error)}`);
-  }
-  
-  return { visa: visaUpdated, mastercard: mcUpdated };
-}
-
-/**
  * Updates ECB rates for all currencies
  * @param {string[]} currencies
  * @param {DailyUpdateFailure[]} failures
@@ -179,19 +96,34 @@ async function updateEcbRates(currencies, failures) {
       const currInserted = store.add(data.toEur);
       
       if (eurInserted > 0 || currInserted > 0) {
-        console.log(`  [ECB] EUR↔${currency}: +${eurInserted} EUR→${currency}, +${currInserted} ${currency}→EUR`);
+        console.log(`[ECB] EUR↔${currency}: +${eurInserted} EUR→${currency}, +${currInserted} ${currency}→EUR`);
         updated++;
       } else {
-        console.log(`  [ECB] EUR↔${currency}: No new data`);
+        console.log(`[ECB] EUR↔${currency}: No new data`);
       }
     } catch (error) {
-      console.error(`  [ECB] EUR↔${currency}: Error - ${error.message}`);
+      console.error(`[ECB] EUR↔${currency}: Error - ${error.message}`);
       failures.push({ pair: `EUR/${currency}`, provider: 'ECB', error: error.message });
       failed++;
     }
   }
   
   return { updated, failed };
+}
+
+/**
+ * Convert still-missing data points to failure records for reporting
+ * @param {ReturnType<typeof analyzeGaps>} missingData
+ * @returns {DailyUpdateFailure[]}
+ */
+function convertMissingToFailures(missingData) {
+  return missingData
+    .filter(m => m.provider === 'VISA') // Only report Visa failures (MC is flaky)
+    .map(m => ({
+      pair: `${m.from}/${m.to}`,
+      provider: /** @type {Provider} */ (m.provider),
+      error: 'No data after batch fetch (API unavailable or rate limited)'
+    }));
 }
 
 /**
@@ -219,50 +151,64 @@ async function main() {
   /** @type {DailyUpdateFailure[]} */
   const failures = [];
   
-  let visaUpdatedCount = 0;
-  let mcUpdatedCount = 0;
+  // Step 1: Find missing data for today (reuse orchestrator logic)
+  const providers = ['VISA', 'MASTERCARD'];
+  const missingBefore = analyzeGaps(watchlist, dateStr, dateStr, providers, { silent: true });
+  const groupedBefore = groupByProvider(missingBefore);
   
-  // Visa/Mastercard updates
-  console.log('--- Visa/Mastercard Updates ---');
-  for (const pair of watchlist) {
-    console.log(`Processing ${pair.from}/${pair.to}...`);
-    const result = await updatePair(
-      /** @type {{from: CurrencyCode, to: CurrencyCode}} */ (pair),
-      latestAvailableDate,
-      failures
-    );
-    if (result.visa) visaUpdatedCount++;
-    if (result.mastercard) mcUpdatedCount++;
+  const visaNeeded = groupedBefore.VISA.length;
+  const mcNeeded = groupedBefore.MASTERCARD.length;
+  
+  console.log(`Missing data: ${visaNeeded} Visa, ${mcNeeded} Mastercard`);
+  
+  // Step 2: Execute batch fetches (batch clients handle their own browser lifecycle)
+  if (visaNeeded > 0) {
+    console.log('\n--- Visa Updates ---');
+    try {
+      await executeProviderBatch('VISA', groupedBefore.VISA, { silent: true });
+    } catch (error) {
+      console.error(`[VISA] Batch failed: ${error.message}`);
+    }
   }
   
-  // ECB updates
+  if (mcNeeded > 0) {
+    console.log('\n--- Mastercard Updates ---');
+    try {
+      await executeProviderBatch('MASTERCARD', groupedBefore.MASTERCARD, { silent: true });
+    } catch (error) {
+      // Mastercard failures are expected due to bot detection, don't report
+      console.log(`[MASTERCARD] Batch completed with errors (expected)`);
+    }
+  }
+  
+  // Step 3: Check what's still missing after batch (these are failures)
+  const missingAfter = analyzeGaps(watchlist, dateStr, dateStr, providers, { silent: true });
+  const groupedAfter = groupByProvider(missingAfter);
+  
+  const visaUpdated = visaNeeded - groupedAfter.VISA.length;
+  const mcUpdated = mcNeeded - groupedAfter.MASTERCARD.length;
+  
+  // Convert Visa failures to reportable format (ignore MC failures)
+  const visaFailures = convertMissingToFailures(missingAfter);
+  failures.push(...visaFailures);
+  
+  // Step 4: ECB updates (uses its own client, not batch)
   const ecbResult = await updateEcbRates(ecbCurrencies, failures);
   
+  // Summary
   console.log(`\n=== Summary ===`);
-  console.log(`Visa: ${visaUpdatedCount}/${watchlist.length} pairs updated`);
-  console.log(`Mastercard: ${mcUpdatedCount}/${watchlist.length} pairs updated`);
+  console.log(`Visa: ${visaUpdated}/${visaNeeded} pairs updated`);
+  console.log(`Mastercard: ${mcUpdated}/${mcNeeded} pairs updated`);
   console.log(`ECB: ${ecbResult.updated}/${ecbCurrencies.length} currencies updated`);
   
-  // Create GitHub issue for failures (excluding Mastercard)
-  const reportableFailures = failures.filter(f => f.provider !== 'MASTERCARD');
-  if (reportableFailures.length > 0) {
-    console.log(`\n⚠ ${reportableFailures.length} failure(s) detected`);
-    await createGitHubIssue(reportableFailures, dateStr);
+  // Create GitHub issue for failures (Visa + ECB only)
+  if (failures.length > 0) {
+    console.log(`\n⚠ ${failures.length} failure(s) detected`);
+    await createGitHubIssue(failures, dateStr);
   }
-  
-  // Close browser instances
-  await VisaClient.closeBrowser();
-  await MastercardClient.closeBrowser();
 }
 
 main().catch(async (error) => {
   console.error('Daily update failed:', error.message);
-  // Ensure browsers are closed on error
-  try {
-    await VisaClient.closeBrowser();
-    await MastercardClient.closeBrowser();
-  } catch (e) {
-    // Ignore cleanup errors
-  }
   process.exit(1);
 });
