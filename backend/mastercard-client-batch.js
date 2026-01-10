@@ -114,7 +114,8 @@ function sleep(ms) {
  * Gets or creates a reusable page for API requests
  */
 async function getApiPage() {
-	if (apiPage && !apiPage.isClosed()) {
+	// Must check browser connection FIRST - page.isClosed() returns false when browser crashed
+	if (apiPage && browserInstance?.isConnected() && !apiPage.isClosed()) {
 		return apiPage;
 	}
 	const { context } = await getBrowser();
@@ -133,6 +134,9 @@ async function refreshSession() {
 		await sleep(config.sessionRefreshDelayMs);
 	} catch (error) {
 		console.warn("[MASTERCARD] Session refresh failed:", error.message);
+		// Page is likely in a broken state - close it so a fresh one is created
+        await page.close();
+		apiPage = null;
 	}
 }
 
