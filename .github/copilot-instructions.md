@@ -1,7 +1,7 @@
 # ForexRadar Copilot Instructions
 
 ## Project Overview
-ForexRadar is a zero-cost, statically-hosted currency tracking app that displays historical Visa, Mastercard, and ECB exchange rates with dual-axis charting (Rate vs. Markup). The architecture uses a **Serverless Git Pattern** where GitHub Actions runs Node.js scripts to populate CSV data files that are committed to the repo and served via GitHub Pages.
+ForexRadar is a zero-cost, statically-hosted currency tracking app that displays historical Visa, Mastercard, and ECB exchange rates with dual-axis charting (Rate vs. Markup). The architecture uses a **Serverless Git Pattern** where GitHub Actions runs Bun scripts to populate CSV data files that are committed to the repo and served via GitHub Pages.
 
 ## Architecture
 
