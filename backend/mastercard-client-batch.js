@@ -32,11 +32,28 @@ let browserInitPromise = null;
 let apiPage = null;
 
 /**
+ * Resets all browser state (called on unexpected disconnect)
+ */
+function resetBrowserState() {
+	browserInstance = null;
+	browserContext = null;
+	browserInitPromise = null;
+	apiPage = null;
+}
+
+/**
  * Gets or creates a shared browser instance (race-condition safe)
  */
 async function getBrowser() {
-	if (browserInstance) {
+	// Check if existing browser is still alive
+	if (browserInstance && browserInstance.isConnected()) {
 		return { browser: browserInstance, context: browserContext };
+	}
+
+	// Browser died unexpectedly - reset state
+	if (browserInstance && !browserInstance.isConnected()) {
+		console.warn("[MASTERCARD] Browser disconnected unexpectedly, resetting state");
+		resetBrowserState();
 	}
 
 	if (browserInitPromise) {
@@ -58,6 +75,12 @@ async function getBrowser() {
 				DNT: "1",
 				"Sec-GPC": "1"
 			}
+		});
+
+		// Auto-reset state if browser crashes unexpectedly
+		browserInstance.on("disconnected", () => {
+			console.warn("[MASTERCARD] Browser disconnected event fired, resetting state");
+			resetBrowserState();
 		});
 
 		return { browser: browserInstance, context: browserContext };
