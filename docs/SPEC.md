@@ -163,10 +163,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-      - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: xvfb-run npm run daily  # Headed browser needs display
+      - uses: oven-sh/setup-bun@v2.1.0
+      - run: bun install
+      - run: bunx playwright install --with-deps chromium
+      - run: xvfb-run bun run daily  # Headed browser needs display
       - run: git add db/ && git commit -m "auto: daily rates update" && git push
 ```
 

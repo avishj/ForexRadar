@@ -12,13 +12,10 @@
  * @module daily-update
  */
 
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { store } from './csv-store.js';
 import { loadEcbWatchlist } from './cli.js';
-import * as VisaClient from './visa-client.js';
-import * as MastercardClient from './mastercard-client.js';
+import * as VisaClient from './visa-client-batch.js';
+import * as MastercardClient from './mastercard-client-batch.js';
 import * as EcbClient from './ecb-client.js';
 import { formatDate, getLatestAvailableDate } from '../shared/utils.js';
 
@@ -28,17 +25,13 @@ import { formatDate, getLatestAvailableDate } from '../shared/utils.js';
 /** @typedef {import('../shared/types.js').CurrencyPair} CurrencyPair */
 /** @typedef {import('../shared/types.js').DailyUpdateFailure} DailyUpdateFailure */
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
 /**
  * Loads the watchlist configuration
- * @returns {CurrencyPair[]} Array of currency pairs
+ * @returns {Promise<CurrencyPair[]>} Array of currency pairs
  */
-function loadWatchlist() {
-  const watchlistPath = join(__dirname, 'watchlist.json');
-  const content = readFileSync(watchlistPath, 'utf-8');
-  const config = JSON.parse(content);
+async function loadWatchlist() {
+  const watchlistPath = `${import.meta.dir}/watchlist.json`;
+  const config = await Bun.file(watchlistPath).json();
   return config.pairs || [];
 }
 
@@ -63,27 +56,16 @@ async function createGitHubIssue(failures, dateStr) {
   ].join('\n');
   
   try {
-    const { spawn } = await import('node:child_process');
-    
-    const gh = spawn('gh', ['issue', 'create', '--title', title, '--body', body], {
-      stdio: 'inherit'
+    const proc = Bun.spawn(['gh', 'issue', 'create', '--title', title, '--body', body], {
+      stdio: ['inherit', 'inherit', 'inherit']
     });
     
-    await new Promise((resolve, reject) => {
-      gh.on('close', (code) => {
-        if (code === 0) {
-          console.log(`\n✓ Created GitHub issue for ${failures.length} failure(s)`);
-          resolve();
-        } else {
-          console.warn(`\n⚠ Failed to create GitHub issue (exit code: ${code})`);
-          resolve(); // Don't fail the whole script
-        }
-      });
-      gh.on('error', (err) => {
-        console.warn(`\n⚠ GitHub CLI not available: ${err.message}`);
-        resolve();
-      });
-    });
+    const exitCode = await proc.exited;
+    if (exitCode === 0) {
+      console.log(`\n✓ Created GitHub issue for ${failures.length} failure(s)`);
+    } else {
+      console.warn(`\n⚠ Failed to create GitHub issue (exit code: ${exitCode})`);
+    }
   } catch (error) {
     console.warn(`\n⚠ Could not create GitHub issue: ${error.message}`);
   }
@@ -218,8 +200,8 @@ async function updateEcbRates(currencies, failures) {
 async function main() {
   console.log('=== ForexRadar Daily Update ===\n');
   
-  const watchlist = loadWatchlist();
-  const ecbCurrencies = loadEcbWatchlist();
+  const watchlist = await loadWatchlist();
+  const ecbCurrencies = await loadEcbWatchlist();
   
   if (watchlist.length === 0 && ecbCurrencies.length === 0) {
     console.log('No pairs in watchlists. Exiting.');

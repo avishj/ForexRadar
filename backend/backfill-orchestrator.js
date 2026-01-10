@@ -9,9 +9,9 @@
  * 3. Executes batch clients in parallel (if provider=all)
  *
  * Usage:
- *   node backfill-orchestrator.js
- *   node backfill-orchestrator.js --days=180
- *   node backfill-orchestrator.js --provider=visa --days=30
+ *   bun backfill-orchestrator.js
+ *   bun backfill-orchestrator.js --days=180
+ *   bun backfill-orchestrator.js --provider=visa --days=30
  *
  * @module backfill-orchestrator
  */

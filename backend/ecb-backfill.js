@@ -7,13 +7,13 @@
  * in ecb-watchlist.json. 
  * 
  * Usage:
- *   node ecb-backfill.js
- *   node ecb-backfill.js --currency=USD  (single currency only)
+ *   bun ecb-backfill.js
+ *   bun ecb-backfill.js --currency=USD  (single currency only)
  * 
  * @module ecb-backfill
  */
 
-import { parseArgs } from 'node:util';
+import { parseArgs } from 'util';
 import { loadEcbWatchlist } from './cli.js';
 import { store } from './csv-store.js';
 import * as EcbClient from './ecb-client.js';

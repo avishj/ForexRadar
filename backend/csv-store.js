@@ -7,9 +7,8 @@
  * @module backend/csv-store
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
-import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'fs';
+import { join } from 'path';
 
 import {
   parseCSV,
@@ -32,9 +31,6 @@ import { getYearFromDate } from '../shared/utils.js';
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
 /** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
 /** @typedef {import('../shared/types.js').Provider} Provider */
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 /**
  * CSVStore class for reading and writing exchange rate data
@@ -68,7 +64,7 @@ export class CSVStore {
    * @param {string} [basePath] - Path to db/ directory. Defaults to ../db relative to this file.
    */
   constructor(basePath) {
-    this.#basePath = basePath || join(__dirname, '..', 'db');
+    this.#basePath = basePath || join(import.meta.dir, '..', 'db');
   }
 
   /**
