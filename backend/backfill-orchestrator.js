@@ -38,15 +38,19 @@ const SEPARATOR = '='.repeat(60);
  * @param {string} startDate - YYYY-MM-DD
  * @param {string} endDate - YYYY-MM-DD
  * @param {string[]} providers - Provider names in uppercase
+ * @param {{ silent?: boolean }} [options] - Options
  * @returns {MissingDataPoint[]}
  */
-function analyzeGaps(pairs, startDate, endDate, providers) {
-  console.log(`\n${SEPARATOR}`);
-  console.log('Analyzing Data Gaps');
-  console.log(SEPARATOR);
-  console.log(`Pairs: ${pairs.length}`);
-  console.log(`Date range: ${endDate} -> ${startDate}`);
-  console.log(`Providers: ${providers.join(', ')}`);
+export function analyzeGaps(pairs, startDate, endDate, providers, options = {}) {
+  const silent = options.silent ?? false;
+  if (!silent) {
+    console.log(`\n${SEPARATOR}`);
+    console.log('Analyzing Data Gaps');
+    console.log(SEPARATOR);
+    console.log(`Pairs: ${pairs.length}`);
+    console.log(`Date range: ${endDate} -> ${startDate}`);
+    console.log(`Providers: ${providers.join(', ')}`);
+  }
   
 	const missing = [];
 
@@ -60,7 +64,9 @@ function analyzeGaps(pairs, startDate, endDate, providers) {
 		currentDate.setDate(currentDate.getDate() - 1);
 	}
   
-  console.log(`\nScanning ${dates.length} dates x ${pairs.length} pairs x ${providers.length} providers...`);
+  if (!silent) {
+    console.log(`\nScanning ${dates.length} dates x ${pairs.length} pairs x ${providers.length} providers...`);
+  }
   
   let totalChecks = 0;
   let missingCount = 0;
@@ -87,18 +93,22 @@ function analyzeGaps(pairs, startDate, endDate, providers) {
   const existingCount = totalChecks - missingCount;
   const existingPct = ((existingCount / totalChecks) * 100).toFixed(1);
   
-  console.log(`\nAnalysis complete`);
-  console.log(`  Total checks: ${totalChecks.toLocaleString()}`);
-  console.log(`  Existing: ${existingCount.toLocaleString()} (${existingPct}%)`);
-  console.log(`  Missing: ${missingCount.toLocaleString()}`);
+  if (!silent) {
+    console.log(`\nAnalysis complete`);
+    console.log(`  Total checks: ${totalChecks.toLocaleString()}`);
+    console.log(`  Existing: ${existingCount.toLocaleString()} (${existingPct}%)`);
+    console.log(`  Missing: ${missingCount.toLocaleString()}`);
+  }
   
   return missing;
 }
 
 /**
  * Group missing data points by provider
+ * @param {MissingDataPoint[]} missingData
+ * @returns {{ VISA: BatchRequest[], MASTERCARD: BatchRequest[] }}
  */
-function groupByProvider(missingData) {
+export function groupByProvider(missingData) {
   const grouped = {
     VISA: [],
     MASTERCARD: []
@@ -117,17 +127,23 @@ function groupByProvider(missingData) {
 
 /**
  * Execute batch fetch for a provider
+ * @param {'VISA' | 'MASTERCARD'} provider
+ * @param {BatchRequest[]} requests
+ * @param {{ silent?: boolean }} [options]
  */
-async function executeProviderBatch(provider, requests) {
+export async function executeProviderBatch(provider, requests, options = {}) {
+  const silent = options.silent ?? false;
   if (requests.length === 0) {
-    console.log(`[${provider}] No missing data to fetch`);
+    if (!silent) console.log(`[${provider}] No missing data to fetch`);
     return;
   }
   
-  console.log(`\n${SEPARATOR}`);
-  console.log(`Executing ${provider} Batch`);
-  console.log(SEPARATOR);
-  console.log(`Requests: ${requests.length.toLocaleString()}`);
+  if (!silent) {
+    console.log(`\n${SEPARATOR}`);
+    console.log(`Executing ${provider} Batch`);
+    console.log(SEPARATOR);
+    console.log(`Requests: ${requests.length.toLocaleString()}`);
+  }
   
   try {
     if (provider === 'VISA') {
@@ -224,7 +240,10 @@ async function main() {
   process.exit(exitCode);
 }
 
-main().catch((error) => {
-  console.error(`\nFatal error: ${error.message}`);
-  process.exit(1);
-});
+// Only run main() when executed directly, not when imported as a module
+if (import.meta.main) {
+  main().catch((error) => {
+    console.error(`\nFatal error: ${error.message}`);
+    process.exit(1);
+  });
+}
