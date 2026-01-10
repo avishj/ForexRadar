@@ -1,220 +1,318 @@
-
-
 # SPEC.md
 
 ## 1. Architectural Overview
 
-**Project Codename:** Forex Radar \
-**Goal:** A zero-cost, statically hosted currency tracking application utilizing Visa's public API to provide >365-day historical exchange rates with dual-axis charting (Rate vs. Markup).
+**Project Codename:** Forex Radar  
+**Goal:** A zero-cost, statically hosted currency tracking application providing historical exchange rates from Visa, Mastercard, and ECB with dual-axis charting (Rate vs. Markup).
 
 ### 1.1 Design Philosophy
-*   **Hybrid Data Layer:** Combines server-side SQLite (long-term storage) with client-side IndexedDB (short-term caching and lazy loading).
-*   **Serverless Git Pattern:** The "backend" is a Node.js script running inside GitHub Actions.
-*   **Progressive Enhancement:** The app attempts to load data from the fastest source first (Local Cache -> Server DB -> Live API).
+*   **Sharded CSV Data Layer:** Server-side CSV files sharded by source currency and year (`db/{FROM_CURR}/{YEAR}.csv`). No database required.
+*   **Serverless Git Pattern:** The "backend" is Bun scripts running inside GitHub Actions that commit CSV changes directly to the repo.
+*   **Progressive Enhancement:** Data loading priority: IndexedDB Cache → Server CSV → Live API (for gaps).
 
-### 1.2 Key Constraints & Limitations
+### 1.2 Data Providers
+| Provider | Rate | Markup | Notes |
+|----------|------|--------|-------|
+| **Visa** | ✓ | ✓ | Request params are **inverted** (`from=to&to=from`) |
+| **Mastercard** | ✓ | ✗ | Akamai bot detection requires `headless: false` + session management |
+| **ECB** | ✓ | ✗ | Official European Central Bank reference rates |
+
+### 1.3 Key Constraints
 *   **Visa API Hard Limit:** Returns HTTP 500 for dates older than ~1 year (365 days).
-*   **Rate Limits:** None detected via client-side browser requests.
-*   **Request Quirk:** To get the rate for Pair A→B, the API request parameters must be sent as `from=B&to=A`. The response object returns the correct A→B mapping.
-*   **Hosting:** GitHub Pages (Static HTML/JS/DB files).
-*   **Compute:** GitHub Actions (Free Tier).
+*   **Mastercard Bot Detection:** Requires Chromium with `headless: false`, session refresh every 6 requests, browser restart every 18 requests.
+*   **ECB Update Timing:** Rates typically update around UTC 12:00.
+*   **Hosting:** GitHub Pages (static files).
+*   **Compute:** GitHub Actions (Free Tier) + Bun runtime.
 
 ---
 
 ## 2. Data Model
 
 ### 2.1 Storage Layers
-1.  **Server-Side (SQLite):**
-    *   **Location:** `/db/{FROM_CURRENCY}.db`
-    *   **Purpose:** Persistent history > 1 year. Committed to Git.
-    *   **Engine:** `sql.js` (WASM) loaded in browser.
+
+1.  **Server-Side (CSV Files):**
+    *   **Location:** `db/{FROM_CURRENCY}/{YEAR}.csv`
+    *   **Purpose:** Persistent history for all tracked pairs. Committed to Git.
+    *   **Sharding:** One file per source currency per year.
+
 2.  **Client-Side (IndexedDB):**
-    *   **Name:** `ForexRadarDB`
+    *   **Database:** `ForexRadarDB`
     *   **Store:** `rates`
-    *   **Purpose:** Cache for "Lazy Loaded" pairs (0-365 days) fetched live by the user's browser.
+    *   **Purpose:** Cache for all data (server + live API). Unified storage.
+    *   **Staleness:** Refreshed from server after UTC 12:00 (tracked via localStorage per currency).
 
-### 2.2 Schema (Unified)
-Both SQLite and IndexedDB use the same record structure to ensure compatibility during merging.
+### 2.2 Record Schema
 
-**Record Definition:**
+**TypeScript Interface (JSDoc typedef in `shared/types.js`):**
 ```typescript
 interface RateRecord {
   date: string;        // "YYYY-MM-DD"
   from_curr: string;   // "USD"
   to_curr: string;     // "INR"
-  provider: string;    // "VISA"
+  provider: string;    // "VISA" | "MASTERCARD" | "ECB"
   rate: number;        // 83.50102
-  markup: number;      // 0.002706 (Decimal representation of %)
+  markup: number|null; // 0.45 (percentage) or null for ECB/Mastercard
 }
 ```
 
-**Database Schema (SQLite SQL):**
-```sql
-CREATE TABLE IF NOT EXISTS rates (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    date TEXT NOT NULL,
-    from_curr TEXT NOT NULL,
-    to_curr TEXT NOT NULL,
-    provider TEXT NOT NULL,
-    rate REAL NOT NULL,
-    markup REAL
-);
-
-CREATE INDEX idx_date_pair ON rates(date, from_curr, to_curr);
+**CSV Format (from_curr is implicit from folder):**
+```csv
+date,to_curr,provider,rate,markup
+2024-01-01,USD,VISA,1.0892,0.45
+2024-01-01,USD,MASTERCARD,1.0876,
+2024-01-01,USD,ECB,1.0856,
 ```
 
 ---
 
-## 3. Implementation Stages
+## 3. Backend Infrastructure
 
-### Stage 1: Backend Infrastructure (The "Server")
-
-This stage sets up the automated ingestion system.
-
-#### 1.1 File Structure
+### 3.1 File Structure
 ```text
-/scripts
-  /lib
-    db-handler.js    // SQLite utils
-    visa-client.js   // API interaction
-  backfill.js        // Manual runner for history
-  daily-update.js    // GitHub Action entry point
+backend/
+  backfill-orchestrator.js  # Gap analysis + batch orchestration
+  csv-store.js              # CSV read/write with in-memory deduplication
+  daily-update.js           # GitHub Action entry point
+  visa-client-batch.js      # Parallel batch fetcher (Playwright/Firefox)
+  visa-client.js            # Single-request client (for daily updates)
+  mastercard-client-batch.js # Sequential batch fetcher (Playwright/Chromium)
+  mastercard-client.js      # Single-request client (for daily updates)
+  ecb-client.js             # ECB HTML scraper
+  ecb-backfill.js           # Full ECB history backfill
+  watchlist.json            # Visa/Mastercard currency pairs
+  ecb-watchlist.json        # ECB currencies to track
+  cli.js                    # CLI argument parsing utilities
+shared/
+  types.js                  # JSDoc typedefs (central type definitions)
+  csv-utils.js              # CSV parsing/serialization (isomorphic)
+  utils.js                  # Date utilities, shared helpers
+  constants.js              # Provider config (rate limits, timeouts)
 ```
 
-#### 1.2 The Visa Client (`visa-client.js`)
-**Logic:**
-*   **Input:** `Date` object, `from_curr`, `to_curr`.
-*   **Request Flip:** Swap params. Send `from=to_curr&to=from_curr`.
-*   **Fetch:** `https://www.visa.co.in/cmsapi/fx/rates?amount=1&fee=0&utcConvertedDate=11%2F14%2F2025&exchangedate=11%2F14%2F2025&fromCurr=USD&toCurr=INR`
-*   **Parse:** Extract `fxRateVisa` -> `rate`, `markupWithoutAdditionalFee` -> `markup`.
-*   **Error Handling:** If `HTTP 500`, return `null` (End of history). If `429/403`, throw `Error` (Rate limit).
-*   **Output:** `RateRecord` or `null`.
+### 3.2 Provider Clients
 
-#### 1.3 The Backfill Script (`backfill.js`)
-**Usage:** `node backfill.js --from=USD --to=INR`
-**Logic:**
-1.  Open SQLite DB (`db/USD.db`).
-2.  Determine `start_date` = Today - 1 Day or Today if ET time is past 12pm.
-3.  **Loop:** While `current_date` > (Latest date in DB or 1 year ago):
-    *   Call `visa-client.fetch(date)`.
-    *   If `500`: Break loop (Hit limit).
-    *   Insert into DB.
-    *   `current_date` = `current_date` - 1 day.
-4.  Save and close DB.
-5.  Log: "Backfilled X days for USD/INR".
+#### Visa Client (`backend/visa-client-batch.js`)
+*   **Browser:** Firefox (headless)
+*   **Concurrency:** 16 parallel requests
+*   **API:** `https://www.visa.co.in/cmsapi/fx/rates`
+*   **Quirk:** Currency params are **inverted** (`fromCurr=to&toCurr=from`)
+*   **Response:** `originalValues.fxRateVisa` → rate, `benchmarks[0].markupWithoutAdditionalFee` → markup
 
-#### 1.4 GitHub Action (`.github/workflows/daily.yml`)
-**Trigger:** Cron `0 17 * * *` (12:00 PM ET).
-**Steps:**
-1.  `actions/checkout@v3`
-2.  `actions/setup-node@v3`
-3.  Run `node daily-update.js`.
-    *   This script iterates through a `watchlist.json`.
-    *   Calls `visa-client` for yesterday.
-    *   Updates the relevant SQLite files.
-4.  Commit changes:
-    ```bash
-    git config user.name "Bot"
-    git add db/*.db
-    git commit -m "auto: daily rates update"
-    git push
-    ```
+#### Mastercard Client (`backend/mastercard-client-batch.js`)
+*   **Browser:** Chromium (headed, anti-bot evasion)
+*   **Concurrency:** Sequential (1 request at a time)
+*   **Session Management:**
+    *   Refresh session by visiting UI page every 6 requests
+    *   Restart browser every 18 requests
+    *   Pause 2 minutes on HTTP 403
+*   **API:** `https://www.mastercard.co.in/settlement/currencyrate/conversion-rate`
+*   **Response:** Returns error in JSON body (not HTTP codes) for out-of-range dates
+
+#### ECB Client (`backend/ecb-client.js`)
+*   **Method:** Scrapes embedded JavaScript from ECB HTML pages
+*   **URL:** `https://www.ecb.europa.eu/stats/.../eurofxref-graph-{currency}.en.html`
+*   **Data:** Extracts both EUR→Currency and Currency→EUR rates
+*   **Output:** Provides bidirectional rates (stored in respective currency folders)
+
+### 3.3 Backfill Orchestrator (`backend/backfill-orchestrator.js`)
+
+**Usage:**
+```bash
+bun run backfill                         # Default: 365 days, all providers
+bun run backfill --days=180              # Custom range
+bun run backfill --provider=visa         # Single provider
+bun run backfill --provider=mastercard --days=30
+```
+
+**Flow:**
+1.  Load watchlist from `backend/watchlist.json`
+2.  Analyze gaps: Check each date/pair/provider combination against `csv-store`
+3.  Group missing data by provider
+4.  Execute batch fetches (Visa parallel, Mastercard sequential)
+5.  Save results to sharded CSV files
+
+### 3.4 Daily Update (`backend/daily-update.js`)
+
+**Trigger:** GitHub Actions cron at UTC 17:00, 19:00, 21:00, 23:00 (retry schedule)
+
+**Flow:**
+1.  Load watchlists (Visa/Mastercard pairs + ECB currencies)
+2.  Determine latest available date (yesterday or today after noon)
+3.  For each Visa/Mastercard pair:
+    *   Check if record exists → skip if yes
+    *   Fetch from API → store in CSV
+4.  For each ECB currency:
+    *   Fetch all historical rates → store new records
+5.  On Visa/ECB failures: Auto-create GitHub issue via `gh` CLI
+6.  Commit and push CSV changes
+
+### 3.5 GitHub Actions Workflows
+
+**`.github/workflows/daily.yml`:**
+```yaml
+on:
+  schedule:
+    - cron: '0 17 * * *'  # UTC times (retry schedule)
+    - cron: '0 19 * * *'
+    - cron: '0 21 * * *'
+    - cron: '0 23 * * *'
+  workflow_dispatch:
+
+jobs:
+  update-rates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: xvfb-run npm run daily  # Headed browser needs display
+      - run: git add db/ && git commit -m "auto: daily rates update" && git push
+```
+
+**`.github/workflows/deploy.yml`:**
+*   Triggers on push to `main` or after daily update workflow completes
+*   Deploys entire repo to GitHub Pages
 
 ---
 
-### Stage 2: Frontend Data Layer (The "Brain")
+## 4. Frontend Architecture
 
-This stage handles the complexity of merging data from Server, Cache, and Live API.
+### 4.1 File Structure
+```text
+js/
+  app.js              # Main application, UI event handlers
+  data-manager.js     # Data orchestration (cache/server/live)
+  storage-manager.js  # IndexedDB operations + staleness tracking
+  csv-reader.js       # Server CSV fetching
+  chart-manager.js    # ApexCharts configuration + rendering
+  visa-client.js      # Browser-side Visa API client (via CORS proxy)
+  mastercard-client.js# Browser-side Mastercard API client (via CORS proxy)
+  currencies.js       # Currency metadata (code, name, symbol)
+  theme.js            # Dark/light mode toggle
+  animations.js       # UI animations
+```
 
-#### 2.1 Dependencies
-*   `sql.js` (SQLite WASM)
-*   `ApexCharts`
-*   `date-fns` (Optional, for date formatting)
+### 4.2 Data Manager (`js/data-manager.js`)
 
-#### 2.2 The Data Manager Class (`/public/js/DataManager.js`)
-**Responsibilities:**
-1.  **Load Sharded DB:** Fetch `/db/{FROM}.db` and load into `sql.js`.
-2.  **Query Server:** `SELECT * FROM rates WHERE from=? AND to=?`.
-3.  **Query Cache (IndexedDB):** Open `ForexRadarDB`, get all records for pair.
-4.  **Hybrid Fetch (The Core Logic):**
-    *   *Input:* `pair` (e.g., USD/INR).
-    *   *Step 1:* Load Server Data (Async).
-    *   *Step 2:* Load Cache Data (Async).
-    *   *Step 3:* Merge:
-        *   Create Map `Date -> Record`.
-        *   Insert Server records.
-        *   Insert/Overwrite with Cache records (Cache is fresher).
-    *   *Step 4:* Check Gaps:
-        *   Identify the latest date in the merged set.
-        *   If `Latest Date < Yesterday`, trigger `Live Fetch Loop`.
-    *   *Step 5:* Live Fetch Loop:
-        *   Loop backwards from Yesterday until existing data found or HTTP 500.
-        *   Fetch from Visa API.
-        *   **Save to IndexedDB** immediately.
-        *   Add to Merged Set.
-    *   *Output:* Array of `RateRecord` sorted by date ASC.
+**Progressive Enhancement Flow:**
+```
+1. Check IndexedDB cache (fastest)
+   ↓
+2. If stale (after UTC 12:00), fetch server CSV files
+   ↓
+3. Merge: Create Map<"date:provider", RateRecord>
+   - Insert server records
+   - Overwrite with cache records (fresher)
+   ↓
+4. Check for gaps (latest data < yesterday)
+   ↓
+5. Live Fetch Loop (fills gaps):
+   - Fetch from Visa/Mastercard APIs via CORS proxy
+   - Save each record to IndexedDB immediately
+   - Stop on HTTP 500 (end of history) or HTTP 429/403 (rate limit)
+   ↓
+6. Return merged records sorted by date ASC
+```
+
+**Cache Staleness (`js/storage-manager.js`):**
+*   Each source currency has its own refresh timestamp (localStorage)
+*   Data is stale if last refresh was before most recent UTC 12:00
+*   Staleness check: `lastRefreshDate < getLastUTC12pm()`
+
+### 4.3 CSV Reader (`js/csv-reader.js`)
+
+*   Discovers available years by probing `db/{FROM_CURR}/{YEAR}.csv`
+*   Fetches only year files that overlap with requested date range
+*   Returns records split by provider for independent series display
+
+### 4.4 Browser API Clients
+
+Both `js/visa-client.js` and `js/mastercard-client.js` use a CORS proxy (`https://api.allorigins.win/raw?url=`) to bypass browser restrictions.
 
 ---
 
-### Stage 3: Frontend UI (The "Face")
+## 5. Frontend UI
 
-#### 3.1 Layout (HTML/Tailwind)
-*   **Header:** Title + "Last Updated: [Date from SQL meta]".
-*   **Controls:** Two `<select>` dropdowns (From, To). Populated via JS from a currency list.
-*   **Action Area:**
-    *   Loader (Spinner): "Fetching History..."
-    *   Stats Bar: High, Low, Current, Avg Markup.
-    *   Chart Container (`<div id="chart">`).
-    *   "Request Server Archiving" Link (Always visible).
-        *   Href: `https://github.com/USER/REPO/issues/new?title=Add pair: [FROM]/[TO]&body=Please add server-side archiving for this pair.`
+### 5.1 Layout (HTML/Tailwind)
+*   **Header:** Animated radar logo + dark/light theme toggle
+*   **Hero Section:** Radar-inspired design with currency symbol blips
+*   **Currency Selectors:** Two dropdowns (From, To) with top 10 currencies prioritized
+*   **Time Range Selector:** 1M, 3M, 6M, 1Y, 5Y, All buttons
+*   **Series Toggles:** Checkboxes for Visa Rate, Mastercard Rate, ECB Rate, Visa Markup
+*   **Stats Bar:** Current rate, High, Low, Markup (dynamically filtered by visible date range)
+*   **Chart Container:** ApexCharts multi-series line chart
+*   **Notifications:** Toast system for progress/error feedback
 
-#### 3.2 Chart Configuration (ApexCharts)
-**Type:** Line Chart.
+### 5.2 Chart Configuration (ApexCharts)
+**Type:** Multi-series Line Chart with dual Y-axes
+
 **Series:**
-1.  `Exchange Rate`: Y-Axis 1 (Left). Color: Blue.
-2.  `Markup (%)`: Y-Axis 2 (Right). Color: Red (Dotted).
-**X-Axis:** DateTime (Type: 'datetime').
-**Tooltip:** Shared crosshairs.
-**Stroke:** Smooth curves.
+| Series | Y-Axis | Color | Style |
+|--------|--------|-------|-------|
+| Visa Rate | Left | Emerald (#10b981) | Solid |
+| Mastercard Rate | Left | Red (#ef4444) | Solid |
+| ECB Rate | Left | Blue (#3b82f6) | Solid |
+| Visa Markup (%) | Right | Amber (#f59e0b) | Dotted |
 
-#### 3.3 Event Handling
-*   `change` on Dropdowns -> Trigger `DataManager.fetch(pair)` -> `Chart.updateSeries([rateSeries, markupSeries])`.
+**Features:**
+*   Shared tooltip with crosshairs
+*   Smooth curves (bezier interpolation)
+*   Zoom/pan with date range preservation
+*   Series visibility toggles (show/hide individual series)
+*   Stats recalculation on zoom (filters to visible range)
 
----
-
-## 4. Operational & Deployment Guide
-
-### 4.1 Initial Population (Bootstrap)
-1.  Developer runs `node backfill.js --from=USD --to=INR`.
-2.  Verify `db/USD.db` has data.
-3.  Commit and Push.
-
-### 4.2 CI/CD Pipeline
-1.  Push to `main`.
-2.  GitHub Pages builds (Jekyll or static file serving).
-3.  Cron triggers `daily-update` at 12 PM ET.
-4.  User visits site, loads `USD.db`.
-5.  User selects `USD/JPY` (Not in DB).
-6.  Browser fetches live history (0-365 days), saves to IndexedDB.
-7.  Chart renders.
-8.  User clicks "Request Archiving" -> Opens GitHub Issue.
-9.  Developer sees issue, adds `USD/JPY` to watchlist, runs backfill script for older history.
-
-### 4.3 Error Handling Standards
-*   **Network Error:** Show toast "Network error fetching live data. Showing cached history."
-*   **API Error (500):** Silently stop fetch (Handled in loop).
-*   **DB Load Fail:** Show "Unable to load server history. Relying on browser cache."
+### 5.3 Event Handling
+*   Currency dropdown `change` → Debounced (300ms) → `DataManager.fetchRates()` → Update chart
+*   Time range button click → Filter data → Update chart + stats
+*   Series toggle checkbox → `ChartManager.setSeriesVisibility()` → Show/hide series
 
 ---
 
-## 5. Coding Standards
+## 6. Operational Guide
 
-1.  **Async/Await:** Strict usage for all I/O operations.
-2.  **Type Safety (JSDoc):** All functions must include JSDoc comments describing params and returns.
-3.  **Separation of Concerns:**
-    *   `VisaClient`: Only talks to API.
-    *   `StorageManager`: Only talks to SQL/IndexedDB.
-    *   `DataManager`: Orchestrates logic.
-    *   `UI`: Only updates DOM.
-4.  **No Alerts:** Use a simple custom notification system (DOM based).
-5.  **Performance:** Debounce the dropdown change events (300ms) to prevent multiple fetches if user scrolls quickly.
+### 6.1 Adding New Currency Pairs
+
+1.  Add pair to `backend/watchlist.json`:
+    ```json
+    { "from": "USD", "to": "JPY" }
+    ```
+2.  Run backfill: `bun run backfill --provider=all`
+3.  Commit and push CSV files
+4.  Daily Action will maintain it going forward
+
+### 6.2 Adding New ECB Currencies
+
+1.  Add currency code to `backend/ecb-watchlist.json`
+2.  Run: `bun run ecb-backfill`
+3.  Commit and push
+
+### 6.3 CLI Commands
+```bash
+bun run daily              # GitHub Actions entry point
+bun run backfill           # Backfill with gap analysis (--days=N --provider=visa|mastercard|all)
+bun run ecb-backfill       # Full ECB historical backfill
+bun run validate           # Validate CSV data integrity
+bun run typecheck          # TypeScript type checking (JSDoc-based)
+```
+
+---
+
+## 7. Coding Standards
+
+1.  **Runtime:** Bun for backend, vanilla ES modules for frontend
+2.  **Type Safety:** JSDoc typedefs in `shared/types.js`. Import with:
+    ```javascript
+    /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
+    ```
+3.  **Module Pattern:** Each file has `@module` JSDoc tag. ES modules with explicit `.js` extensions.
+4.  **Separation of Concerns:**
+    *   Clients → API interaction only
+    *   StorageManager → IndexedDB operations only
+    *   CSVStore/CSVReader → CSV file operations only
+    *   DataManager → Orchestration logic
+    *   ChartManager → ApexCharts configuration
+    *   App → UI event handling
+5.  **Date Handling:** Always use `parseDate()`/`formatDate()` from `shared/utils.js` (avoids timezone issues)
+6.  **Notifications:** Custom toast system (no `alert()`)
+7.  **Debouncing:** Dropdown changes debounced at 300ms
