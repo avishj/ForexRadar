@@ -460,6 +460,97 @@ function showEmptyState() {
   }
 }
 
+// ============================================================================
+// ANIMATED STAT TRANSITIONS
+// ============================================================================
+
+/** @type {Map<HTMLElement, number>} Track active animations by element */
+const activeAnimations = new Map();
+
+/** @type {Map<HTMLElement, number>} Track current displayed values */
+const currentValues = new Map();
+
+/**
+ * Animates a numeric value from current to target with easing
+ * @param {HTMLElement} element - The element to update
+ * @param {number|null} targetValue - Target numeric value (null = show '-')
+ * @param {number} decimals - Number of decimal places
+ * @param {string} [suffix=''] - Optional suffix (e.g., '%')
+ * @param {string} [prefix=''] - Optional prefix (e.g., '+' for positive spread)
+ */
+function animateValue(element, targetValue, decimals, suffix = '', prefix = '') {
+  // Cancel any existing animation on this element
+  const existingAnimation = activeAnimations.get(element);
+  if (existingAnimation) {
+    cancelAnimationFrame(existingAnimation);
+    activeAnimations.delete(element);
+  }
+  
+  // Handle null/undefined - just set to '-' immediately
+  if (targetValue === null || targetValue === undefined) {
+    element.textContent = '-';
+    currentValues.delete(element);
+    return;
+  }
+  
+  // Get the current displayed value (or start from target if first load)
+  const startValue = currentValues.get(element) ?? targetValue;
+  
+  // If values are the same, just ensure display is correct
+  if (Math.abs(startValue - targetValue) < Math.pow(10, -(decimals + 1))) {
+    const displayPrefix = prefix || (targetValue >= 0 && suffix === '' ? '' : '');
+    element.textContent = `${displayPrefix}${targetValue.toFixed(decimals)}${suffix}`;
+    currentValues.set(element, targetValue);
+    return;
+  }
+  
+  // Add the updating class for visual feedback
+  element.classList.add('stat-updating');
+  
+  const duration = 400; // ms
+  const startTime = performance.now();
+  
+  /**
+   * Easing function (ease-out cubic)
+   * @param {number} t - Progress 0-1
+   * @returns {number} Eased progress
+   */
+  function easeOutCubic(t) {
+    return 1 - Math.pow(1 - t, 3);
+  }
+  
+  /**
+   * Animation frame handler
+   * @param {number} currentTime - Current timestamp
+   */
+  function animate(currentTime) {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const easedProgress = easeOutCubic(progress);
+    
+    const currentValue = startValue + (targetValue - startValue) * easedProgress;
+    const displayPrefix = prefix || '';
+    element.textContent = `${displayPrefix}${currentValue.toFixed(decimals)}${suffix}`;
+    
+    if (progress < 1) {
+      const frameId = requestAnimationFrame(animate);
+      activeAnimations.set(element, frameId);
+    } else {
+      // Animation complete
+      activeAnimations.delete(element);
+      currentValues.set(element, targetValue);
+      
+      // Remove the updating class after a short delay for the pulse effect
+      setTimeout(() => {
+        element.classList.remove('stat-updating');
+      }, 150);
+    }
+  }
+  
+  const frameId = requestAnimationFrame(animate);
+  activeAnimations.set(element, frameId);
+}
+
 /**
  * Updates the stats display for multi-provider data
  * @param {MultiProviderStats} stats - Multi-provider statistics object
@@ -467,7 +558,7 @@ function showEmptyState() {
 function updateStats(stats) {
   // Current rate - prefer Visa if available, else Mastercard
   const currentRate = stats.visa.current ?? stats.mastercard.current;
-  statCurrent.textContent = currentRate?.toFixed(4) ?? '-';
+  animateValue(statCurrent, currentRate, 4);
   
   // High/Low across both providers
   const allHighs = [stats.visa.high, stats.mastercard.high].filter(v => v !== null);
@@ -475,19 +566,17 @@ function updateStats(stats) {
   const high = allHighs.length > 0 ? Math.max(...allHighs) : null;
   const low = allLows.length > 0 ? Math.min(...allLows) : null;
   
-  statHigh.textContent = high?.toFixed(4) ?? '-';
-  statLow.textContent = low?.toFixed(4) ?? '-';
+  animateValue(statHigh, high, 4);
+  animateValue(statLow, low, 4);
   
   // Visa markup (only Visa provides this)
-  statMarkup.textContent = (stats.visa.avgMarkup === null || stats.visa.avgMarkup === undefined)
-    ? '-'
-    : `${stats.visa.avgMarkup.toFixed(3)}%`;
+  animateValue(statMarkup, stats.visa.avgMarkup, 3, '%');
   
   // Spread between MC and Visa
   if (statSpread) {
     if (stats.currentSpread !== null) {
       const spreadSign = stats.currentSpread >= 0 ? '+' : '';
-      statSpread.textContent = `${spreadSign}${stats.currentSpread.toFixed(4)}`;
+      animateValue(statSpread, stats.currentSpread, 4, '', spreadSign);
       statSpread.className = 'stat-value ' + (stats.currentSpread >= 0 ? 'low' : 'high');
     } else {
       statSpread.textContent = '-';
