@@ -2363,3 +2363,141 @@ h1, h2, h3, h4, h5, h6, .font-display {
     color: black;
   }
 }
+
+/* --------------------------------
+   Keyboard Shortcuts Modal
+   -------------------------------- */
+.shortcuts-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.25s ease;
+}
+
+.shortcuts-modal.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.shortcuts-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+.shortcuts-content {
+  position: relative;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow: hidden;
+  transform: scale(0.95) translateY(10px);
+  transition: transform 0.25s ease;
+}
+
+.shortcuts-modal.open .shortcuts-content {
+  transform: scale(1) translateY(0);
+}
+
+.shortcuts-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.shortcuts-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.shortcuts-close {
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border-radius: 8px;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shortcuts-close:hover {
+  background: var(--accent-primary);
+  color: white;
+}
+
+.shortcuts-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  max-height: calc(80vh - 70px);
+}
+
+.shortcut-group {
+  margin-bottom: 1.25rem;
+}
+
+.shortcut-group:last-child {
+  margin-bottom: 0;
+}
+
+.shortcut-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 0;
+}
+
+.shortcut-row kbd {
+  min-width: 32px;
+  height: 28px;
+  padding: 0 0.5rem;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-family: 'Space Grotesk', monospace;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 0 var(--border-color);
+}
+
+.shortcut-row span {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 480px) {
+  .shortcuts-content {
+    width: 95%;
+    border-radius: 16px;
+  }
+  
+  .shortcuts-body {
+    padding: 1rem;
+  }
+  
+  .shortcut-row {
+    gap: 0.75rem;
+  }
+}
