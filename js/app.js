@@ -74,7 +74,7 @@ class SearchableDropdown {
     });
     
     this.list.addEventListener('click', (e) => {
-      const item = /** @type {HTMLElement} */ (e.target).closest('.dropdown-item');
+      const item = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('.dropdown-item'));
       if (item) {
         const code = item.dataset.code;
         if (code) this.select(code);
@@ -83,7 +83,7 @@ class SearchableDropdown {
     
     // Handle hover
     this.list.addEventListener('mouseover', (e) => {
-      const item = /** @type {HTMLElement} */ (e.target).closest('.dropdown-item');
+      const item = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('.dropdown-item'));
       if (item) {
         const index = parseInt(item.dataset.index || '-1', 10);
         if (index >= 0) this.highlight(index);
