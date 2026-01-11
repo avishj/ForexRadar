@@ -1261,6 +1261,59 @@ function init() {
     });
   }
 
+  // Copy Rate button
+  const copyRateBtn = document.getElementById('copy-rate-btn');
+  if (copyRateBtn) {
+    copyRateBtn.addEventListener('click', async () => {
+      const rate = statCurrent?.textContent;
+      if (!rate || rate === '-') {
+        showNotification('No rate to copy', 'warning');
+        return;
+      }
+      
+      const fromCurr = fromSelect.value;
+      const toCurr = toSelect.value;
+      const textToCopy = `${fromCurr}/${toCurr}: ${rate}`;
+      
+      try {
+        await navigator.clipboard.writeText(textToCopy);
+        copyRateBtn.classList.add('copied');
+        showNotification('Rate copied to clipboard!', 'success', 2000);
+        setTimeout(() => copyRateBtn.classList.remove('copied'), 1500);
+      } catch (err) {
+        showNotification('Failed to copy', 'error');
+      }
+    });
+  }
+
+  // Share URL button
+  const shareUrlBtn = document.getElementById('share-url-btn');
+  if (shareUrlBtn) {
+    shareUrlBtn.addEventListener('click', async () => {
+      const fromCurr = fromSelect.value;
+      const toCurr = toSelect.value;
+      
+      if (!fromCurr || !toCurr) {
+        showNotification('Select currencies first', 'warning');
+        return;
+      }
+      
+      const url = new URL(window.location.href);
+      url.searchParams.set('from', fromCurr);
+      url.searchParams.set('to', toCurr);
+      url.searchParams.set('range', currentTimeRange);
+      
+      try {
+        await navigator.clipboard.writeText(url.toString());
+        shareUrlBtn.classList.add('copied');
+        showNotification('Link copied to clipboard!', 'success', 2000);
+        setTimeout(() => shareUrlBtn.classList.remove('copied'), 1500);
+      } catch (err) {
+        showNotification('Failed to copy link', 'error');
+      }
+    });
+  }
+
   // Series toggle event listeners
   if (toggleVisaRate) {
     toggleVisaRate.addEventListener('change', () => {
