@@ -74,6 +74,9 @@ const toggleVisaMarkupContainer = toggleVisaMarkup?.closest('.series-toggle');
 let debounceTimer = null;
 const DEBOUNCE_MS = 300;
 
+/** @type {boolean} Flag to prevent URL updates during initialization */
+let isInitializing = true;
+
 // Track current data for stats recalculation on zoom
 /** @type {RateRecord[]} */
 let currentVisaRecords = [];
@@ -105,6 +108,61 @@ function parseTimeRange(rangeKey) {
     case 'all': return { all: true };
     default: return { years: 1 };
   }
+}
+
+// ============================================================================
+// URL Deep-Linking
+// ============================================================================
+
+/**
+ * Parses URL query parameters for currency pair and time range
+ * @returns {{ from: string|null, to: string|null, range: string|null }}
+ */
+function parseURLParams() {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    from: params.get('from')?.toUpperCase() || null,
+    to: params.get('to')?.toUpperCase() || null,
+    range: params.get('range')?.toLowerCase() || null
+  };
+}
+
+/**
+ * Updates URL query parameters without page reload
+ * Uses replaceState to avoid cluttering browser history
+ */
+function updateURL() {
+  if (isInitializing) return;
+  
+  const fromCurr = fromSelect.value;
+  const toCurr = toSelect.value;
+  
+  if (!fromCurr || !toCurr) return;
+  
+  const url = new URL(window.location.href);
+  url.searchParams.set('from', fromCurr);
+  url.searchParams.set('to', toCurr);
+  url.searchParams.set('range', currentTimeRange);
+  
+  history.replaceState({ from: fromCurr, to: toCurr, range: currentTimeRange }, '', url);
+}
+
+/**
+ * Validates if a currency code exists in our currency list
+ * @param {string} code - Currency code to validate
+ * @returns {boolean}
+ */
+function isValidCurrency(code) {
+  return currencies.some(c => c.code === code);
+}
+
+/**
+ * Validates if a time range key is valid
+ * @param {string} range - Time range key to validate
+ * @returns {boolean}
+ */
+function isValidTimeRange(range) {
+  return ['1m', '3m', '6m', '1y', '5y', 'all'].includes(range);
 }
 
 // ============================================================================
@@ -572,6 +630,7 @@ function handleSelectionChange() {
     const toCurr = toSelect.value;
     if (fromCurr && toCurr) {
       localStorage.setItem('forexRadar_lastPair', JSON.stringify({ from: fromCurr, to: toCurr }));
+      updateURL();
     }
     loadCurrencyPair();
   }, DEBOUNCE_MS);
@@ -589,37 +648,80 @@ function init() {
   populateCurrencyDropdown(fromSelect);
   populateCurrencyDropdown(toSelect);
 
-  // Restore last selected pair or use defaults (USD -> INR)
-  try {
-    const lastPair = localStorage.getItem('forexRadar_lastPair');
-    if (lastPair) {
-      const { from, to } = JSON.parse(lastPair);
-      // Validate that the currencies exist in our list
-      const validFrom = currencies.find(c => c.code === from);
-      const validTo = currencies.find(c => c.code === to);
-      if (validFrom && validTo) {
-        fromSelect.value = from;
-        toSelect.value = to;
-      } else {
-        // Invalid saved pair, use defaults
-        fromSelect.value = 'USD';
-        toSelect.value = 'INR';
-      }
-    } else {
-      // No saved pair, use defaults
-      fromSelect.value = 'USD';
-      toSelect.value = 'INR';
-    }
-  } catch (error) {
-    // Error parsing saved pair, use defaults
-    console.error('Error restoring last pair:', error);
-    fromSelect.value = 'USD';
-    toSelect.value = 'INR';
+  // Priority: URL params > localStorage > defaults
+  const urlParams = parseURLParams();
+  let selectedFrom = null;
+  let selectedTo = null;
+  let selectedRange = null;
+  
+  // 1. Check URL parameters first
+  if (urlParams.from && urlParams.to && isValidCurrency(urlParams.from) && isValidCurrency(urlParams.to)) {
+    selectedFrom = urlParams.from;
+    selectedTo = urlParams.to;
   }
+  if (urlParams.range && isValidTimeRange(urlParams.range)) {
+    selectedRange = /** @type {'1m'|'3m'|'6m'|'1y'|'5y'|'all'} */ (urlParams.range);
+  }
+  
+  // 2. Fall back to localStorage if URL didn't provide values
+  if (!selectedFrom || !selectedTo) {
+    try {
+      const lastPair = localStorage.getItem('forexRadar_lastPair');
+      if (lastPair) {
+        const { from, to } = JSON.parse(lastPair);
+        if (isValidCurrency(from) && isValidCurrency(to)) {
+          selectedFrom = selectedFrom || from;
+          selectedTo = selectedTo || to;
+        }
+      }
+    } catch (error) {
+      console.error('Error restoring last pair:', error);
+    }
+  }
+  
+  if (!selectedRange) {
+    try {
+      const savedRange = localStorage.getItem('forexRadar_timeRange');
+      if (savedRange && isValidTimeRange(savedRange)) {
+        selectedRange = /** @type {'1m'|'3m'|'6m'|'1y'|'5y'|'all'} */ (savedRange);
+      }
+    } catch (error) {
+      console.error('Error restoring time range:', error);
+    }
+  }
+  
+  // 3. Apply defaults if still no values
+  fromSelect.value = selectedFrom || 'USD';
+  toSelect.value = selectedTo || 'INR';
+  currentTimeRange = selectedRange || '1y';
 
   // Add event listeners with debouncing
   fromSelect.addEventListener('change', handleSelectionChange);
   toSelect.addEventListener('change', handleSelectionChange);
+  
+  // Handle browser back/forward navigation
+  window.addEventListener('popstate', (event) => {
+    if (event.state && event.state.from && event.state.to) {
+      // Restore state from history
+      if (isValidCurrency(event.state.from) && isValidCurrency(event.state.to)) {
+        fromSelect.value = event.state.from;
+        toSelect.value = event.state.to;
+        if (event.state.range && isValidTimeRange(event.state.range)) {
+          currentTimeRange = event.state.range;
+          // Update time range button active state
+          const timeRangeButtons = document.querySelectorAll('.time-range-btn');
+          timeRangeButtons.forEach(btn => {
+            if (btn.getAttribute('data-range') === event.state.range) {
+              btn.classList.add('active');
+            } else {
+              btn.classList.remove('active');
+            }
+          });
+        }
+        loadCurrencyPair();
+      }
+    }
+  });
 
   // Series toggle event listeners
   if (toggleVisaRate) {
@@ -656,28 +758,20 @@ function init() {
       if (rangeKey && rangeKey !== currentTimeRange) {
         currentTimeRange = rangeKey;
         localStorage.setItem('forexRadar_timeRange', rangeKey);
+        updateURL();
         loadCurrencyPair();
       }
     });
   });
   
-  // Restore last time range selection
-  try {
-    const savedRange = localStorage.getItem('forexRadar_timeRange');
-    if (savedRange && ['1m', '3m', '6m', '1y', '5y', 'all'].includes(savedRange)) {
-      currentTimeRange = /** @type {'1m'|'3m'|'6m'|'1y'|'5y'|'all'} */ (savedRange);
-      // Update button active state
-      timeRangeButtons.forEach(btn => {
-        if (btn.getAttribute('data-range') === savedRange) {
-          btn.classList.add('active');
-        } else {
-          btn.classList.remove('active');
-        }
-      });
+  // Update time range button active state based on currentTimeRange (already set above)
+  timeRangeButtons.forEach(btn => {
+    if (btn.getAttribute('data-range') === currentTimeRange) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
     }
-  } catch (error) {
-    console.error('Error restoring time range:', error);
-  }
+  });
 
   // Listen for theme changes to update chart
   window.addEventListener('themechange', () => {
@@ -688,6 +782,19 @@ function init() {
     }
   });
 
+  // Set initial URL state (only if we have valid currencies selected)
+  if (fromSelect.value && toSelect.value) {
+    // Use replaceState for initial load to set proper state without adding history entry
+    const url = new URL(window.location.href);
+    url.searchParams.set('from', fromSelect.value);
+    url.searchParams.set('to', toSelect.value);
+    url.searchParams.set('range', currentTimeRange);
+    history.replaceState({ from: fromSelect.value, to: toSelect.value, range: currentTimeRange }, '', url);
+  }
+  
+  // Mark initialization complete
+  isInitializing = false;
+  
   // Initial load
   loadCurrencyPair();
 }
