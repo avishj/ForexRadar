@@ -1144,6 +1144,229 @@ function handleSelectionChange() {
 }
 
 // ============================================================================
+// Keyboard Shortcuts
+// ============================================================================
+
+/** @type {HTMLElement|null} */
+let shortcutsModal = null;
+
+/**
+ * Creates the keyboard shortcuts help modal
+ * @returns {HTMLElement}
+ */
+function createShortcutsModal() {
+  const modal = document.createElement('div');
+  modal.className = 'shortcuts-modal';
+  modal.innerHTML = `
+    <div class="shortcuts-backdrop"></div>
+    <div class="shortcuts-content">
+      <div class="shortcuts-header">
+        <h3>Keyboard Shortcuts</h3>
+        <button class="shortcuts-close" aria-label="Close">&times;</button>
+      </div>
+      <div class="shortcuts-body">
+        <div class="shortcut-group">
+          <div class="shortcut-row">
+            <kbd>S</kbd>
+            <span>Swap currencies</span>
+          </div>
+          <div class="shortcut-row">
+            <kbd>/</kbd>
+            <span>Focus currency search</span>
+          </div>
+          <div class="shortcut-row">
+            <kbd>C</kbd>
+            <span>Copy current rate</span>
+          </div>
+          <div class="shortcut-row">
+            <kbd>L</kbd>
+            <span>Copy shareable link</span>
+          </div>
+          <div class="shortcut-row">
+            <kbd>D</kbd>
+            <span>Download chart as PNG</span>
+          </div>
+        </div>
+        <div class="shortcut-group">
+          <div class="shortcut-row">
+            <kbd>1</kbd>
+            <span>1 Month view</span>
+          </div>
+          <div class="shortcut-row">
+            <kbd>2</kbd>
+            <span>3 Months view</span>
+          </div>
+          <div class="shortcut-row">
+            <kbd>3</kbd>
+            <span>6 Months view</span>
+          </div>
+          <div class="shortcut-row">
+            <kbd>4</kbd>
+            <span>1 Year view</span>
+          </div>
+          <div class="shortcut-row">
+            <kbd>5</kbd>
+            <span>5 Years view</span>
+          </div>
+          <div class="shortcut-row">
+            <kbd>6</kbd>
+            <span>All time view</span>
+          </div>
+        </div>
+        <div class="shortcut-group">
+          <div class="shortcut-row">
+            <kbd>?</kbd>
+            <span>Show this help</span>
+          </div>
+          <div class="shortcut-row">
+            <kbd>Esc</kbd>
+            <span>Close modal / blur input</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(modal);
+  
+  // Close handlers
+  const closeBtn = modal.querySelector('.shortcuts-close');
+  const backdrop = modal.querySelector('.shortcuts-backdrop');
+  
+  closeBtn?.addEventListener('click', () => hideShortcutsModal());
+  backdrop?.addEventListener('click', () => hideShortcutsModal());
+  
+  return modal;
+}
+
+/**
+ * Shows the keyboard shortcuts modal
+ */
+function showShortcutsModal() {
+  if (!shortcutsModal) {
+    shortcutsModal = createShortcutsModal();
+  }
+  shortcutsModal.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+/**
+ * Hides the keyboard shortcuts modal
+ */
+function hideShortcutsModal() {
+  if (shortcutsModal) {
+    shortcutsModal.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+}
+
+/**
+ * Time range mapping for number keys
+ */
+const TIME_RANGE_KEYS = {
+  '1': '1m',
+  '2': '3m',
+  '3': '6m',
+  '4': '1y',
+  '5': '5y',
+  '6': 'all'
+};
+
+/**
+ * Sets up global keyboard shortcuts
+ */
+function setupKeyboardShortcuts() {
+  document.addEventListener('keydown', (e) => {
+    // Ignore if user is typing in an input field
+    const target = /** @type {HTMLElement} */ (e.target);
+    const isInputField = target.tagName === 'INPUT' || 
+                         target.tagName === 'TEXTAREA' || 
+                         target.isContentEditable;
+    
+    // Allow Escape to work even in inputs
+    if (e.key === 'Escape') {
+      if (shortcutsModal?.classList.contains('open')) {
+        hideShortcutsModal();
+        e.preventDefault();
+        return;
+      }
+      // Blur any focused input
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+      return;
+    }
+    
+    // Skip all other shortcuts if in input
+    if (isInputField) return;
+    
+    // Skip if modifier keys are pressed (except shift for ?)
+    if (e.ctrlKey || e.altKey || e.metaKey) return;
+    
+    const key = e.key.toLowerCase();
+    
+    switch (key) {
+      case 's':
+        // Swap currencies
+        e.preventDefault();
+        swapButton?.click();
+        break;
+        
+      case '/':
+        // Focus from currency search
+        e.preventDefault();
+        const fromInput = document.getElementById('from-currency-input');
+        if (fromInput) {
+          fromInput.focus();
+          /** @type {HTMLInputElement} */ (fromInput).select();
+        }
+        break;
+        
+      case 'c':
+        // Copy rate
+        e.preventDefault();
+        document.getElementById('copy-rate-btn')?.click();
+        break;
+        
+      case 'l':
+        // Copy link
+        e.preventDefault();
+        document.getElementById('share-url-btn')?.click();
+        break;
+        
+      case 'd':
+        // Download chart
+        e.preventDefault();
+        document.getElementById('download-chart-btn')?.click();
+        break;
+        
+      case '?':
+        // Show shortcuts help
+        e.preventDefault();
+        showShortcutsModal();
+        break;
+        
+      case '1':
+      case '2':
+      case '3':
+      case '4':
+      case '5':
+      case '6':
+        // Time range shortcuts
+        e.preventDefault();
+        const range = TIME_RANGE_KEYS[key];
+        if (range) {
+          const btn = document.querySelector(`.time-range-btn[data-range="${range}"]`);
+          if (btn instanceof HTMLElement) {
+            btn.click();
+          }
+        }
+        break;
+    }
+  });
+}
+
+// ============================================================================
 // Initialization
 // ============================================================================
 
@@ -1408,6 +1631,9 @@ function init() {
     url.searchParams.set('range', currentTimeRange);
     history.replaceState({ from: fromSelect.value, to: toSelect.value, range: currentTimeRange }, '', url);
   }
+
+  // Keyboard shortcuts
+  setupKeyboardShortcuts();
   
   // Mark initialization complete
   isInitializing = false;
