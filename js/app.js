@@ -48,6 +48,10 @@ const seriesTogglesSection = /** @type {HTMLElement} */ (document.getElementById
 const timeRangeSection = /** @type {HTMLElement} */ (document.getElementById('time-range-selector'));
 /** @type {HTMLElement} */
 const notificationContainer = /** @type {HTMLElement} */ (document.getElementById('notification-container'));
+/** @type {HTMLElement} */
+const recentPairsContainer = /** @type {HTMLElement} */ (document.getElementById('recent-pairs'));
+/** @type {HTMLElement} */
+const recentPairsList = /** @type {HTMLElement} */ (document.getElementById('recent-pairs-list'));
 
 // Stats elements
 const statCurrent = document.getElementById('stat-current');
@@ -165,6 +169,118 @@ function isValidCurrency(code) {
  */
 function isValidTimeRange(range) {
   return ['1m', '3m', '6m', '1y', '5y', 'all'].includes(range);
+}
+
+// ============================================================================
+// Recent Pairs History
+// ============================================================================
+
+const RECENT_PAIRS_KEY = 'forexRadar_recentPairs';
+const MAX_RECENT_PAIRS = 5;
+
+/**
+ * @typedef {Object} RecentPair
+ * @property {string} from - Source currency code
+ * @property {string} to - Target currency code
+ */
+
+/**
+ * Loads recent pairs from localStorage
+ * @returns {RecentPair[]}
+ */
+function loadRecentPairs() {
+  try {
+    const stored = localStorage.getItem(RECENT_PAIRS_KEY);
+    if (stored) {
+      const pairs = JSON.parse(stored);
+      // Validate and filter invalid entries
+      return pairs.filter(p => p.from && p.to && isValidCurrency(p.from) && isValidCurrency(p.to));
+    }
+  } catch (error) {
+    console.error('Error loading recent pairs:', error);
+  }
+  return [];
+}
+
+/**
+ * Saves a pair to recent pairs history
+ * Adds to front, deduplicates, and limits to MAX_RECENT_PAIRS
+ * @param {string} from - Source currency code
+ * @param {string} to - Target currency code
+ */
+function saveRecentPair(from, to) {
+  if (!from || !to) return;
+  
+  const recentPairs = loadRecentPairs();
+  
+  // Remove existing duplicate (same pair in same direction)
+  const filtered = recentPairs.filter(p => !(p.from === from && p.to === to));
+  
+  // Add new pair to front
+  filtered.unshift({ from, to });
+  
+  // Limit to max pairs
+  const limited = filtered.slice(0, MAX_RECENT_PAIRS);
+  
+  localStorage.setItem(RECENT_PAIRS_KEY, JSON.stringify(limited));
+  
+  // Render updated list
+  renderRecentPairs(limited);
+}
+
+/**
+ * Renders the recent pairs chips
+ * @param {RecentPair[]} [pairs] - Pairs to render (loads from storage if not provided)
+ */
+function renderRecentPairs(pairs) {
+  if (!recentPairsList || !recentPairsContainer) return;
+  
+  const recentPairs = pairs || loadRecentPairs();
+  
+  // Hide if no recent pairs
+  if (recentPairs.length === 0) {
+    recentPairsContainer.classList.add('hidden');
+    return;
+  }
+  
+  recentPairsContainer.classList.remove('hidden');
+  
+  // Get current selection to highlight active chip
+  const currentFrom = fromSelect.value;
+  const currentTo = toSelect.value;
+  
+  // Build chips HTML
+  recentPairsList.innerHTML = recentPairs.map((pair, index) => {
+    const isActive = pair.from === currentFrom && pair.to === currentTo;
+    return `
+      <button 
+        class="recent-pair-chip ${isActive ? 'active' : ''}" 
+        data-from="${pair.from}" 
+        data-to="${pair.to}"
+        type="button"
+        aria-label="Load ${pair.from} to ${pair.to}"
+      >
+        ${pair.from} <span class="chip-arrow">→</span> ${pair.to}
+      </button>
+    `;
+  }).join('');
+  
+  // Add click handlers
+  recentPairsList.querySelectorAll('.recent-pair-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const from = chip.getAttribute('data-from');
+      const to = chip.getAttribute('data-to');
+      if (from && to) {
+        fromSelect.value = from;
+        toSelect.value = to;
+        localStorage.setItem('forexRadar_lastPair', JSON.stringify({ from, to }));
+        updateURL();
+        loadCurrencyPair();
+        // Update active state immediately
+        renderRecentPairs();
+      }
+    });
+  });
 }
 
 // ============================================================================
@@ -632,6 +748,7 @@ function handleSelectionChange() {
     const toCurr = toSelect.value;
     if (fromCurr && toCurr) {
       localStorage.setItem('forexRadar_lastPair', JSON.stringify({ from: fromCurr, to: toCurr }));
+      saveRecentPair(fromCurr, toCurr);
       updateURL();
     }
     loadCurrencyPair();
@@ -743,8 +860,9 @@ function init() {
       fromSelect.value = toCurr;
       toSelect.value = fromCurr;
       
-      // Update localStorage and URL, then reload
+      // Update localStorage, recent pairs, and URL, then reload
       localStorage.setItem('forexRadar_lastPair', JSON.stringify({ from: toCurr, to: fromCurr }));
+      saveRecentPair(toCurr, fromCurr);
       updateURL();
       loadCurrencyPair();
     });
@@ -821,6 +939,9 @@ function init() {
   
   // Mark initialization complete
   isInitializing = false;
+  
+  // Render recent pairs
+  renderRecentPairs();
   
   // Initial load
   loadCurrencyPair();
