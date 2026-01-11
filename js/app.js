@@ -24,6 +24,8 @@ import * as ChartManager from './chart-manager.js';
 const fromSelect = /** @type {HTMLSelectElement} */ (document.getElementById('from-currency'));
 /** @type {HTMLSelectElement} */
 const toSelect = /** @type {HTMLSelectElement} */ (document.getElementById('to-currency'));
+/** @type {HTMLButtonElement} */
+const swapButton = /** @type {HTMLButtonElement} */ (document.getElementById('swap-currencies'));
 /** @type {HTMLElement} */
 const loader = /** @type {HTMLElement} */ (document.getElementById('loader'));
 /** @type {HTMLElement} */
@@ -722,6 +724,31 @@ function init() {
       }
     }
   });
+
+  // Swap currencies button
+  if (swapButton) {
+    swapButton.addEventListener('click', () => {
+      const fromCurr = fromSelect.value;
+      const toCurr = toSelect.value;
+      
+      if (!fromCurr || !toCurr) return;
+      
+      // Trigger swap animation
+      swapButton.classList.add('swapping');
+      swapButton.addEventListener('animationend', () => {
+        swapButton.classList.remove('swapping');
+      }, { once: true });
+      
+      // Swap the values
+      fromSelect.value = toCurr;
+      toSelect.value = fromCurr;
+      
+      // Update localStorage and URL, then reload
+      localStorage.setItem('forexRadar_lastPair', JSON.stringify({ from: toCurr, to: fromCurr }));
+      updateURL();
+      loadCurrencyPair();
+    });
+  }
 
   // Series toggle event listeners
   if (toggleVisaRate) {
