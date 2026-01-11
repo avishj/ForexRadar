@@ -864,6 +864,33 @@ export function isChartInitialized() {
 }
 
 /**
+ * Exports chart as PNG and triggers download
+ * @param {string} filename - Filename without extension
+ * @returns {Promise<boolean>} - Whether export succeeded
+ */
+export async function exportChartAsPng(filename = 'forex-chart') {
+  if (!chartInstance) return false;
+  
+  try {
+    const result = /** @type {{ imgURI: string }} */ (await chartInstance.dataURI({ scale: 2 }));
+    const imgURI = result.imgURI;
+    
+    // Create download link
+    const link = document.createElement('a');
+    link.href = imgURI;
+    link.download = `${filename}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    return true;
+  } catch (err) {
+    console.error('Failed to export chart:', err);
+    return false;
+  }
+}
+
+/**
  * Refreshes the chart theme (call on theme toggle)
  * @param {string} fromCurr - Source currency code
  * @param {string} toCurr - Target currency code
