@@ -1314,6 +1314,32 @@ function init() {
     });
   }
 
+  // Download Chart button
+  const downloadChartBtn = document.getElementById('download-chart-btn');
+  if (downloadChartBtn) {
+    downloadChartBtn.addEventListener('click', async () => {
+      if (!ChartManager.isChartInitialized()) {
+        showNotification('No chart to download', 'warning');
+        return;
+      }
+      
+      const fromCurr = fromSelect.value;
+      const toCurr = toSelect.value;
+      const filename = `forex-${fromCurr}-${toCurr}-${currentTimeRange}`;
+      
+      downloadChartBtn.classList.add('copied');
+      const success = await ChartManager.exportChartAsPng(filename);
+      
+      if (success) {
+        showNotification('Chart downloaded!', 'success', 2000);
+      } else {
+        showNotification('Failed to download chart', 'error');
+      }
+      
+      setTimeout(() => downloadChartBtn.classList.remove('copied'), 1500);
+    });
+  }
+
   // Series toggle event listeners
   if (toggleVisaRate) {
     toggleVisaRate.addEventListener('change', () => {
