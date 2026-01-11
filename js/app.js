@@ -539,8 +539,8 @@ function loadRecentPairs() {
     const stored = localStorage.getItem(RECENT_PAIRS_KEY);
     if (stored) {
       const pairs = JSON.parse(stored);
-      // Validate and filter invalid entries
-      return pairs.filter(p => p.from && p.to && isValidCurrency(p.from) && isValidCurrency(p.to));
+      // Validate and filter invalid entries (including self-pairs)
+      return pairs.filter(p => p.from && p.to && p.from !== p.to && isValidCurrency(p.from) && isValidCurrency(p.to));
     }
   } catch (error) {
     console.error('Error loading recent pairs:', error);
@@ -555,7 +555,7 @@ function loadRecentPairs() {
  * @param {string} to - Target currency code
  */
 function saveRecentPair(from, to) {
-  if (!from || !to) return;
+  if (!from || !to || from === to) return;
   
   const recentPairs = loadRecentPairs();
   
