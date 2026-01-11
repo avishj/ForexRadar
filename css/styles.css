@@ -1616,6 +1616,44 @@ h1, h2, h3, h4, h5, h6, .font-display {
   color: #f59e0b;
 }
 
+/* Animated stat transition effect */
+.stat-value {
+  transition: transform 0.15s ease-out, text-shadow 0.3s ease-out;
+}
+
+.stat-value.stat-updating {
+  transform: scale(1.05);
+  text-shadow: 0 0 12px currentColor;
+}
+
+/* Subtle color pulse for accent stats */
+.stat-value.accent.stat-updating {
+  text-shadow: 0 0 16px var(--accent-primary);
+}
+
+.stat-value.high.stat-updating {
+  text-shadow: 0 0 16px #10b981;
+}
+
+.stat-value.low.stat-updating {
+  text-shadow: 0 0 16px #ef4444;
+}
+
+.stat-value.markup.stat-updating {
+  text-shadow: 0 0 16px #f59e0b;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .stat-value {
+    transition: none;
+  }
+  .stat-value.stat-updating {
+    transform: none;
+    text-shadow: none;
+  }
+}
+
 /* --------------------------------
    Chart Container
    -------------------------------- */
