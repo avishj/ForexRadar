@@ -147,10 +147,22 @@
     <div class="selector-card">
       <div class="selector-grid">
         <div class="selector-group">
-          <label for="from-currency" class="selector-label">From Currency</label>
-          <select id="from-currency" class="selector-input">
-            <option value="">Select currency...</option>
-          </select>
+          <label for="from-currency-input" class="selector-label">From Currency</label>
+          <div class="searchable-dropdown" id="from-currency-dropdown">
+            <input 
+              type="text" 
+              id="from-currency-input" 
+              class="selector-input searchable-input"
+              placeholder="Search currency..."
+              autocomplete="off"
+              role="combobox"
+              aria-expanded="false"
+              aria-controls="from-currency-list"
+              aria-autocomplete="list"
+            >
+            <input type="hidden" id="from-currency" name="from-currency">
+            <div class="dropdown-list" id="from-currency-list" role="listbox"></div>
+          </div>
         </div>
         
         <button id="swap-currencies" class="selector-arrow" type="button" aria-label="Swap currencies" title="Swap currencies">
@@ -160,10 +172,22 @@
         </button>
         
         <div class="selector-group">
-          <label for="to-currency" class="selector-label">To Currency</label>
-          <select id="to-currency" class="selector-input">
-            <option value="">Select currency...</option>
-          </select>
+          <label for="to-currency-input" class="selector-label">To Currency</label>
+          <div class="searchable-dropdown" id="to-currency-dropdown">
+            <input 
+              type="text" 
+              id="to-currency-input" 
+              class="selector-input searchable-input"
+              placeholder="Search currency..."
+              autocomplete="off"
+              role="combobox"
+              aria-expanded="false"
+              aria-controls="to-currency-list"
+              aria-autocomplete="list"
+            >
+            <input type="hidden" id="to-currency" name="to-currency">
+            <div class="dropdown-list" id="to-currency-list" role="listbox"></div>
+          </div>
         </div>
       </div>
     </div>
