@@ -400,6 +400,7 @@ const recentPairsList = /** @type {HTMLElement} */ (document.getElementById('rec
 
 // Stats elements
 const statCurrent = document.getElementById('stat-current');
+const statPercentile = document.getElementById('stat-percentile');
 const statHigh = document.getElementById('stat-high');
 const statLow = document.getElementById('stat-low');
 const statMarkup = document.getElementById('stat-markup');
@@ -851,6 +852,74 @@ function animateValue(element, targetValue, decimals, suffix = '', prefix = '') 
 }
 
 /**
+ * Calculates the percentile rank of the current rate within the historical data
+ * @param {number} currentRate - Current rate
+ * @param {RateRecord[]} allRecords - All historical rate records
+ * @returns {number|null} Percentile (0-100), or null if insufficient data
+ */
+function calculateRatePercentile(currentRate, allRecords) {
+  if (!currentRate || allRecords.length < 2) return null;
+  
+  const rates = allRecords.map(r => r.rate).filter(r => r !== null && r !== undefined);
+  if (rates.length < 2) return null;
+  
+  // Count how many rates are below or equal to current
+  // For exchange rates, LOWER is typically better for buyers (less local currency per unit)
+  // So we count how many are HIGHER (worse) than current
+  const betterCount = rates.filter(r => r > currentRate).length;
+  
+  // Percentile = percentage of rates that are worse (higher) than current
+  const percentile = (betterCount / rates.length) * 100;
+  
+  return Math.round(percentile);
+}
+
+/**
+ * Updates the percentile badge display
+ * @param {number|null} percentile - Percentile value (0-100)
+ */
+function updatePercentileBadge(percentile) {
+  if (!statPercentile) return;
+  
+  const valueEl = statPercentile.querySelector('.percentile-value');
+  
+  if (percentile === null || isNaN(percentile)) {
+    statPercentile.classList.add('hidden');
+    return;
+  }
+  
+  // Show the badge
+  statPercentile.classList.remove('hidden');
+  
+  // Update value
+  if (valueEl) {
+    valueEl.textContent = `${percentile}%`;
+  }
+  
+  // Remove old rating classes
+  statPercentile.classList.remove('excellent', 'good', 'average', 'poor');
+  
+  // Add rating class based on percentile
+  // Higher percentile = better (more rates are worse than current)
+  if (percentile >= 75) {
+    statPercentile.classList.add('excellent');
+    statPercentile.title = `Excellent! Better than ${percentile}% of rates in this period`;
+  } else if (percentile >= 50) {
+    statPercentile.classList.add('good');
+    statPercentile.title = `Good - better than ${percentile}% of rates in this period`;
+  } else if (percentile >= 25) {
+    statPercentile.classList.add('average');
+    statPercentile.title = `Average - better than ${percentile}% of rates in this period`;
+  } else {
+    statPercentile.classList.add('poor');
+    statPercentile.title = `Below average - only better than ${percentile}% of rates in this period`;
+  }
+}
+
+/** @type {RateRecord[]} Cached records for percentile calculation */
+let cachedRecordsForPercentile = [];
+
+/**
  * Updates the stats display for multi-provider data
  * @param {MultiProviderStats} stats - Multi-provider statistics object
  */
@@ -995,6 +1064,13 @@ function handleChartZoom(minDate, maxDate) {
     // Recalculate multi-provider stats for visible data
     const stats = DataManager.calculateMultiProviderStats(visaRecords, mastercardRecords, ecbRecords);
     updateStats(stats);
+    
+    // Update percentile with visible records
+    const allRecords = [...visaRecords, ...mastercardRecords];
+    cachedRecordsForPercentile = allRecords;
+    const currentRate = stats.visa.current ?? stats.mastercard.current;
+    const percentile = calculateRatePercentile(currentRate, allRecords);
+    updatePercentileBadge(percentile);
   }
 }
 
@@ -1068,6 +1144,13 @@ async function loadCurrencyPair() {
     showResults();
     updateStats(stats);
     updateLastUpdated(stats.dateRange.end);
+
+    // Calculate and update percentile
+    const allRecords = [...result.visaRecords, ...result.mastercardRecords];
+    cachedRecordsForPercentile = allRecords;
+    const currentRate = stats.visa.current ?? stats.mastercard.current;
+    const percentile = calculateRatePercentile(currentRate, allRecords);
+    updatePercentileBadge(percentile);
 
     // Set up zoom callback before initializing/updating chart
     ChartManager.setZoomCallback(handleChartZoom);
