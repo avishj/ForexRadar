@@ -875,26 +875,20 @@ function calculateRatePercentile(currentRate, allRecords) {
 }
 
 /**
- * Updates the percentile badge display
+ * Updates the percentile stat card display
  * @param {number|null} percentile - Percentile value (0-100)
  */
 function updatePercentileBadge(percentile) {
   if (!statPercentile) return;
   
-  const valueEl = statPercentile.querySelector('.percentile-value');
-  
   if (percentile === null || isNaN(percentile)) {
-    statPercentile.classList.add('hidden');
+    statPercentile.textContent = '-';
+    statPercentile.classList.remove('excellent', 'good', 'average', 'poor');
     return;
   }
   
-  // Show the badge
-  statPercentile.classList.remove('hidden');
-  
-  // Update value
-  if (valueEl) {
-    valueEl.textContent = `${percentile}%`;
-  }
+  // Update value with percentile suffix
+  statPercentile.textContent = `${percentile}%ile`;
   
   // Remove old rating classes
   statPercentile.classList.remove('excellent', 'good', 'average', 'poor');
@@ -903,16 +897,12 @@ function updatePercentileBadge(percentile) {
   // Higher percentile = better (more rates are worse than current)
   if (percentile >= 75) {
     statPercentile.classList.add('excellent');
-    statPercentile.title = `Excellent! Better than ${percentile}% of rates in this period`;
   } else if (percentile >= 50) {
     statPercentile.classList.add('good');
-    statPercentile.title = `Good - better than ${percentile}% of rates in this period`;
   } else if (percentile >= 25) {
     statPercentile.classList.add('average');
-    statPercentile.title = `Average - better than ${percentile}% of rates in this period`;
   } else {
     statPercentile.classList.add('poor');
-    statPercentile.title = `Below average - only better than ${percentile}% of rates in this period`;
   }
 }
 

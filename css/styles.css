@@ -1609,13 +1609,19 @@ h1, h2, h3, h4, h5, h6, .font-display {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 1rem;
 }
 
-@media (max-width: 1200px) {
+@media (min-width: 1200px) {
   .stats-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(7, 1fr);
+  }
+}
+
+@media (max-width: 1199px) and (min-width: 769px) {
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
   }
 }
 
@@ -1655,6 +1661,7 @@ h1, h2, h3, h4, h5, h6, .font-display {
 .stat-card:nth-child(4) { animation-delay: 0.25s; }
 .stat-card:nth-child(5) { animation-delay: 0.3s; }
 .stat-card:nth-child(6) { animation-delay: 0.35s; }
+.stat-card:nth-child(7) { animation-delay: 0.4s; }
 
 .stat-card::before {
   content: '';
@@ -1803,74 +1810,20 @@ h1, h2, h3, h4, h5, h6, .font-display {
   color: #f59e0b;
 }
 
-/* Stat value row for current rate + percentile */
-.stat-value-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-/* Percentile badge */
-.percentile-badge {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 0.35rem 0.6rem;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  line-height: 1.1;
-  transition: all 0.3s ease;
-}
-
-.percentile-badge.hidden {
-  display: none;
-}
-
-.percentile-value {
-  font-family: 'Space Grotesk', monospace;
-  font-size: 0.95rem;
-  font-weight: 700;
-}
-
-.percentile-label {
-  font-size: 0.55rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-tertiary);
-}
-
-/* Color coding for percentile */
-.percentile-badge.excellent {
-  background: rgba(16, 185, 129, 0.15);
-  border-color: rgba(16, 185, 129, 0.3);
-}
-.percentile-badge.excellent .percentile-value {
+/* Percentile stat card color coding */
+#stat-percentile.excellent {
   color: #10b981;
 }
 
-.percentile-badge.good {
-  background: rgba(34, 197, 94, 0.15);
-  border-color: rgba(34, 197, 94, 0.3);
-}
-.percentile-badge.good .percentile-value {
+#stat-percentile.good {
   color: #22c55e;
 }
 
-.percentile-badge.average {
-  background: rgba(245, 158, 11, 0.15);
-  border-color: rgba(245, 158, 11, 0.3);
-}
-.percentile-badge.average .percentile-value {
+#stat-percentile.average {
   color: #f59e0b;
 }
 
-.percentile-badge.poor {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: rgba(239, 68, 68, 0.3);
-}
-.percentile-badge.poor .percentile-value {
+#stat-percentile.poor {
   color: #ef4444;
 }
 
