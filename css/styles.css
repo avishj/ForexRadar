@@ -1609,13 +1609,19 @@ h1, h2, h3, h4, h5, h6, .font-display {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 1rem;
 }
 
-@media (max-width: 1200px) {
+@media (min-width: 1200px) {
   .stats-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(7, 1fr);
+  }
+}
+
+@media (max-width: 1199px) and (min-width: 769px) {
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
   }
 }
 
@@ -1655,6 +1661,7 @@ h1, h2, h3, h4, h5, h6, .font-display {
 .stat-card:nth-child(4) { animation-delay: 0.25s; }
 .stat-card:nth-child(5) { animation-delay: 0.3s; }
 .stat-card:nth-child(6) { animation-delay: 0.35s; }
+.stat-card:nth-child(7) { animation-delay: 0.4s; }
 
 .stat-card::before {
   content: '';
@@ -1801,6 +1808,23 @@ h1, h2, h3, h4, h5, h6, .font-display {
 
 .stat-value.markup {
   color: #f59e0b;
+}
+
+/* Percentile stat card color coding */
+#stat-percentile.excellent {
+  color: #10b981;
+}
+
+#stat-percentile.good {
+  color: #22c55e;
+}
+
+#stat-percentile.average {
+  color: #f59e0b;
+}
+
+#stat-percentile.poor {
+  color: #ef4444;
 }
 
 /* Animated stat transition effect */
