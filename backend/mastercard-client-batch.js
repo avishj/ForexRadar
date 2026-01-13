@@ -89,7 +89,7 @@ async function getBrowser() {
 		});
 		browserContext = await browserInstance.newContext({
 			userAgent: SESSION_USER_AGENT,
-			viewport: { width: 1512, height: 984 },
+			viewport: { width: 1280, height: 720 },
 			locale: "en-US",
 			extraHTTPHeaders: {
 				"Accept-Language": "en-GB,en;q=0.9",
