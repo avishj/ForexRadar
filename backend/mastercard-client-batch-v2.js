@@ -364,17 +364,35 @@ function parseDate(date) {
 async function selectDate(page, date) {
 	const { day, monthValue, year } = parseDate(date);
 
-	// Click the date input to open picker using Playwright click (simulates real mouse)
-	// The date input ID is "getDate"
-	await page.click("#getDate", { force: true });
-	await randomDelay(400, 500);
-
-	// Wait for the datepicker calendar table to become visible
-	// Use the calendar table itself which is cleaner than checking the container div
-	await page.waitForSelector("table.ui-datepicker-calendar", { 
-		state: "visible", 
-		timeout: 5000 
-	});
+	// Click the date input to open picker, with retry logic
+	// Sometimes the datepicker needs multiple clicks to open after a previous selection
+	let datepickerVisible = false;
+	for (let attempt = 0; attempt < 3 && !datepickerVisible; attempt++) {
+		if (attempt > 0) {
+			// Click elsewhere first to reset focus
+			await page.click("body", { position: { x: 10, y: 10 } });
+			await randomDelay(200, 300);
+		}
+		
+		// Click the date input
+		await page.click("#getDate", { force: true });
+		await randomDelay(400, 500);
+		
+		// Check if datepicker is visible
+		try {
+			await page.waitForSelector("table.ui-datepicker-calendar", { 
+				state: "visible", 
+				timeout: 2000 
+			});
+			datepickerVisible = true;
+		} catch {
+			// Will retry
+		}
+	}
+	
+	if (!datepickerVisible) {
+		throw new Error("Failed to open datepicker after 3 attempts");
+	}
 	await randomDelay(200, 300);
 
 	// Select year first using JavaScript - triggers calendar re-render
@@ -468,21 +486,36 @@ async function selectDate(page, date) {
  */
 
 /**
- * Fetches exchange rate for a single date/currency pair by:
- * 1. Setting up a network request interceptor
- * 2. Filling the form with currencies, amount, bank fee, and date
- * 3. Capturing the API response from the background request
- *
- * The form auto-calculates when all required fields are valid.
- * The API request is triggered once the form is complete.
+ * Sets up the form with currency pair and static fields (amount, bank fee).
+ * Call this once per currency pair, then use fetchDateOnly for each date.
+ * 
+ * @param {PlaywrightPage} page
+ * @param {CurrencyCode} from - Source currency code
+ * @param {CurrencyCode} to - Target currency code
+ */
+async function setupCurrencyPair(page, from, to) {
+	// 1. Select "From" currency
+	await selectCurrency(page, "from", from);
+
+	// 2. Fill amount (always 1 for rate calculation)
+	await fillAmount(page, "1");
+
+	// 3. Select "To" currency  
+	await selectCurrency(page, "to", to);
+
+	// 4. Fill bank fee (always 0 for pure rate)
+	await fillBankFee(page, "0");
+}
+
+/**
+ * Fetches exchange rate for a single date when currencies are already set up.
+ * Only changes the date field and captures the API response.
  *
  * @param {PlaywrightPage} page
  * @param {string} date - Date in YYYY-MM-DD format
- * @param {CurrencyCode} from - Source currency code
- * @param {CurrencyCode} to - Target currency code
  * @returns {Promise<ConversionResult>}
  */
-async function fetchSingleRate(page, date, from, to) {
+async function fetchDateOnly(page, date) {
 	/** @type {ConversionResult} */
 	const result = { rate: null, error: null };
 
@@ -538,29 +571,15 @@ async function fetchSingleRate(page, date, from, to) {
 		}
 	};
 
-	// Register response handler BEFORE filling the form
+	// Register response handler BEFORE changing the date
 	page.on("response", responseHandler);
 
 	try {
-		// Fill all fields - API is triggered once form is valid
-		
-		// 1. Select "From" currency
-		await selectCurrency(page, "from", from);
-
-		// 2. Fill amount (always 1 for rate calculation)
-		await fillAmount(page, "1");
-
-		// 3. Select "To" currency  
-		await selectCurrency(page, "to", to);
-
-		// 4. Fill bank fee (always 0 for pure rate)
-		await fillBankFee(page, "0");
-
-		// 5. Select date - typically the last field to trigger calculation
+		// Only select date - currencies are already set
 		await selectDate(page, date);
 
 		// Give the form a moment to trigger the API
-		await sleep(500);
+		await sleep(50);
 
 		// Wait for API response with timeout
 		const apiResult = await Promise.race([
@@ -600,8 +619,33 @@ async function resetForm(page) {
 // ============================================================================
 
 /**
+ * Groups requests by currency pair for efficient batch processing.
+ * @param {BatchRequest[]} requests
+ * @returns {Map<string, {from: CurrencyCode, to: CurrencyCode, dates: string[]}>}
+ */
+function groupRequestsByCurrencyPair(requests) {
+	/** @type {Map<string, {from: CurrencyCode, to: CurrencyCode, dates: string[]}>} */
+	const groups = new Map();
+	
+	for (const { date, from, to } of requests) {
+		const key = `${from}/${to}`;
+		if (!groups.has(key)) {
+			groups.set(key, { from, to, dates: [] });
+		}
+		groups.get(key).dates.push(date);
+	}
+	
+	// Sort dates within each group (ascending) for consistent processing
+	for (const group of groups.values()) {
+		group.dates.sort();
+	}
+	
+	return groups;
+}
+
+/**
  * Fetches exchange rates for multiple date/pair combinations.
- * Processes sequentially with session management, simulating UI interactions.
+ * Groups requests by currency pair to minimize redundant form fills.
  * Writes results directly to csv-store.
  *
  * @param {BatchRequest[]} requests - Array of {date, from, to} objects
@@ -613,100 +657,116 @@ export async function fetchBatch(requests) {
 		return;
 	}
 
-	console.log(`\n[MASTERCARD-V2] Starting: ${requests.length} requests (UI simulation mode)`);
-	console.log(`[MASTERCARD-V2] Browser restart: every ${config.browserRestartInterval} requests`);
+	// Group by currency pair to process dates together
+	const groups = groupRequestsByCurrencyPair(requests);
+	const pairCount = groups.size;
+	
+	console.log(`\n[MASTERCARD-V2] Starting: ${requests.length} requests across ${pairCount} currency pairs`);
 
 	let successCount = 0;
 	let failCount = 0;
 	let unavailableCount = 0;
+	let processedCount = 0;
 
 	try {
-		let requestCounter = 0;
+		const page = await getMainPage();
+		let pairIndex = 0;
 
-		for (let i = 0; i < requests.length; i++) {
-			const { date, from, to } = requests[i];
-
-			// Browser restart check - prevents session staleness
-			if (requestCounter % config.browserRestartInterval === 0 && requestCounter > 0) {
-				console.log(`[MASTERCARD-V2] Restarting browser after ${requestCounter} requests`);
-				await closeBrowser();
-				await sleep(config.sessionRefreshDelayMs * 2);
-			}
+		for (const [pairKey, { from, to, dates }] of groups) {
+			pairIndex++;
+			console.log(`[MASTERCARD-V2] Processing pair ${pairIndex}/${pairCount}: ${pairKey} (${dates.length} dates)`);
 
 			try {
-				const page = await getMainPage();
-				
-				// Reset form before each request to ensure clean state
-				// This prevents stale data from previous requests
-				if (requestCounter > 0) {
+				// Reset form and set up currency pair once
+				if (processedCount > 0) {
 					await resetForm(page);
 				}
-				
-				const result = await fetchSingleRate(page, date, from, to);
+				await setupCurrencyPair(page, from, to);
 
-				if (result.rate !== null) {
-					// Save successful result
-					const record = {
-						date,
-						from_curr: from,
-						to_curr: to,
-						provider: PROVIDER_NAME,
-						rate: result.rate,
-						markup: null
-					};
+				// Process all dates for this pair
+				for (const date of dates) {
+					try {
+						const result = await fetchDateOnly(page, date);
 
-					const inserted = store.add(record);
-					if (inserted > 0) {
-						console.log(`[MASTERCARD-V2] SAVED ${date} ${from}/${to}: ${result.rate}`);
-						successCount++;
-					} else {
-						console.log(`[MASTERCARD-V2] SKIPPED ${date} ${from}/${to}: ${result.rate} (duplicate)`);
-						successCount++; // Still count as success since we got the rate
+						if (result.rate !== null) {
+							// Save successful result
+							const record = {
+								date,
+								from_curr: from,
+								to_curr: to,
+								provider: PROVIDER_NAME,
+								rate: result.rate,
+								markup: null
+							};
+
+							const inserted = store.add(record);
+							if (inserted > 0) {
+								console.log(`[MASTERCARD-V2] SAVED ${date} ${from}/${to}: ${result.rate}`);
+								successCount++;
+							} else {
+								console.log(`[MASTERCARD-V2] SKIPPED ${date} ${from}/${to}: ${result.rate} (duplicate)`);
+								successCount++; // Still count as success since we got the rate
+							}
+						} else if (result.error) {
+							// Handle specific error cases
+							const errorLower = result.error.toLowerCase();
+							if (
+								errorLower.includes("outside of approved historical rate range") ||
+								errorLower.includes("not selectable") ||
+								errorLower.includes("out of range") ||
+								errorLower.includes("not found in picker")
+							) {
+								console.log(`[MASTERCARD-V2] UNAVAILABLE ${date} ${from}/${to}: ${result.error}`);
+								unavailableCount++;
+							} else if (errorLower.includes("403") || errorLower.includes("forbidden")) {
+								// HTTP 403 - need to restart browser and pause
+								console.error(`[MASTERCARD-V2] 403 Forbidden - pausing ${config.pauseOnForbiddenMs / 1000}s`);
+								failCount++;
+								await closeBrowser();
+								await sleep(config.pauseOnForbiddenMs);
+								console.log("[MASTERCARD-V2] Resuming after 403 pause");
+								// Break out of date loop to re-setup after browser restart
+								break;
+							} else {
+								console.error(`[MASTERCARD-V2] FAILED ${date} ${from}/${to}: ${result.error}`);
+								failCount++;
+							}
+						}
+
+						// Short delay between date changes (no need for full request delay)
+						await sleep(config.batchDelayMs / 2);
+					} catch (error) {
+						console.error(`[MASTERCARD-V2] FAILED ${date} ${from}/${to}: ${error.message}`);
+						failCount++;
+
+						// On timeout or critical errors, restart browser and break to re-setup
+						if (error.message.includes("Timeout") || error.message.includes("Target closed")) {
+							console.log("[MASTERCARD-V2] Critical error - restarting browser");
+							await closeBrowser();
+							await sleep(config.sessionRefreshDelayMs * 2);
+							break;
+						}
 					}
-				} else if (result.error) {
-					// Handle specific error cases
-					const errorLower = result.error.toLowerCase();
-					if (
-						errorLower.includes("outside of approved historical rate range") ||
-						errorLower.includes("not selectable") ||
-						errorLower.includes("out of range") ||
-						errorLower.includes("not found in picker")
-					) {
-						console.log(`[MASTERCARD-V2] UNAVAILABLE ${date} ${from}/${to}: ${result.error}`);
-						unavailableCount++;
-					} else if (errorLower.includes("403") || errorLower.includes("forbidden")) {
-						// HTTP 403 - need to restart browser and pause
-						console.error(`[MASTERCARD-V2] 403 Forbidden - pausing ${config.pauseOnForbiddenMs / 1000}s`);
-						failCount++;
-						await closeBrowser();
-						await sleep(config.pauseOnForbiddenMs);
-						console.log("[MASTERCARD-V2] Resuming after 403 pause");
-					} else {
-						console.error(`[MASTERCARD-V2] FAILED ${date} ${from}/${to}: ${result.error}`);
-						failCount++;
+
+					processedCount++;
+
+					// Progress reporting
+					if (processedCount % 10 === 0 || processedCount === requests.length) {
+						const pct = Math.round((processedCount / requests.length) * 100);
+						console.log(`[MASTERCARD-V2] Progress: ${processedCount}/${requests.length} (${pct}%)`);
 					}
 				}
-
-				// Delay between requests
-				await sleep(config.batchDelayMs);
 			} catch (error) {
-				console.error(`[MASTERCARD-V2] FAILED ${date} ${from}/${to}: ${error.message}`);
-				failCount++;
+				console.error(`[MASTERCARD-V2] FAILED setting up ${pairKey}: ${error.message}`);
+				failCount += dates.length;
+				processedCount += dates.length;
 
-				// On timeout or critical errors, restart browser
+				// On critical errors, restart browser
 				if (error.message.includes("Timeout") || error.message.includes("Target closed")) {
 					console.log("[MASTERCARD-V2] Critical error - restarting browser");
 					await closeBrowser();
 					await sleep(config.sessionRefreshDelayMs * 2);
 				}
-			}
-
-			requestCounter++;
-
-			// Progress reporting
-			if ((i + 1) % 10 === 0 || i === requests.length - 1) {
-				const pct = Math.round(((i + 1) / requests.length) * 100);
-				console.log(`[MASTERCARD-V2] Progress: ${i + 1}/${requests.length} (${pct}%)`);
 			}
 		}
 
