@@ -32,6 +32,8 @@ jobs:
         run: bunx playwright install --with-deps chromium
       
       - name: Run daily update
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" bun run daily
       
       - name: Commit and push changes
