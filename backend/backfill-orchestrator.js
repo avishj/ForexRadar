@@ -210,7 +210,16 @@ async function main() {
   // Step 2: Group by provider
   const grouped = groupByProvider(missingData);
   
-  // Step 3: Execute batches in parallel (if multiple providers)
+  // Step 3: Randomize batch request order (Fisher-Yates shuffle)
+  for (const provider of ['VISA', 'MASTERCARD']) {
+    const requests = grouped[provider];
+    for (let i = requests.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [requests[i], requests[j]] = [requests[j], requests[i]];
+    }
+  }
+  
+  // Step 4: Execute batches in parallel (if multiple providers)
   const promises = [];
   
   if (providers.includes('VISA') && grouped.VISA.length > 0) {
@@ -233,7 +242,7 @@ async function main() {
     }
   }
   
-  // Step 4: Print summary
+  // Step 5: Print summary
   printSummary(pairs, startDate, endDate, providers);
   
   const exitCode = failures.length > 0 ? 1 : 0;
