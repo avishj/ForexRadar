@@ -142,7 +142,7 @@ async function main() {
   
   console.log(`Visa/MC Watchlist: ${watchlist.length} pair(s)`);
   console.log(`ECB Watchlist: ${ecbCurrencies.length} currencies`);
-  console.log('Providers: Visa, Mastercard, ECB\n');
+  console.log('Providers: Visa, ECB\n');
   
   const latestAvailableDate = getLatestAvailableDate();
   const dateStr = formatDate(latestAvailableDate);
@@ -152,14 +152,13 @@ async function main() {
   const failures = [];
   
   // Step 1: Find missing data for today (reuse orchestrator logic)
-  const providers = ['VISA', 'MASTERCARD'];
+  const providers = ['VISA'];
   const missingBefore = analyzeGaps(watchlist, dateStr, dateStr, providers, { silent: true });
   const groupedBefore = groupByProvider(missingBefore);
   
   const visaNeeded = groupedBefore.VISA.length;
-  const mcNeeded = groupedBefore.MASTERCARD.length;
   
-  console.log(`Missing data: ${visaNeeded} Visa, ${mcNeeded} Mastercard`);
+  console.log(`Missing data: ${visaNeeded} Visa`);
   
   // Step 2: Execute batch fetches (batch clients handle their own browser lifecycle)
   if (visaNeeded > 0) {
@@ -171,24 +170,13 @@ async function main() {
     }
   }
   
-  if (mcNeeded > 0) {
-    console.log('\n--- Mastercard Updates ---');
-    try {
-      await executeProviderBatch('MASTERCARD', groupedBefore.MASTERCARD, { silent: true });
-    } catch (error) {
-      // Mastercard failures are expected due to bot detection, don't report
-      console.log(`[MASTERCARD] Batch completed with errors (expected)`);
-    }
-  }
-  
   // Step 3: Check what's still missing after batch (these are failures)
   const missingAfter = analyzeGaps(watchlist, dateStr, dateStr, providers, { silent: true });
   const groupedAfter = groupByProvider(missingAfter);
   
   const visaUpdated = visaNeeded - groupedAfter.VISA.length;
-  const mcUpdated = mcNeeded - groupedAfter.MASTERCARD.length;
   
-  // Convert Visa failures to reportable format (ignore MC failures)
+  // Convert Visa failures to reportable format
   const visaFailures = convertMissingToFailures(missingAfter);
   failures.push(...visaFailures);
   
@@ -198,10 +186,9 @@ async function main() {
   // Summary
   console.log(`\n=== Summary ===`);
   console.log(`Visa: ${visaUpdated}/${visaNeeded} pairs updated`);
-  console.log(`Mastercard: ${mcUpdated}/${mcNeeded} pairs updated`);
   console.log(`ECB: ${ecbResult.updated}/${ecbCurrencies.length} currencies updated`);
   
-  // Create GitHub issue for failures (Visa + ECB only)
+  // Create GitHub issue for failures
   if (failures.length > 0) {
     console.log(`\n⚠ ${failures.length} failure(s) detected`);
     await createGitHubIssue(failures, dateStr);
