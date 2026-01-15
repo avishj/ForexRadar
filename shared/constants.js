@@ -36,11 +36,11 @@ export const PROVIDER_CONFIG = {
 		// Completely restart browser every N requests to prevent 403s
 		browserRestartInterval: 18,
 		// How long to pause after receiving HTTP 403
-		pauseOnForbiddenMs: 2 * 60 * 1000, // 2 minutes
+		pauseOnForbiddenMs: 10 * 60 * 1000, // 10 minutes
 		// Small delay after session refresh
-		sessionRefreshDelayMs: 200,
+		sessionRefreshDelayMs: 500,
 		// Small delay between batches to avoid overwhelming the API
-		batchDelayMs: 1000
+		batchDelayMs: 1300
 	},
 	ECB: {}
 };
@@ -62,11 +62,11 @@ export const USER_AGENTS = [
 	// "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36",
 	// "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.7499.40 Safari/537.36",
 	// Chrome 142 - macOS Sequoia (15) and Sonoma (14)
-	// "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+	"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
 	// "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36",
 	// "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36",
 	// Chrome 142 - Linux
-	"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36",
+	// "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36",
 	// Edge 142 - Windows
 	// "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0",
 	// "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.7499.40 Safari/537.36 Edg/142.0.3351.18",
