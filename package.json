@@ -9,19 +9,15 @@
     "daily": "cd backend && bun run daily-update.js",
     "validate": "cd backend && bun run validate-data.js",
     "typecheck": "bunx tsc --noEmit",
-    "typecheck:frontend": "bunx tsc --project jsconfig.json --noEmit",
-    "typecheck:backend": "bunx tsc --project backend/jsconfig.json --noEmit",
     "check": "bun run typecheck",
     "postinstall": "cd backend && bunx playwright install firefox chromium"
   },
   "dependencies": {
-    "better-sqlite3": "^11.7.0",
     "playwright": "^1.40.0"
   },
   "devDependencies": {
     "@types/bun": "^1.1.14",
     "@types/node": "^20.0.0",
-    "@types/sql.js": "^1.4.9",
     "apexcharts": "^3.45.0",
     "typescript": "^5.0.0"
   },
