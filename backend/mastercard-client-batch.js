@@ -219,8 +219,9 @@ export async function fetchBatch(requests) {
 				if (apiStatus === 403) {
 					console.error(`[MASTERCARD] 403 Forbidden - Pausing ${config.pauseOnForbiddenMs / 1000}s`);
 					await closeBrowser();
-					await sleep(config.pauseOnForbiddenMs);
+                    await sleep(config.pauseOnForbiddenMs);
 					console.log("[MASTERCARD] Resuming");
+                    await refreshSession();
 					continue;
 				}
 
