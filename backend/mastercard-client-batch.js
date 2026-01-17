@@ -279,7 +279,8 @@ export async function fetchBatch(requests) {
 				if (error.message.includes("Timeout")) {
 					console.log("[MASTERCARD] Timeout detected - restarting browser");
 					await closeBrowser();
-					await sleep(config.sessionRefreshDelayMs);
+                    await sleep(config.sessionRefreshDelayMs);
+                    await refreshSession();
 				}
 			}
 
