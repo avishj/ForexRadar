@@ -123,7 +123,7 @@ async function closeBrowser() {
 			// Try graceful close with 3 second timeout
 			await Promise.race([browser.close(), new Promise((_, reject) => setTimeout(() => reject(new Error("Close timeout")), 3000))]);
 			console.log("[MASTERCARD] Browser closed");
-		} catch (error) {
+		} catch (_error) {
 			console.warn("[MASTERCARD] Browser close timed out, continuing (process may need manual cleanup)");
 		}
 	}

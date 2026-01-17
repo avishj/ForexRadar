@@ -293,7 +293,7 @@ function getChartOptions(fromCurr, toCurr) {
       x: {
         format: 'MMM dd, yyyy'
       },
-      custom: function({ series, seriesIndex, dataPointIndex, w }) {
+      custom: function({ series, seriesIndex: _seriesIndex, dataPointIndex, w }) {
         // Custom tooltip to ensure all series are displayed even when some have null values
         const date = new Date(w.globals.seriesX[0][dataPointIndex]);
         const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });

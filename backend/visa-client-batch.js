@@ -117,7 +117,7 @@ export async function fetchBatch(requests) {
 							apiStatus = response.status();
 							try {
 								apiResponse = await response.text();
-							} catch {}
+							} catch { /* Response body unavailable */ }
 						}
 					});
 

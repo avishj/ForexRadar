@@ -10,14 +10,9 @@
 import {
   parseCSV,
   filterByTargetCurrency,
-  filterByDateRange,
   sortByDateAsc,
-  splitByProvider,
-  getLatestDateFromRecords,
-  getOldestDateFromRecords
+  splitByProvider
 } from '../shared/csv-utils.js';
-
-import { getYearsInRange, formatDate } from '../shared/utils.js';
 
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
 /** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */

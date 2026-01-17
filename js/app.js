@@ -232,9 +232,9 @@ class SearchableDropdown {
   }
   
   /**
-   * @param {FocusEvent} e 
+   * @param {FocusEvent} _e 
    */
-  handleBlur(e) {
+  handleBlur(_e) {
     // Small delay to allow click events on dropdown items
     setTimeout(() => {
       this.close();
@@ -596,7 +596,7 @@ function renderRecentPairs(pairs) {
   const currentTo = toSelect.value;
   
   // Build chips HTML
-  recentPairsList.innerHTML = recentPairs.map((pair, index) => {
+  recentPairsList.innerHTML = recentPairs.map((pair, _index) => {
     const isActive = pair.from === currentFrom && pair.to === currentTo;
     return `
       <button 
@@ -634,7 +634,7 @@ function renderRecentPairs(pairs) {
 // ============================================================================
 
 // Track notification count for staggering
-let notificationCount = 0;
+const _notificationCount = 0;
 
 /**
  * Shows a notification toast
@@ -1169,7 +1169,7 @@ async function loadCurrencyPair() {
 
     // Show summary notification
     const { fromCache, fromServer, fromLive, visaCount, mastercardCount, ecbCount } = result.stats;
-    let source = [];
+    const source = [];
     if (fromCache > 0) source.push(`${fromCache} cached`);
     if (fromServer > 0) source.push(`${fromServer} from server`);
     if (fromLive > 0) source.push(`${fromLive} live`);
@@ -1385,7 +1385,7 @@ function setupKeyboardShortcuts() {
         swapButton?.click();
         break;
         
-      case '/':
+      case '/': {
         // Focus from currency search
         e.preventDefault();
         const fromInput = document.getElementById('from-currency-input');
@@ -1394,6 +1394,7 @@ function setupKeyboardShortcuts() {
           /** @type {HTMLInputElement} */ (fromInput).select();
         }
         break;
+      }
         
       case 'c':
         // Copy rate
@@ -1424,7 +1425,7 @@ function setupKeyboardShortcuts() {
       case '3':
       case '4':
       case '5':
-      case '6':
+      case '6': {
         // Time range shortcuts
         e.preventDefault();
         const range = TIME_RANGE_KEYS[key];
@@ -1435,6 +1436,7 @@ function setupKeyboardShortcuts() {
           }
         }
         break;
+      }
     }
   });
 }
@@ -1576,7 +1578,7 @@ function init() {
         copyRateBtn.classList.add('copied');
         showNotification('Rate copied to clipboard!', 'success', 2000);
         setTimeout(() => copyRateBtn.classList.remove('copied'), 1500);
-      } catch (err) {
+      } catch (_err) {
         showNotification('Failed to copy', 'error');
       }
     });
@@ -1604,7 +1606,7 @@ function init() {
         shareUrlBtn.classList.add('copied');
         showNotification('Link copied to clipboard!', 'success', 2000);
         setTimeout(() => shareUrlBtn.classList.remove('copied'), 1500);
-      } catch (err) {
+      } catch (_err) {
         showNotification('Failed to copy link', 'error');
       }
     });

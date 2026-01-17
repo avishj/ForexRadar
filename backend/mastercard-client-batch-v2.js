@@ -136,7 +136,7 @@ async function closeBrowser() {
 				new Promise((_, reject) => setTimeout(() => reject(new Error("Close timeout")), 3000))
 			]);
 			console.log("[MASTERCARD-V2] Browser closed");
-		} catch (error) {
+		} catch (_error) {
 			console.warn("[MASTERCARD-V2] Browser close timed out, continuing");
 		}
 	}
@@ -254,7 +254,7 @@ async function selectCurrency(page, dropdownType, currencyCode) {
 		if (!dropdown) throw new Error("Dropdown not found");
 		
 		// Find the search input in this dropdown
-		const searchInput = dropdown.querySelector("input[type='text'], input[placeholder='Search']");
+		const searchInput = /** @type {HTMLInputElement|null} */ (dropdown.querySelector("input[type='text'], input[placeholder='Search']"));
 		if (!searchInput) throw new Error("Search input not found in dropdown");
 		
 		// Focus and fill the search input
@@ -303,7 +303,7 @@ async function selectCurrency(page, dropdownType, currencyCode) {
  */
 async function fillAmount(page, amount) {
 	await page.evaluate((val) => {
-		const input = document.querySelector("#txtTAmt");
+		const input = /** @type {HTMLInputElement|null} */ (document.querySelector("#txtTAmt"));
 		if (!input) throw new Error("Amount input #txtTAmt not found");
 		input.focus();
 		input.value = val;
@@ -321,7 +321,7 @@ async function fillAmount(page, amount) {
  */
 async function fillBankFee(page, fee) {
 	await page.evaluate((val) => {
-		const input = document.querySelector("#BankFee");
+		const input = /** @type {HTMLInputElement|null} */ (document.querySelector("#BankFee"));
 		if (!input) throw new Error("Bank fee input #BankFee not found");
 		input.focus();
 		input.value = val;
@@ -397,7 +397,7 @@ async function selectDate(page, date) {
 
 	// Select year first using JavaScript - triggers calendar re-render
 	const yearChanged = await page.evaluate((targetYear) => {
-		const yearSelect = document.querySelector(".ui-datepicker-year");
+		const yearSelect = /** @type {HTMLSelectElement|null} */ (document.querySelector(".ui-datepicker-year"));
 		if (!yearSelect) return { success: false, error: "Year select not found" };
 		const option = yearSelect.querySelector(`option[value="${targetYear}"]`);
 		if (!option) return { success: false, error: `Year ${targetYear} not in options` };
@@ -413,7 +413,7 @@ async function selectDate(page, date) {
 
 	// Select month using JavaScript - triggers calendar re-render
 	const monthChanged = await page.evaluate((targetMonth) => {
-		const monthSelect = document.querySelector(".ui-datepicker-month");
+		const monthSelect = /** @type {HTMLSelectElement|null} */ (document.querySelector(".ui-datepicker-month"));
 		if (!monthSelect) return { success: false, error: "Month select not found" };
 		const option = monthSelect.querySelector(`option[value="${targetMonth}"]`);
 		if (!option) return { success: false, error: `Month ${targetMonth} not in options` };
@@ -440,7 +440,7 @@ async function selectDate(page, date) {
 			const link = td.querySelector("a");
 			if (link && link.textContent.trim() === String(targetDay)) {
 				// Click the TD element - this triggers jQuery UI's handler
-				td.click();
+				/** @type {HTMLElement} */ (td).click();
 				return { success: true, clickedDay: targetDay };
 			}
 		}
@@ -466,7 +466,7 @@ async function selectDate(page, date) {
 	
 	// Verify the date was actually set by checking the input value
 	const actualValue = await page.evaluate(() => {
-		const dateInput = document.querySelector("#getDate");
+		const dateInput = /** @type {HTMLInputElement|null} */ (document.querySelector("#getDate"));
 		return dateInput ? dateInput.value : null;
 	});
 	

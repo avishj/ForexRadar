@@ -84,7 +84,7 @@ function getStartDateFromRange(range) {
   // Start from end of today to ensure we include today's data
   const now = new Date();
   now.setHours(23, 59, 59, 999); // End of today
-  let startDate = new Date(now);
+  const startDate = new Date(now);
   
   if ("months" in range && range.months) {
     startDate.setMonth(startDate.getMonth() - range.months);
@@ -363,7 +363,7 @@ async function fetchLiveDataForProvider(
   // If no historical data exists, only fetch last 7 days
   const stopDateStr = latestDate || addDays(yesterdayStr, -7);
   
-  let currentDate = new Date(startDate);
+  const currentDate = new Date(startDate);
   let consecutiveErrors = 0;
   const maxErrors = 3;
 
