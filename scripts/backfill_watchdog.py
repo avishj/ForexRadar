@@ -26,6 +26,10 @@ import argparse
 from datetime import datetime
 from pathlib import Path
 
+# Global for signal handling
+_current_process = None
+_shutdown_requested = False
+
 # Configuration
 HANG_TIMEOUT = 900  # 15 minutes in seconds
 MAX_RESTARTS = 3
@@ -104,6 +108,19 @@ def release_lock() -> None:
         pass
 
 
+def handle_shutdown(signum, frame) -> None:
+    """Handle SIGTERM/SIGINT for graceful shutdown."""
+    global _shutdown_requested, _current_process
+    log(f"Received signal {signum}, shutting down...", "warn")
+    _shutdown_requested = True
+    
+    if _current_process and _current_process.poll() is None:
+        kill_process_group(_current_process.pid)
+    
+    release_lock()
+    sys.exit(130 if signum == signal.SIGINT else 143)
+
+
 def kill_process_group(pid: int) -> None:
     """
     Kill entire process group to terminate Playwright and browser children.
@@ -138,6 +155,11 @@ def run_backfill(provider: str, days: int, log_file: Path) -> tuple[bool, int]:
     Returns:
         (success: bool, exit_code: int)
     """
+    global _current_process
+    
+    if _shutdown_requested:
+        return False, -1
+    
     cmd = ["bun", "run", "backfill", "--", f"--provider={provider}", f"--days={days}"]
     log(f"Executing: {' '.join(cmd)}", "info")
     
@@ -151,7 +173,7 @@ def run_backfill(provider: str, days: int, log_file: Path) -> tuple[bool, int]:
         lf.flush()
         
         # Start process in new session for process group control
-        proc = subprocess.Popen(
+        _current_process = subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -161,8 +183,13 @@ def run_backfill(provider: str, days: int, log_file: Path) -> tuple[bool, int]:
             universal_newlines=True,
         )
         
+        proc = _current_process
         try:
             while True:
+                if _shutdown_requested:
+                    kill_process_group(proc.pid)
+                    return False, -1
+                
                 # Non-blocking read with select
                 import select
                 ready, _, _ = select.select([proc.stdout], [], [], 1.0)
@@ -258,6 +285,10 @@ def commit_and_push() -> bool:
 
 
 def main() -> int:
+    # Register signal handlers for graceful shutdown
+    signal.signal(signal.SIGTERM, handle_shutdown)
+    signal.signal(signal.SIGINT, handle_shutdown)
+    
     parser = argparse.ArgumentParser(description="Backfill watchdog with hang detection")
     parser.add_argument("--provider", required=True, help="Provider (visa/mastercard)")
     parser.add_argument("--days", type=int, required=True, help="Number of days to backfill")

@@ -146,16 +146,8 @@ install() {
     <key>StandardErrorPath</key>
     <string>${LOG_DIR}/launchd_stderr.log</string>
     
-    <!-- Restart on failure (but not on success) -->
-    <key>KeepAlive</key>
-    <dict>
-        <key>SuccessfulExit</key>
-        <false/>
-    </dict>
-    
-    <!-- Prevent rapid restart loops (5 minute throttle) -->
-    <key>ThrottleInterval</key>
-    <integer>300</integer>
+    <!-- Do NOT use KeepAlive - watchdog handles restarts internally -->
+    <!-- Only run at scheduled times, not on load -->
     
     <!-- Nice priority (lower priority than interactive apps) -->
     <key>Nice</key>
