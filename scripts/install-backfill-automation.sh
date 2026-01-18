@@ -48,13 +48,12 @@ uninstall() {
     print_header
     log_info "Uninstalling backfill automation..."
     
-    # Unload from launchd
-    if launchctl list | grep -q "$PLIST_NAME"; then
-        log_info "Unloading from launchd..."
-        launchctl unload "$PLIST_PATH" 2>/dev/null || true
+    # Unload from launchd (use modern bootout command)
+    log_info "Unloading from launchd..."
+    if launchctl bootout "gui/$(id -u)/$PLIST_NAME" 2>/dev/null; then
         log_success "Unloaded from launchd"
     else
-        log_warn "Not currently loaded in launchd"
+        log_warn "Not currently loaded in launchd (or already removed)"
     fi
     
     # Remove plist
@@ -92,11 +91,9 @@ install() {
     # Create LaunchAgents directory if needed
     mkdir -p "$HOME/Library/LaunchAgents"
     
-    # Unload existing if present
-    if launchctl list 2>/dev/null | grep -q "$PLIST_NAME"; then
-        log_info "Unloading existing job..."
-        launchctl unload "$PLIST_PATH" 2>/dev/null || true
-    fi
+    # Unload existing if present (use modern bootout command)
+    log_info "Removing existing job if present..."
+    launchctl bootout "gui/$(id -u)/$PLIST_NAME" 2>/dev/null || true
     
     # Generate plist
     log_info "Generating launchd plist..."
@@ -123,7 +120,7 @@ install() {
             <key>Hour</key>
             <integer>2</integer>
             <key>Minute</key>
-            <integer>0</integer>
+            <integer>13</integer>
         </dict>
         <dict>
             <key>Hour</key>
@@ -166,14 +163,18 @@ install() {
 EOF
     log_success "Created plist: $PLIST_PATH"
     
-    # Load into launchd
+    # Load into launchd (use modern bootstrap command)
     log_info "Loading into launchd..."
-    launchctl load "$PLIST_PATH"
-    log_success "Loaded into launchd"
+    if launchctl bootstrap "gui/$(id -u)" "$PLIST_PATH"; then
+        log_success "Loaded into launchd"
+    else
+        log_error "Failed to load - try: launchctl bootstrap gui/\$(id -u) $PLIST_PATH"
+        exit 1
+    fi
     
     # Verify it's loaded
     if launchctl list | grep -q "$PLIST_NAME"; then
-        log_success "Verified: job is running in launchd"
+        log_success "Verified: job registered in launchd"
     else
         log_warn "Job may not be loaded correctly, check 'launchctl list | grep forexradar'"
     fi
