@@ -9,7 +9,7 @@
 #   ./install-backfill-automation.sh          # Install and load
 #   ./install-backfill-automation.sh uninstall # Unload and remove
 #
-# Schedule: Runs at 9:00 AM, 3:00 PM, and 9:00 PM daily
+# Schedule: Runs at 12:00 PM, 3:00 PM, 6:00 PM, and 9:00 PM daily
 #
 
 set -euo pipefail
@@ -113,18 +113,24 @@ install() {
     <key>WorkingDirectory</key>
     <string>${PROJECT_ROOT}</string>
     
-    <!-- Run at 9:00 AM, 3:00 PM, and 9:00 PM daily -->
+    <!-- Run at 12:00 PM, 3:00 PM, 6:00 PM, and 9:00 PM daily -->
     <key>StartCalendarInterval</key>
     <array>
         <dict>
             <key>Hour</key>
-            <integer>2</integer>
+            <integer>12</integer>
             <key>Minute</key>
-            <integer>13</integer>
+            <integer>0</integer>
         </dict>
         <dict>
             <key>Hour</key>
             <integer>15</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+        <dict>
+            <key>Hour</key>
+            <integer>18</integer>
             <key>Minute</key>
             <integer>0</integer>
         </dict>
@@ -183,8 +189,9 @@ EOF
     echo -e "${BOLD}Installation Complete!${RESET}"
     echo ""
     echo -e "${DIM}Schedule:${RESET}"
-    echo "  • 9:00 AM daily"
+    echo "  • 12:00 PM daily"
     echo "  • 3:00 PM daily"
+    echo "  • 6:00 PM daily"
     echo "  • 9:00 PM daily"
     echo ""
     echo -e "${DIM}Logs:${RESET}"
