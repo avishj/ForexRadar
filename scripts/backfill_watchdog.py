@@ -241,6 +241,22 @@ def has_changes() -> bool:
     return bool(result.stdout.strip())
 
 
+def git_pull() -> bool:
+    """Pull latest changes from remote."""
+    log("Pulling latest changes...", "info")
+    result = subprocess.run(
+        ["git", "pull", "--rebase"],
+        cwd=PROJECT_ROOT,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        log(f"git pull failed: {result.stderr}", "error")
+        return False
+    log("Pull successful", "success")
+    return True
+
+
 def commit_and_push() -> bool:
     """Commit changes with signoff and push to remote."""
     if not has_changes():
@@ -317,6 +333,10 @@ def main() -> int:
         latest_log.unlink(missing_ok=True)
         latest_log.symlink_to(log_file)
         
+        # Pull before starting
+        if not git_pull():
+            log("Failed to pull, continuing anyway...", "warn")
+        
         attempt = 0
         success = False
         
@@ -337,6 +357,10 @@ def main() -> int:
         if not success:
             log(f"All {MAX_RESTARTS} attempts failed", "error")
             return 1
+        
+        # Pull again before committing to avoid conflicts
+        if not git_pull():
+            log("Failed to pull before commit", "warn")
         
         # Commit and push on success
         if not commit_and_push():
