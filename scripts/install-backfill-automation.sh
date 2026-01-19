@@ -9,7 +9,7 @@
 #   ./install-backfill-automation.sh          # Install and load
 #   ./install-backfill-automation.sh uninstall # Unload and remove
 #
-# Schedule: Runs at 12:00 PM, 3:00 PM, 6:00 PM, and 9:00 PM daily
+# Schedule: Runs at 1:00 PM, 4:00 PM, 7:00 PM, and 10:00 PM daily
 #
 
 set -euo pipefail
@@ -113,30 +113,30 @@ install() {
     <key>WorkingDirectory</key>
     <string>${PROJECT_ROOT}</string>
     
-    <!-- Run at 12:00 PM, 3:00 PM, 6:00 PM, and 9:00 PM daily -->
+    <!-- Run at 1:00 PM, 4:00 PM, 7:00 PM, and 10:00 PM daily -->
     <key>StartCalendarInterval</key>
     <array>
         <dict>
             <key>Hour</key>
-            <integer>12</integer>
+            <integer>13</integer>
             <key>Minute</key>
             <integer>0</integer>
         </dict>
         <dict>
             <key>Hour</key>
-            <integer>15</integer>
+            <integer>16</integer>
             <key>Minute</key>
             <integer>0</integer>
         </dict>
         <dict>
             <key>Hour</key>
-            <integer>18</integer>
+            <integer>19</integer>
             <key>Minute</key>
             <integer>0</integer>
         </dict>
         <dict>
             <key>Hour</key>
-            <integer>21</integer>
+            <integer>22</integer>
             <key>Minute</key>
             <integer>0</integer>
         </dict>
@@ -189,10 +189,10 @@ EOF
     echo -e "${BOLD}Installation Complete!${RESET}"
     echo ""
     echo -e "${DIM}Schedule:${RESET}"
-    echo "  • 12:00 PM daily"
-    echo "  • 3:00 PM daily"
-    echo "  • 6:00 PM daily"
-    echo "  • 9:00 PM daily"
+    echo "  • 1:00 PM daily"
+    echo "  • 4:00 PM daily"
+    echo "  • 7:00 PM daily"
+    echo "  • 10:00 PM daily"
     echo ""
     echo -e "${DIM}Logs:${RESET}"
     echo "  • $LOG_DIR/backfill_mastercard_latest.log"
