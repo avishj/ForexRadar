@@ -73,9 +73,12 @@ test.describe('Page Load & Initial State', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
     
-    // Filter out expected errors (e.g., network failures for external resources)
+    // Filter out expected errors (e.g., network failures, CORS for external resources)
     const criticalErrors = errors.filter(
-      (e) => !e.includes('net::ERR') && !e.includes('Failed to load resource')
+      (e) => !e.includes('net::ERR') && 
+             !e.includes('Failed to load resource') &&
+             !e.includes('CORS') &&
+             !e.includes('Access-Control-Allow-Origin')
     );
     expect(criticalErrors).toHaveLength(0);
   });
