@@ -54,8 +54,20 @@ async function selectUsdInrAndWaitForData(page) {
 // Test Setup
 // ============================================================================
 
-// Note: Each test starts fresh by going to '/' directly
-// Tests that need clean localStorage must clear it explicitly
+/**
+ * Ensure fresh environment per test by clearing storage before page loads.
+ * This guarantees atomicity - no state leaks between tests.
+ */
+test.beforeEach(async ({ context, page }) => {
+  await context.clearCookies();
+  
+  // Clear storage BEFORE the app loads (via init script)
+  // This is critical because the app reads localStorage during boot
+  await context.addInitScript(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+});
 
 // ============================================================================
 // Page Load & Initial State Tests
@@ -186,13 +198,19 @@ test.describe('Theme Toggle', () => {
     await expect(page.locator('html')).toHaveClass(/dark/);
   });
 
-  test('theme persists on reload', async ({ page }) => {
+  test('theme persists on reload', async ({ browser }) => {
+    // Use fresh context WITHOUT storage clearing to test persistence
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    
     await page.goto('/');
     await page.click('#theme-toggle');
     await expect(page.locator('html')).toHaveClass(/light/);
     
     await page.reload();
     await expect(page.locator('html')).toHaveClass(/light/);
+    
+    await context.close();
   });
 
   test('themechange event fires without error', async ({ page }) => {
