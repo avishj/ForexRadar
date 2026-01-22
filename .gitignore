@@ -3,3 +3,4 @@ repomix-output.xml
 node_modules/
 .DS_Store
 test-results/
+playwright-report/
