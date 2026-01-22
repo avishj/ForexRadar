@@ -12,6 +12,7 @@
  */
 
 import { formatDate } from '../shared/utils.js';
+import { LIVE_FETCH_TIMEOUT_MS } from '../shared/constants.js';
 
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
 /** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
@@ -70,8 +71,12 @@ export async function fetchRate(date, fromCurr, toCurr) {
   // Use CORS proxy to bypass browser restrictions
   const proxyUrl = CORS_PROXY + encodeURIComponent(url.toString());
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), LIVE_FETCH_TIMEOUT_MS);
+
   try {
-    const response = await fetch(proxyUrl);
+    const response = await fetch(proxyUrl, { signal: controller.signal });
+    clearTimeout(timeoutId);
     
     // Handle HTTP-level errors
     if (response.status === 429 || response.status === 403) {
@@ -111,6 +116,12 @@ export async function fetchRate(date, fromCurr, toCurr) {
       markup: null // Mastercard does not provide markup information
     };
   } catch (error) {
+    clearTimeout(timeoutId);
+    
+    if (error.name === 'AbortError') {
+      throw new Error('Request timeout');
+    }
+    
     if (error.message.includes('Rate limited')) {
       throw error;
     }
