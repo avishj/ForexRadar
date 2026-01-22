@@ -46,6 +46,11 @@ export const PROVIDER_CONFIG = {
 };
 
 /**
+ * Timeout for live API fetch requests (browser clients)
+ */
+export const LIVE_FETCH_TIMEOUT_MS = 2000;
+
+/**
  * Default backfill configuration
  */
 export const BACKFILL_DEFAULTS = {

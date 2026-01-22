@@ -8,6 +8,7 @@
  */
 
 import { formatDate, formatDateForApi } from '../shared/utils.js';
+import { LIVE_FETCH_TIMEOUT_MS } from '../shared/constants.js';
 
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
 /** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
@@ -39,8 +40,12 @@ export async function fetchRate(date, fromCurr, toCurr) {
   // Use CORS proxy to bypass browser restrictions
   const proxyUrl = CORS_PROXY + encodeURIComponent(url.toString());
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), LIVE_FETCH_TIMEOUT_MS);
+
   try {
-    const response = await fetch(proxyUrl);
+    const response = await fetch(proxyUrl, { signal: controller.signal });
+    clearTimeout(timeoutId);
     
     // HTTP 500 indicates end of history
     if (response.status === 500) {
@@ -80,6 +85,12 @@ export async function fetchRate(date, fromCurr, toCurr) {
       markup: markup ?? 0
     };
   } catch (error) {
+    clearTimeout(timeoutId);
+    
+    if (error.name === 'AbortError') {
+      throw new Error('Request timeout');
+    }
+    
     if (error.message.includes('Rate limited')) {
       throw error;
     }
