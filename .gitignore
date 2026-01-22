@@ -2,3 +2,5 @@ repomix-output.xml
 *.png
 node_modules/
 .DS_Store
+test-results/
+playwright-report/

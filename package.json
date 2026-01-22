@@ -12,13 +12,19 @@
     "check": "bun run typecheck",
     "lint": "eslint js shared backend",
     "lint:fix": "eslint js shared backend --fix",
-    "postinstall": "cd backend && bunx playwright install firefox chromium"
+    "postinstall": "cd backend && bunx playwright install firefox chromium",
+    "test": "bunx playwright test --config=tests/playwright.config.js",
+    "test:chromium": "bunx playwright test --config=tests/playwright.config.js --project=chromium",
+    "test:firefox": "bunx playwright test --config=tests/playwright.config.js --project=firefox",
+    "test:headed": "bunx playwright test --config=tests/playwright.config.js --headed",
+    "test:ui": "bunx playwright test --config=tests/playwright.config.js --ui"
   },
   "dependencies": {
     "playwright": "^1.40.0"
   },
   "devDependencies": {
     "@eslint/js": "9.39.2",
+    "@playwright/test": "^1.40.0",
     "@types/bun": "^1.1.14",
     "@types/node": "^20.0.0",
     "apexcharts": "^3.45.0",
