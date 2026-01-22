@@ -603,35 +603,47 @@ test.describe('Series Toggles', () => {
   });
 
   test('unchecking Visa Rate toggle works', async ({ page }) => {
-    await page.locator('#toggle-visa-rate').uncheck({ force: true });
-    await expect(page.locator('#toggle-visa-rate')).not.toBeChecked();
+    const checkbox = page.locator('#toggle-visa-rate');
+    const label = page.locator('label:has(#toggle-visa-rate)');
+    await label.click();
+    await expect(checkbox).not.toBeChecked();
   });
 
   test('unchecking Mastercard Rate toggle works', async ({ page }) => {
-    await page.locator('#toggle-mc-rate').uncheck({ force: true });
-    await expect(page.locator('#toggle-mc-rate')).not.toBeChecked();
+    const checkbox = page.locator('#toggle-mc-rate');
+    const label = page.locator('label:has(#toggle-mc-rate)');
+    await label.click();
+    await expect(checkbox).not.toBeChecked();
   });
 
   test('unchecking ECB Rate toggle works', async ({ page }) => {
-    const ecbToggle = page.locator('#toggle-ecb-rate');
+    const checkbox = page.locator('#toggle-ecb-rate');
+    const label = page.locator('label:has(#toggle-ecb-rate)');
     // ECB toggle may not be visible if no ECB data exists for the pair
-    if (await ecbToggle.isVisible()) {
-      await ecbToggle.uncheck({ force: true });
-      await expect(ecbToggle).not.toBeChecked();
+    if (await checkbox.isVisible()) {
+      await label.click();
+      await expect(checkbox).not.toBeChecked();
     }
   });
 
   test('unchecking Visa Markup toggle works', async ({ page }) => {
-    await page.locator('#toggle-visa-markup').uncheck({ force: true });
-    await expect(page.locator('#toggle-visa-markup')).not.toBeChecked();
+    const checkbox = page.locator('#toggle-visa-markup');
+    const label = page.locator('label:has(#toggle-visa-markup)');
+    await label.click();
+    await expect(checkbox).not.toBeChecked();
   });
 
   test('re-checking toggle works', async ({ page }) => {
-    await page.locator('#toggle-visa-rate').uncheck({ force: true });
-    await expect(page.locator('#toggle-visa-rate')).not.toBeChecked();
+    const checkbox = page.locator('#toggle-visa-rate');
+    const label = page.locator('label:has(#toggle-visa-rate)');
     
-    await page.locator('#toggle-visa-rate').check({ force: true });
-    await expect(page.locator('#toggle-visa-rate')).toBeChecked();
+    // Click label to uncheck
+    await label.click();
+    await expect(checkbox).not.toBeChecked();
+    
+    // Click label to re-check
+    await label.click();
+    await expect(checkbox).toBeChecked();
   });
 });
 
@@ -670,9 +682,11 @@ test.describe('Action Buttons', () => {
     await selectUsdInrAndWaitForData(page);
   });
 
-  test('copy rate button shows notification', async ({ page }) => {
-    // Grant clipboard permissions
-    await page.context().grantPermissions(['clipboard-write', 'clipboard-read']);
+  test('copy rate button shows notification', async ({ page, browserName }) => {
+    // Firefox doesn't support clipboard-write permission
+    if (browserName !== 'firefox') {
+      await page.context().grantPermissions(['clipboard-write', 'clipboard-read']);
+    }
     
     await page.click('#copy-rate-btn');
     
@@ -681,8 +695,11 @@ test.describe('Action Buttons', () => {
     await expect(notification).toBeVisible({ timeout: 5000 });
   });
 
-  test('share button shows notification', async ({ page }) => {
-    await page.context().grantPermissions(['clipboard-write', 'clipboard-read']);
+  test('share button shows notification', async ({ page, browserName }) => {
+    // Firefox doesn't support clipboard-write permission
+    if (browserName !== 'firefox') {
+      await page.context().grantPermissions(['clipboard-write', 'clipboard-read']);
+    }
     
     await page.click('#share-url-btn');
     
