@@ -13,41 +13,38 @@ import { test, expect } from '@playwright/test';
 // ============================================================================
 
 /**
- * Select a currency from the "from" dropdown.
- * Clears the input first to ensure dropdown shows all options.
+ * Select a currency from the specified dropdown.
+ * @param {import('@playwright/test').Page} page
+ * @param {'from' | 'to'} side - Which dropdown to use
+ * @param {string} code - Currency code (e.g., 'USD', 'EUR')
  */
-async function selectFromCurrency(page, code) {
-  const input = page.locator('#from-currency-input');
+async function selectCurrency(page, side, code) {
+  const input = page.locator(`#${side}-currency-input`);
   await input.focus();
   await input.fill('');
-  await page.click(`#from-currency-list .dropdown-item[data-code="${code}"]`);
+  await page.click(`#${side}-currency-list .dropdown-item[data-code="${code}"]`);
 }
 
 /**
- * Select a currency from the "to" dropdown.
- * Clears the input first to ensure dropdown shows all options.
+ * Select a currency pair.
+ * @param {import('@playwright/test').Page} page
+ * @param {string} fromCode - Source currency code
+ * @param {string} toCode - Target currency code
  */
-async function selectToCurrency(page, code) {
-  const input = page.locator('#to-currency-input');
-  await input.focus();
-  await input.fill('');
-  await page.click(`#to-currency-list .dropdown-item[data-code="${code}"]`);
+async function selectCurrencyPair(page, fromCode, toCode) {
+  await selectCurrency(page, 'from', fromCode);
+  await selectCurrency(page, 'to', toCode);
 }
 
 /**
  * Select a currency pair and wait for data to load.
+ * @param {import('@playwright/test').Page} page
+ * @param {string} fromCode - Source currency code
+ * @param {string} toCode - Target currency code
  */
-async function selectCurrencyPair(page, fromCode, toCode) {
-  await selectFromCurrency(page, fromCode);
-  await selectToCurrency(page, toCode);
-}
-
-/**
- * Select USD/INR and wait for stats bar to be visible.
- */
-async function selectUsdInrAndWaitForData(page) {
-  await selectCurrencyPair(page, 'USD', 'INR');
-  await page.locator('#stats-bar').waitFor({ state: 'visible', timeout: 30000 });
+async function selectPairAndWait(page, fromCode, toCode) {
+  await selectCurrencyPair(page, fromCode, toCode);
+  await expect(page.locator('#stats-bar')).toBeVisible({ timeout: 30000 });
 }
 
 // ============================================================================
@@ -417,15 +414,9 @@ test.describe('Swap Currencies', () => {
     // Click swap
     await page.click('#swap-currencies');
     
-    // Wait for swap
-    await page.waitForTimeout(200);
-    
-    // Check values swapped
-    const fromAfter = await page.locator('#from-currency').inputValue();
-    const toAfter = await page.locator('#to-currency').inputValue();
-    
-    expect(fromAfter).toBe('EUR');
-    expect(toAfter).toBe('USD');
+    // Check values swapped (state-based wait)
+    await expect(page.locator('#from-currency')).toHaveValue('EUR');
+    await expect(page.locator('#to-currency')).toHaveValue('USD');
   });
 
   test('swap button has animation class during swap', async ({ page }) => {
@@ -493,7 +484,7 @@ test.describe('Data Loading', () => {
 test.describe('Stats Bar', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await selectUsdInrAndWaitForData(page);
+    await selectPairAndWait(page, 'USD', 'INR');
   });
 
   test('current rate displays a value', async ({ page }) => {
@@ -588,7 +579,7 @@ test.describe('Time Range Selector', () => {
 
   test('time range persists on reload', async ({ page }) => {
     await page.click('.time-range-btn[data-range="3m"]');
-    await page.waitForTimeout(500);
+    await expect(page.locator('.time-range-btn[data-range="3m"]')).toHaveClass(/active/);
     
     await page.reload();
     await page.locator('#time-range-selector').waitFor({ state: 'visible', timeout: 30000 });
@@ -697,7 +688,7 @@ test.describe('Chart', () => {
 test.describe('Action Buttons', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await selectUsdInrAndWaitForData(page);
+    await selectPairAndWait(page, 'USD', 'INR');
   });
 
   test('copy rate button shows notification', async ({ page, browserName }) => {
@@ -742,7 +733,7 @@ test.describe('Action Buttons', () => {
 test.describe('Recent Pairs', () => {
   test('recent pairs section exists in DOM', async ({ page }) => {
     await page.goto('/');
-    await selectUsdInrAndWaitForData(page);
+    await selectPairAndWait(page, 'USD', 'INR');
     // Recent pairs container should exist (may be hidden until multiple pairs selected)
     await expect(page.locator('#recent-pairs')).toBeAttached();
   });
@@ -751,21 +742,27 @@ test.describe('Recent Pairs', () => {
     await page.goto('/');
     
     // Select first pair and wait for data
-    await selectUsdInrAndWaitForData(page);
+    await selectPairAndWait(page, 'USD', 'INR');
     
     // Select second pair
     await selectCurrencyPair(page, 'EUR', 'GBP');
     await page.locator('#stats-bar').waitFor({ state: 'visible', timeout: 30000 });
     
-    // Recent pairs should now be visible with at least one entry
-    const recentPairs = page.locator('#recent-pairs');
-    if (await recentPairs.isVisible()) {
-      const recentPair = page.locator('#recent-pairs-list .recent-pair').first();
-      if (await recentPair.isVisible()) {
-        await recentPair.click();
-        await page.waitForTimeout(500);
-      }
+    // Recent pairs may need a moment to populate in UI
+    const recentPair = page.locator('#recent-pairs-list .recent-pair').first();
+    
+    // Check if recent pair appears (graceful - may not be visible depending on UI state)
+    const isVisible = await recentPair.isVisible().catch(() => false);
+    if (!isVisible) {
+      // Recent pairs not visible after selecting 2 pairs - this is acceptable
+      // The feature may require more pairs or different conditions
+      return;
     }
+    
+    // Click recent pair and verify it loads
+    await recentPair.click();
+    await expect(page.locator('#from-currency')).toHaveValue('USD');
+    await expect(page.locator('#to-currency')).toHaveValue('INR');
   });
 });
 
@@ -777,11 +774,10 @@ test.describe('URL State & Navigation', () => {
   test('URL updates when selecting currencies', async ({ page }) => {
     await page.goto('/');
     await selectCurrencyPair(page, 'USD', 'INR');
-    await page.waitForTimeout(500);
     
-    const url = page.url();
-    expect(url).toContain('from=USD');
-    expect(url).toContain('to=INR');
+    // Wait for URL to update (state-based)
+    await expect(page).toHaveURL(/from=USD/);
+    await expect(page).toHaveURL(/to=INR/);
   });
 
   test('loading URL with query params sets currencies', async ({ page }) => {
@@ -848,14 +844,9 @@ test.describe('Keyboard Shortcuts', () => {
     await page.locator('body').click();
     await page.keyboard.press('s');
     
-    // Wait for swap animation
-    await page.waitForTimeout(300);
-    
-    // Values should be swapped
-    const fromValue = await page.locator('#from-currency').inputValue();
-    const toValue = await page.locator('#to-currency').inputValue();
-    expect(fromValue).toBe('EUR');
-    expect(toValue).toBe('USD');
+    // Values should be swapped (state-based wait)
+    await expect(page.locator('#from-currency')).toHaveValue('EUR');
+    await expect(page.locator('#to-currency')).toHaveValue('USD');
   });
 
   test('time range shortcuts work', async ({ page }) => {
@@ -864,10 +855,9 @@ test.describe('Keyboard Shortcuts', () => {
     
     // Press 1 for 1M
     await page.keyboard.press('1');
-    await page.waitForTimeout(500);
     
-    const activeBtn = page.locator('.time-range-btn.active');
-    await expect(activeBtn).toHaveAttribute('data-range', '1m');
+    // Wait for button to become active (state-based)
+    await expect(page.locator('.time-range-btn[data-range="1m"]')).toHaveClass(/active/);
   });
 });
 
@@ -946,14 +936,18 @@ test.describe('Error Handling', () => {
   test('graceful handling of missing data', async ({ page }) => {
     await page.goto('/');
     
-    // Select a potentially rare/missing pair
-    await selectCurrencyPair(page, 'XOF', 'XAF');
+    // Select a pair that exists but may have limited/no data (AED to THB)
+    // These are valid currencies in watchlist but may not have historical data
+    await selectCurrencyPair(page, 'AED', 'THB');
     
-    // Should not crash, either shows data or empty state
-    await page.waitForTimeout(5000);
+    // Wait for app to process - should either show data or remain responsive
+    // Give extra time since this pair may have slow/no response
+    await page.waitForLoadState('networkidle');
     
-    // Page should still be functional
+    // Page should still be functional regardless of data availability
     await expect(page.locator('.header')).toBeVisible();
+    await expect(page.locator('#from-currency')).toHaveValue('AED');
+    await expect(page.locator('#to-currency')).toHaveValue('THB');
   });
 });
 
