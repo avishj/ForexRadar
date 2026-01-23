@@ -15,6 +15,7 @@
     "postinstall": "cd backend && bunx playwright install firefox chromium",
     "test": "bunx playwright test --config=tests/playwright.config.js",
     "test:unit": "bun test tests/unit/",
+    "test:integration": "bun test tests/integration/",
     "test:chromium": "bunx playwright test --config=tests/playwright.config.js --project=chromium",
     "test:firefox": "bunx playwright test --config=tests/playwright.config.js --project=firefox",
     "test:headed": "bunx playwright test --config=tests/playwright.config.js --headed",
