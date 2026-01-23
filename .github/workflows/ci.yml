@@ -7,10 +7,10 @@ on:
     branches: [main]
 
 jobs:
-  lint:
-    name: Lint & Typecheck
+  check:
+    name: Lint, Typecheck & Unit Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
 
     steps:
       - name: Checkout
@@ -30,10 +30,13 @@ jobs:
       - name: Typecheck
         run: bun run check
 
+      - name: Unit tests
+        run: bun run test:unit
+
   test:
     name: Smoke Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Checkout

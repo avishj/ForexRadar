@@ -14,6 +14,7 @@
     "lint:fix": "eslint js shared backend --fix",
     "postinstall": "cd backend && bunx playwright install firefox chromium",
     "test": "bunx playwright test --config=tests/playwright.config.js",
+    "test:unit": "bun test tests/unit/",
     "test:chromium": "bunx playwright test --config=tests/playwright.config.js --project=chromium",
     "test:firefox": "bunx playwright test --config=tests/playwright.config.js --project=firefox",
     "test:headed": "bunx playwright test --config=tests/playwright.config.js --headed",
