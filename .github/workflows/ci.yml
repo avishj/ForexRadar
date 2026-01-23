@@ -7,121 +7,14 @@ on:
     branches: [main]
 
 jobs:
-  check:
-    name: Lint, Typecheck & Tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+  lint-typecheck:
+    uses: ./.github/workflows/_lint-typecheck.yml
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6.0.1
+  unit-integration:
+    uses: ./.github/workflows/_unit-integration.yml
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2.1.0
-        with:
-          bun-version: latest
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile --ignore-scripts
-
-      - name: Lint
-        run: bun run lint
-
-      - name: Typecheck
-        run: bun run check
-
-      - name: Unit tests
-        run: bun run test:unit
-
-      - name: Integration tests
-        run: bun run test:integration
-
-  test:
-    name: Smoke Tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6.0.1
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2.1.0
-        with:
-          bun-version: latest
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile --ignore-scripts
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('**/bun.lock') }}
-          restore-keys: |
-            playwright-${{ runner.os }}-
-
-      - name: Install Playwright browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: bunx playwright install --with-deps chromium firefox
-
-      - name: Install Playwright deps (cached)
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: bunx playwright install-deps chromium firefox
-
-      - name: Run smoke tests
-        run: bun run test
-
-      - name: Upload test report
-        uses: actions/upload-artifact@v6
-        if: ${{ !cancelled() }}
-        with:
-          name: playwright-report
-          path: playwright-report/
-          retention-days: 7
+  smoke:
+    uses: ./.github/workflows/_smoke.yml
 
   e2e:
-    name: E2E Tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6.0.1
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2.1.0
-        with:
-          bun-version: latest
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile --ignore-scripts
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v4
-        id: playwright-cache
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('**/bun.lock') }}
-          restore-keys: |
-            playwright-${{ runner.os }}-
-
-      - name: Install Playwright browsers
-        if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: bunx playwright install --with-deps chromium firefox
-
-      - name: Install Playwright deps (cached)
-        if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: bunx playwright install-deps chromium firefox
-
-      - name: Run e2e tests
-        run: bun run test:e2e
-
-      - name: Upload e2e report
-        uses: actions/upload-artifact@v6
-        if: ${{ !cancelled() }}
-        with:
-          name: e2e-report
-          path: playwright-report/
-          retention-days: 7
+    uses: ./.github/workflows/_e2e.yml
