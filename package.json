@@ -15,10 +15,13 @@
     "postinstall": "cd backend && bunx playwright install firefox chromium",
     "test": "bunx playwright test --config=tests/playwright.config.js",
     "test:unit": "bun test tests/unit/",
+    "test:smoke": "bunx playwright test --config=tests/playwright.config.js",
+    "test:e2e": "bunx playwright test --config=tests/playwright.e2e.config.js",
     "test:chromium": "bunx playwright test --config=tests/playwright.config.js --project=chromium",
     "test:firefox": "bunx playwright test --config=tests/playwright.config.js --project=firefox",
     "test:headed": "bunx playwright test --config=tests/playwright.config.js --headed",
-    "test:ui": "bunx playwright test --config=tests/playwright.config.js --ui"
+    "test:ui": "bunx playwright test --config=tests/playwright.config.js --ui",
+    "test:all": "bun run test:unit && bun run test:smoke && bun run test:e2e"
   },
   "dependencies": {
     "playwright": "^1.40.0"
