@@ -17,6 +17,7 @@
     "test:unit": "bun test tests/unit/",
     "test:smoke": "bunx playwright test --config=tests/playwright.config.js",
     "test:e2e": "bunx playwright test --config=tests/playwright.e2e.config.js",
+    "test:integration": "bun test tests/integration/",
     "test:chromium": "bunx playwright test --config=tests/playwright.config.js --project=chromium",
     "test:firefox": "bunx playwright test --config=tests/playwright.config.js --project=firefox",
     "test:headed": "bunx playwright test --config=tests/playwright.config.js --headed",
