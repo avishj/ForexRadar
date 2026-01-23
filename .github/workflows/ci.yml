@@ -30,6 +30,26 @@ jobs:
       - name: Typecheck
         run: bun run check
 
+  unit-test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2.1.0
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      - name: Run unit tests
+        run: bun run test:unit
+
   test:
     name: Smoke Tests
     runs-on: ubuntu-latest
