@@ -199,9 +199,11 @@ class SearchableDropdown {
     const isSelected = item.code === this.value;
     const code = query ? this.highlightMatch(item.code, query) : item.code;
     const name = query ? this.highlightMatch(item.name, query) : item.name;
+    const optionId = `${this.container.id}-option-${item.code}`;
     
     return `
       <div class="dropdown-item${isSelected ? ' selected' : ''}" 
+           id="${optionId}"
            data-code="${item.code}" 
            data-index="${index}"
            role="option"
@@ -302,6 +304,13 @@ class SearchableDropdown {
     });
     this.highlightedIndex = index;
     
+    // Update aria-activedescendant for screen readers
+    const highlightedItem = this.filteredItems[index];
+    if (highlightedItem) {
+      const optionId = `${this.container.id}-option-${highlightedItem.code}`;
+      this.input.setAttribute('aria-activedescendant', optionId);
+    }
+    
     // Scroll into view
     const highlighted = items[index];
     if (highlighted) {
@@ -357,6 +366,7 @@ class SearchableDropdown {
     this.isOpen = false;
     this.list.classList.remove('open');
     this.input.setAttribute('aria-expanded', 'false');
+    this.input.removeAttribute('aria-activedescendant');
     this.highlightedIndex = -1;
   }
 }
