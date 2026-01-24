@@ -8,6 +8,9 @@
  */
 
 import { formatDate } from '../shared/utils.js';
+import { createLogger } from '../shared/logger.js';
+
+const log = createLogger('ECB');
 
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
 /** @typedef {import('../shared/types.js').ECBRateData} ECBRateData */
@@ -44,12 +47,12 @@ function extractRates(html, varName) {
  */
 export async function fetchAllRates(currency) {
   const url = `${ECB_BASE_URL}/eurofxref-graph-${currency.toLowerCase()}.en.html`;
-  console.log(`[ECB] Fetching ${currency}`);
+  log.info(`Fetching ${currency}`);
   
   try {
     const response = await fetch(url);
     if (!response.ok) {
-      console.error(`[ECB] HTTP ${response.status} for ${currency}`);
+      log.error(`HTTP ${response.status} for ${currency}`);
       return null;
     }
     
@@ -58,11 +61,11 @@ export async function fetchAllRates(currency) {
     const inverse = extractRates(html, 'chartDataInverse');
     
     if (direct.length === 0 && inverse.length === 0) {
-      console.error(`[ECB] No data found for ${currency}`);
+      log.error(`No data found for ${currency}`);
       return null;
     }
     
-    console.log(`[ECB] Found ${direct.length} EUR→${currency}, ${inverse.length} ${currency}→EUR`);
+    log.success(`Found ${direct.length} EUR→${currency}, ${inverse.length} ${currency}→EUR`);
     
     return {
       eurTo: direct.map(d => ({
@@ -83,7 +86,7 @@ export async function fetchAllRates(currency) {
       }))
     };
   } catch (error) {
-    console.error(`[ECB] Error fetching ${currency}: ${error.message}`);
+    log.error(`Error fetching ${currency}: ${error.message}`);
     return null;
   }
 }
