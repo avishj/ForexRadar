@@ -31,7 +31,25 @@ bun run postinstall        # Install Playwright browsers (Firefox + Chromium)
 | `bun run check` | Run TypeScript type checking |
 | `bun run lint` | Run ESLint on js/, shared/, backend/ |
 | `bun run lint:fix` | Auto-fix ESLint issues |
-| `bun run test` | Run Playwright UI smoke tests |
+
+### Test Scripts
+| Command | Description |
+|---------|-------------|
+| `bun run test` | Run Playwright smoke tests |
+| `bun run test:unit` | Run unit tests (shared utilities) |
+| `bun run test:integration` | Run integration tests (CSVStore, ECB client) |
+| `bun run test:contract` | Run API contract tests (Visa, ECB) |
+| `bun run test:contract:all` | Run all contract tests (incl. Mastercard) |
+| `bun run test:contract:mc` | Run Mastercard contract tests only |
+| `bun run test:e2e` | Run end-to-end flow tests |
+| `bun run test:smoke` | Run UI smoke tests (alias for `test`) |
+| `bun run test:perf` | Run backend performance benchmarks |
+| `bun run test:perf:browser` | Run browser-based performance tests |
+| `bun run test:all` | Run unit + smoke + e2e tests |
+| `bun run test:headed` | Run tests in headed browser mode |
+| `bun run test:ui` | Open Playwright UI mode |
+| `bun run test:chromium` | Run smoke tests on Chromium only |
+| `bun run test:firefox` | Run smoke tests on Firefox only |
 
 ### Verification After Changes
 Always run these commands after making changes:
@@ -48,7 +66,7 @@ bun run validate   # Data integrity (if db/ modified)
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        GitHub Actions                            │
-│  daily.yml (4x daily) ──► daily-update.js ──► db/{CURR}/{YEAR}.csv │
+│  daily.yml (2x daily) ──► daily-update.js ──► db/{CURR}/{YEAR}.csv │
 └─────────────────────────────────────────────────────────────────┘
                                 │
                                 ▼
@@ -113,14 +131,22 @@ ForexRadar/
 │   └── {CURRENCY}/            # e.g., USD/, EUR/, INR/
 │       └── {YEAR}.csv         # e.g., 2024.csv, 2025.csv
 │
-├── tests/                     # Playwright UI tests
-│   ├── ui-smoke.spec.js       # Basic UI smoke tests
+├── tests/                     # Test suites
+│   ├── unit/                  # Unit tests (constants, csv-utils, utils)
+│   ├── integration/           # Integration tests (CSVStore, ECB client)
+│   ├── contract/              # API response contract tests
+│   ├── smoke/                 # UI smoke tests (Playwright)
+│   ├── e2e/                   # End-to-end flow tests
+│   ├── perf/                  # Performance benchmarks
 │   └── playwright.config.js   # Test configuration
 │
 ├── .github/workflows/         # CI/CD
-│   ├── daily.yml              # Scheduled data updates (4x daily)
+│   ├── ci.yml                 # Lint + typecheck + tests on PR
+│   ├── daily.yml              # Scheduled data updates (2x daily)
 │   ├── deploy.yml             # GitHub Pages deployment
-│   └── ci.yml                 # Lint + typecheck on PR
+│   ├── contract.yml           # Weekly API contract tests
+│   ├── perf.yml               # Weekly performance benchmarks
+│   └── _*.yml                 # Reusable workflow jobs
 │
 └── docs/                      # Documentation
 ```
@@ -187,7 +213,7 @@ date,from_curr,to_curr,provider,rate,markup
 ## GitHub Actions Workflows
 
 ### `daily.yml` - Scheduled Data Updates
-- **Schedule**: 17:00, 19:00, 21:00, 23:00 UTC
+- **Schedule**: 17:00 and 23:00 UTC
 - **Requirements**: Uses `xvfb-run` for headful Playwright
 - **Outputs**: Commits new data to `db/`, creates issues on failures
 
@@ -197,7 +223,15 @@ date,from_curr,to_curr,provider,rate,markup
 
 ### `ci.yml` - Continuous Integration
 - **Triggers**: Push/PR to main
-- **Checks**: `bun run lint`, `bun run check`
+- **Jobs**: Lint + typecheck, unit + integration tests, smoke tests, e2e tests
+
+### `contract.yml` - API Contract Tests
+- **Schedule**: Weekly (Sundays at 00:00 UTC)
+- **Purpose**: Validates that Visa and ECB APIs return expected response structures
+
+### `perf.yml` - Performance Benchmarks
+- **Schedule**: Weekly (Sundays at 00:00 UTC)
+- **Purpose**: Backend + browser performance regression tests
 
 ## Development Guidelines
 
