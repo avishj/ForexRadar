@@ -4,6 +4,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" 
+        content="default-src 'self';
+                 script-src 'self' https://cdn.tailwindcss.com https://cdn.jsdelivr.net 'unsafe-inline';
+                 style-src 'self' https://fonts.googleapis.com 'unsafe-inline';
+                 font-src https://fonts.gstatic.com;
+                 connect-src 'self' https://avishj.github.io https://api.allorigins.win;
+                 img-src 'self' data:;">
   <title>Forex Radar: One stop solution to tracking Visa / Master Card exchange rates.</title>
   <meta name="description" content="Track historical Visa and Mastercard exchange rates with real markup percentages. See what you're actually paying when you swipe abroad.">
   
@@ -32,7 +39,9 @@
   <link rel="stylesheet" href="css/styles.css">
   
   <!-- ApexCharts -->
-  <script src="https://cdn.jsdelivr.net/npm/apexcharts@5.3.6/dist/apexcharts.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@5.3.6/dist/apexcharts.min.js"
+          integrity="sha384-mrR3K8Jvv+o9bZ6Yu9HWI0M8tuzo5VWNi4fWcmmbFq3NbB+WvjW/tF/wnELivEnc"
+          crossorigin="anonymous"></script>
 </head>
 
 <body>
