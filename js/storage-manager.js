@@ -21,7 +21,7 @@
 /** @typedef {import('../shared/types.js').Provider} Provider */
 
 const DB_NAME = 'ForexRadarDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = 'rates';
 const REFRESH_KEY_PREFIX = 'forexRadar_serverRefresh_';
 
@@ -141,10 +141,14 @@ export async function openDB() {
 
     request.onupgradeneeded = (event) => {
       const db = /** @type {IDBOpenDBRequest} */ (event.target).result;
+      const tx = /** @type {IDBTransaction} */ (/** @type {IDBOpenDBRequest} */ (event.target).transaction);
       
-      // Create rates store with compound key
+      /** @type {IDBObjectStore} */
+      let store;
+      
+      // Create rates store with compound key (or get existing store for upgrade)
       if (!db.objectStoreNames.contains(STORE_NAME)) {
-        const store = db.createObjectStore(STORE_NAME, {
+        store = db.createObjectStore(STORE_NAME, {
           keyPath: ['date', 'from_curr', 'to_curr', 'provider']
         });
         
@@ -153,6 +157,13 @@ export async function openDB() {
         
         // Index for querying by date
         store.createIndex('date', 'date', { unique: false });
+      } else {
+        store = tx.objectStore(STORE_NAME);
+      }
+      
+      // V2: Add composite index for efficient provider queries
+      if (!store.indexNames.contains('pair_provider')) {
+        store.createIndex('pair_provider', ['from_curr', 'to_curr', 'provider'], { unique: false });
       }
     };
   });
@@ -262,6 +273,7 @@ export async function getLatestDate(fromCurr, toCurr) {
 
 /**
  * Checks if a rate exists in cache for a specific date, currency pair, and provider
+ * Uses direct key lookup for efficiency instead of loading all records
  * @param {string} date - Date in "YYYY-MM-DD" format
  * @param {string} fromCurr - Source currency code
  * @param {string} toCurr - Target currency code
@@ -276,7 +288,7 @@ export async function rateExists(date, fromCurr, toCurr, provider) {
     const store = transaction.objectStore(STORE_NAME);
     
     if (provider) {
-      // Check for specific provider
+      // Check for specific provider using direct key lookup
       const request = store.get([date, fromCurr, toCurr, provider]);
       
       request.onerror = () => {
@@ -287,19 +299,27 @@ export async function rateExists(date, fromCurr, toCurr, provider) {
         resolve(request.result !== undefined);
       };
     } else {
-      // Check if any provider exists for this date/pair
-      // Use the pair index and filter by date
+      // Check if any provider exists for this date/pair using cursor (stops at first match)
       const index = store.index('pair');
-      const request = index.getAll([fromCurr, toCurr]);
+      const range = IDBKeyRange.only([fromCurr, toCurr]);
+      const request = index.openCursor(range);
       
       request.onerror = () => {
         reject(new Error(`Failed to check rate: ${request.error?.message}`));
       };
       
       request.onsuccess = () => {
-        const records = request.result || [];
-        const exists = records.some(r => r.date === date);
-        resolve(exists);
+        const cursor = request.result;
+        if (!cursor) {
+          resolve(false);
+          return;
+        }
+        
+        if (cursor.value.date === date) {
+          resolve(true);
+        } else {
+          cursor.continue();
+        }
       };
     }
   });
@@ -333,31 +353,64 @@ export async function clearCache() {
 
 /**
  * Gets the count of cached records for a currency pair
+ * Uses IDBIndex.count() instead of loading all records
  * @param {string} fromCurr - Source currency code
  * @param {string} toCurr - Target currency code
  * @returns {Promise<number>}
  */
 export async function getRecordCount(fromCurr, toCurr) {
-  const records = await getRatesForPair(fromCurr, toCurr);
-  return records.length;
+  const db = await openDB();
+  
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(STORE_NAME, 'readonly');
+    const store = transaction.objectStore(STORE_NAME);
+    const index = store.index('pair');
+    
+    const request = index.count(IDBKeyRange.only([fromCurr, toCurr]));
+    
+    request.onerror = () => {
+      reject(new Error(`Failed to count records: ${request.error?.message}`));
+    };
+    
+    request.onsuccess = () => {
+      resolve(request.result);
+    };
+  });
 }
 
 /**
  * Gets the latest date for a specific provider in cache
+ * Uses cursor with reverse direction on pair_provider index for efficiency
  * @param {string} fromCurr - Source currency code
  * @param {string} toCurr - Target currency code
  * @param {Provider} provider - Provider name
  * @returns {Promise<string|null>} Latest date or null
  */
 export async function getLatestDateForProvider(fromCurr, toCurr, provider) {
-  const records = await getRatesForPair(fromCurr, toCurr);
-  const providerRecords = records.filter(r => r.provider === provider);
+  const db = await openDB();
   
-  if (providerRecords.length === 0) {
-    return null;
-  }
-  
-  return providerRecords[providerRecords.length - 1].date;
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(STORE_NAME, 'readonly');
+    const store = transaction.objectStore(STORE_NAME);
+    const index = store.index('pair_provider');
+    const range = IDBKeyRange.only([fromCurr, toCurr, provider]);
+    
+    // Open cursor in reverse to get latest date first
+    const request = index.openCursor(range, 'prev');
+    
+    request.onerror = () => {
+      reject(new Error(`Failed to get latest date: ${request.error?.message}`));
+    };
+    
+    request.onsuccess = () => {
+      const cursor = request.result;
+      if (cursor) {
+        resolve(cursor.value.date);
+      } else {
+        resolve(null);
+      }
+    };
+  });
 }
 
 /**
