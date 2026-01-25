@@ -30,9 +30,13 @@ const PROVIDER_NAME = "MASTERCARD";
 const config = PROVIDER_CONFIG.MASTERCARD;
 
 // Reusable browser instance
+/** @type {PlaywrightBrowser | null} */
 let browserInstance = null;
+/** @type {PlaywrightBrowserContext | null} */
 let browserContext = null;
+/** @type {Promise<{browser: PlaywrightBrowser, context: PlaywrightBrowserContext}> | null} */
 let browserInitPromise = null;
+/** @type {import('playwright').Page | null} */
 let apiPage = null;
 
 /**
@@ -131,6 +135,7 @@ async function closeBrowser() {
 
 /**
  * Sleep utility for rate limiting
+ * @param {number} ms
  */
 function sleep(ms) {
 	return new Promise((resolve) => setTimeout(resolve, ms));
@@ -260,13 +265,14 @@ export async function fetchBatch(requests) {
 				}
 
 				// Save
+				/** @type {RateRecord} */
 				const record = {
 					date,
 					from_curr: from,
 					to_curr: to,
 					provider: PROVIDER_NAME,
 					rate: parseFloat(rate),
-					markup: null
+					markup: /** @type {null} */ (null)
 				};
 
 				const inserted = store.add(record);

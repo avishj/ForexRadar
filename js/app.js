@@ -39,6 +39,7 @@ class SearchableDropdown {
     this.list = /** @type {HTMLElement} */ (container.querySelector('.dropdown-list'));
     this.highlightedIndex = -1;
     this.isOpen = false;
+    /** @type {Array<{code: string, name: string}>} */
     this.filteredItems = [];
     
     this.init();
@@ -199,9 +200,11 @@ class SearchableDropdown {
     const isSelected = item.code === this.value;
     const code = query ? this.highlightMatch(item.code, query) : item.code;
     const name = query ? this.highlightMatch(item.name, query) : item.name;
+    const optionId = `${this.container.id}-option-${item.code}`;
     
     return `
       <div class="dropdown-item${isSelected ? ' selected' : ''}" 
+           id="${optionId}"
            data-code="${item.code}" 
            data-index="${index}"
            role="option"
@@ -302,6 +305,13 @@ class SearchableDropdown {
     });
     this.highlightedIndex = index;
     
+    // Update aria-activedescendant for screen readers
+    const highlightedItem = this.filteredItems[index];
+    if (highlightedItem) {
+      const optionId = `${this.container.id}-option-${highlightedItem.code}`;
+      this.input.setAttribute('aria-activedescendant', optionId);
+    }
+    
     // Scroll into view
     const highlighted = items[index];
     if (highlighted) {
@@ -357,6 +367,7 @@ class SearchableDropdown {
     this.isOpen = false;
     this.list.classList.remove('open');
     this.input.setAttribute('aria-expanded', 'false');
+    this.input.removeAttribute('aria-activedescendant');
     this.highlightedIndex = -1;
   }
 }
@@ -423,6 +434,7 @@ const toggleVisaMarkupContainer = toggleVisaMarkup?.closest('.series-toggle');
 // State
 // ============================================================================
 
+/** @type {ReturnType<typeof setTimeout> | null} */
 let debounceTimer = null;
 const DEBOUNCE_MS = 300;
 
@@ -540,7 +552,7 @@ function loadRecentPairs() {
     if (stored) {
       const pairs = JSON.parse(stored);
       // Validate and filter invalid entries (including self-pairs)
-      return pairs.filter(p => p.from && p.to && p.from !== p.to && isValidCurrency(p.from) && isValidCurrency(p.to));
+      return pairs.filter(/** @param {RecentPair} p */ (p) => p.from && p.to && p.from !== p.to && isValidCurrency(p.from) && isValidCurrency(p.to));
     }
   } catch (error) {
     console.error('Error loading recent pairs:', error);
@@ -1099,7 +1111,7 @@ async function loadCurrencyPair() {
       /** @type {CurrencyCode} */ (toCurr),
       range,
       {
-        onProgress: (stage, message) => {
+        onProgress: (/** @type {string} */ stage, /** @type {string} */ message) => {
           loaderText.textContent = message;
         }
       }

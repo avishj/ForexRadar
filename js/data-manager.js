@@ -138,7 +138,7 @@ export async function fetchRates(fromCurr, toCurr, range, options = {}) {
     fetchMastercard = true 
   } = options;
   
-  const notify = (stage, message) => {
+  const notify = (/** @type {string} */ stage, /** @type {string} */ message) => {
     if (onProgress) {
       onProgress(stage, message);
     }

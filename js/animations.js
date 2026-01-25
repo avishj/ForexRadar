@@ -36,6 +36,10 @@ class AnimationsManager {
     });
   }
   
+  /**
+   * @param {Event} e
+   * @param {Element} trigger
+   */
   showTooltip(e, trigger) {
     const text = trigger.getAttribute('data-tooltip');
     if (!text) return;
@@ -88,6 +92,7 @@ class AnimationsManager {
    * Initialize scroll-triggered animations using Intersection Observer
    */
   initScrollAnimations() {
+    /** @type {IntersectionObserverInit} */
     const observerOptions = {
       root: null,
       rootMargin: '0px 0px -100px 0px',
@@ -205,7 +210,7 @@ class AnimationsManager {
     const start = parseFloat(element.textContent) || 0;
     const startTime = performance.now();
     
-    const update = (currentTime) => {
+    const update = (/** @type {number} */ currentTime) => {
       const elapsed = currentTime - startTime;
       const progress = Math.min(elapsed / duration, 1);
       

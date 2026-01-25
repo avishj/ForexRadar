@@ -15,12 +15,16 @@
  */
 
 import { chromium } from "playwright";
-import { PROVIDER_CONFIG, USER_AGENTS } from "../shared/constants.js";
+import { PROVIDER_CONFIG, BROWSER_CONFIG, USER_AGENTS } from "../shared/constants.js";
+import { sleep, randomDelay, closeBrowserWithTimeout, formatProgress } from "../shared/browser-utils.js";
 import { store } from "./csv-store.js";
+import { createLogger } from "../shared/logger.js";
+
+const log = createLogger("MASTERCARD-V2");
 
 // Select a random user agent at script startup (stays consistent for session)
 const SESSION_USER_AGENT = USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
-console.log(`[MASTERCARD-V2] Using User-Agent: ${SESSION_USER_AGENT}`);
+log.info(`Using User-Agent: ${SESSION_USER_AGENT}`);
 
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
 /** @typedef {import('../shared/types.js').Provider} Provider */
@@ -38,11 +42,16 @@ const MASTERCARD_API_PATTERN = /settlement\/currencyrate\/conversion-rate\?/;
 const PROVIDER_NAME = "MASTERCARD";
 
 const config = PROVIDER_CONFIG.MASTERCARD;
+const browserConfig = BROWSER_CONFIG.MASTERCARD;
 
 // Browser state
+/** @type {PlaywrightBrowser | null} */
 let browserInstance = null;
+/** @type {PlaywrightBrowserContext | null} */
 let browserContext = null;
+/** @type {Promise<{browser: PlaywrightBrowser, context: PlaywrightBrowserContext}> | null} */
 let browserInitPromise = null;
+/** @type {PlaywrightPage | null} */
 let mainPage = null;
 
 // ============================================================================
@@ -69,7 +78,7 @@ async function getBrowser() {
 	}
 
 	if (browserInstance && !browserInstance.isConnected()) {
-		console.warn("[MASTERCARD-V2] Browser disconnected unexpectedly, resetting state");
+		log.warn("Browser disconnected unexpectedly, resetting state");
 		resetBrowserState();
 	}
 
@@ -78,41 +87,21 @@ async function getBrowser() {
 	}
 
 	browserInitPromise = (async () => {
-		console.log("[MASTERCARD-V2] Launching Chrome browser...");
+		log.info("Launching Chrome browser...");
 		browserInstance = await chromium.launch({
-			channel: "chrome", // Use installed Chrome instead of Chromium
-			headless: false, // Akamai bot detection blocks headless mode
-			args: [
-				"--disable-blink-features=AutomationControlled",
-				"--disable-gpu",
-				"--disable-dev-shm-usage",
-				"--disable-background-timer-throttling",
-				"--disable-backgrounding-occluded-windows",
-				"--disable-renderer-backgrounding",
-				"--no-sandbox",
-				"--disable-web-security",
-				"--disable-extensions",
-				"--disable-plugins",
-				"--disable-default-apps",
-				"--disable-sync",
-				"--disable-translate",
-				"--max_old_space_size=2048",
-				"--js-flags=--max-old-space-size=2048"
-			]
+			channel: browserConfig.channel,
+			headless: browserConfig.headless,
+			args: browserConfig.args
 		});
 		browserContext = await browserInstance.newContext({
 			userAgent: SESSION_USER_AGENT,
-			viewport: { width: 1512, height: 984 },
-			locale: "en-US",
-			extraHTTPHeaders: {
-				"Accept-Language": "en-GB,en;q=0.9",
-				DNT: "1",
-				"Sec-GPC": "1"
-			}
+			viewport: browserConfig.viewport,
+			locale: browserConfig.locale,
+			extraHTTPHeaders: browserConfig.extraHTTPHeaders
 		});
 
 		browserInstance.on("disconnected", () => {
-			console.warn("[MASTERCARD-V2] Browser disconnected event fired, resetting state");
+			log.warn("Browser disconnected event fired, resetting state");
 			resetBrowserState();
 		});
 
@@ -127,36 +116,16 @@ async function getBrowser() {
  */
 async function closeBrowser() {
 	if (browserInstance) {
-		console.log("[MASTERCARD-V2] Closing browser...");
+		log.info("Closing browser...");
 		const browser = browserInstance;
 		resetBrowserState();
-		try {
-			await Promise.race([
-				browser.close(),
-				new Promise((_, reject) => setTimeout(() => reject(new Error("Close timeout")), 3000))
-			]);
-			console.log("[MASTERCARD-V2] Browser closed");
-		} catch (_error) {
-			console.warn("[MASTERCARD-V2] Browser close timed out, continuing");
+		const closed = await closeBrowserWithTimeout(browser);
+		if (closed) {
+			log.success("Browser closed");
+		} else {
+			log.warn("Browser close timed out, continuing");
 		}
 	}
-}
-
-/**
- * Sleep utility for rate limiting and human-like delays
- * @param {number} ms - Milliseconds to sleep
- */
-function sleep(ms) {
-	return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/**
- * Random delay to simulate human behavior
- * @param {number} min - Minimum ms
- * @param {number} max - Maximum ms
- */
-function randomDelay(min, max) {
-	return sleep(Math.floor(Math.random() * (max - min + 1)) + min);
 }
 
 // ============================================================================
@@ -184,7 +153,7 @@ async function getMainPage() {
 	// Wait for the form to be ready (from currency dropdown)
 	await mainPage.waitForSelector("#tCurrency", { timeout: 15000 });
 
-	console.log("[MASTERCARD-V2] Page loaded and ready");
+	log.success("Page loaded and ready");
 	return mainPage;
 }
 
@@ -213,7 +182,7 @@ async function handleCookieConsent(page) {
 		
 		if (clicked) {
 			await sleep(500);
-			console.log("[MASTERCARD-V2] Cookie consent accepted");
+			log.info("Cookie consent accepted");
 		}
 		
 		// Also remove any lingering overlay that might block clicks
@@ -266,6 +235,7 @@ async function selectCurrency(page, dropdownType, currencyCode) {
 	await randomDelay(500, 600); // Wait for filtering to complete
 
 	// Click the matching currency option
+	/** @type {{success: boolean, error?: string, found?: string | null, available?: string[]}} */
 	const clicked = await page.evaluate(({ selector, code }) => {
 		const dropdown = document.querySelector(selector);
 		if (!dropdown) {
@@ -285,11 +255,11 @@ async function selectCurrency(page, dropdownType, currencyCode) {
 		
 		// Debug: return what we found
 		const allLinks = Array.from(links).map(l => (l.textContent || "").replace(/\s+/g, " ").trim()).filter(Boolean);
-		return { success: false, found: null, available: allLinks.slice(0, 5) };
+		return { success: false, found: /** @type {string | null} */ (null), available: allLinks.slice(0, 5) };
 	}, { selector: dropdownSelector, code: currencyCode });
 	
 	if (!clicked.success) {
-		console.error(`[MASTERCARD-V2] Currency ${currencyCode} not found. Debug:`, clicked);
+		log.error(`Currency ${currencyCode} not found. Debug: ${JSON.stringify(clicked)}`);
 		throw new Error(`Currency ${currencyCode} not found in dropdown`);
 	}
 	
@@ -520,6 +490,7 @@ async function fetchDateOnly(page, date) {
 	const result = { rate: null, error: null };
 
 	// Set up promise to capture the API response
+	/** @type {(value: {rate?: number, error?: string}) => void} */
 	let resolveApiResponse;
 	let apiResolved = false;
 	const apiResponsePromise = new Promise((resolve) => {
@@ -532,6 +503,7 @@ async function fetchDateOnly(page, date) {
 	});
 
 	// Response handler to capture the conversion rate API call
+	/** @param {import('playwright').Response} response */
 	const responseHandler = async (response) => {
 		const url = response.url();
 		// Only match responses that contain our target date (to avoid capturing fxDate=0000-00-00 calls)
@@ -653,7 +625,7 @@ function groupRequestsByCurrencyPair(requests) {
  */
 export async function fetchBatch(requests) {
 	if (requests.length === 0) {
-		console.log("[MASTERCARD-V2] No requests to process");
+		log.info("No requests to process");
 		return;
 	}
 
@@ -661,7 +633,7 @@ export async function fetchBatch(requests) {
 	const groups = groupRequestsByCurrencyPair(requests);
 	const pairCount = groups.size;
 	
-	console.log(`\n[MASTERCARD-V2] Starting: ${requests.length} requests across ${pairCount} currency pairs`);
+	log.info(`Starting: ${requests.length} requests across ${pairCount} currency pairs`);
 
 	let successCount = 0;
 	let failCount = 0;
@@ -674,7 +646,7 @@ export async function fetchBatch(requests) {
 
 		for (const [pairKey, { from, to, dates }] of groups) {
 			pairIndex++;
-			console.log(`[MASTERCARD-V2] Processing pair ${pairIndex}/${pairCount}: ${pairKey} (${dates.length} dates)`);
+			log.info(`Processing pair ${pairIndex}/${pairCount}: ${pairKey} (${dates.length} dates)`);
 
 			try {
 				// Reset form and set up currency pair once
@@ -690,21 +662,22 @@ export async function fetchBatch(requests) {
 
 						if (result.rate !== null) {
 							// Save successful result
+							/** @type {RateRecord} */
 							const record = {
 								date,
 								from_curr: from,
 								to_curr: to,
 								provider: PROVIDER_NAME,
 								rate: result.rate,
-								markup: null
+								markup: /** @type {null} */ (null)
 							};
 
 							const inserted = store.add(record);
 							if (inserted > 0) {
-								console.log(`[MASTERCARD-V2] SAVED ${date} ${from}/${to}: ${result.rate}`);
+								log.success(`SAVED ${date} ${from}/${to}: ${result.rate}`);
 								successCount++;
 							} else {
-								console.log(`[MASTERCARD-V2] SKIPPED ${date} ${from}/${to}: ${result.rate} (duplicate)`);
+								log.info(`SKIPPED ${date} ${from}/${to}: ${result.rate} (duplicate)`);
 								successCount++; // Still count as success since we got the rate
 							}
 						} else if (result.error) {
@@ -716,19 +689,19 @@ export async function fetchBatch(requests) {
 								errorLower.includes("out of range") ||
 								errorLower.includes("not found in picker")
 							) {
-								console.log(`[MASTERCARD-V2] UNAVAILABLE ${date} ${from}/${to}: ${result.error}`);
+								log.info(`UNAVAILABLE ${date} ${from}/${to}: ${result.error}`);
 								unavailableCount++;
 							} else if (errorLower.includes("403") || errorLower.includes("forbidden")) {
 								// HTTP 403 - need to restart browser and pause
-								console.error(`[MASTERCARD-V2] 403 Forbidden - pausing ${config.pauseOnForbiddenMs / 1000}s`);
+								log.error(`403 Forbidden - pausing ${config.pauseOnForbiddenMs / 1000}s`);
 								failCount++;
 								await closeBrowser();
 								await sleep(config.pauseOnForbiddenMs);
-								console.log("[MASTERCARD-V2] Resuming after 403 pause");
+								log.info("Resuming after 403 pause");
 								// Break out of date loop to re-setup after browser restart
 								break;
 							} else {
-								console.error(`[MASTERCARD-V2] FAILED ${date} ${from}/${to}: ${result.error}`);
+								log.error(`FAILED ${date} ${from}/${to}: ${result.error}`);
 								failCount++;
 							}
 						}
@@ -736,12 +709,12 @@ export async function fetchBatch(requests) {
 						// Short delay between date changes (no need for full request delay)
 						await sleep(config.batchDelayMs / 2);
 					} catch (error) {
-						console.error(`[MASTERCARD-V2] FAILED ${date} ${from}/${to}: ${error.message}`);
+						log.error(`FAILED ${date} ${from}/${to}: ${error.message}`);
 						failCount++;
 
 						// On timeout or critical errors, restart browser and break to re-setup
 						if (error.message.includes("Timeout") || error.message.includes("Target closed")) {
-							console.log("[MASTERCARD-V2] Critical error - restarting browser");
+							log.warn("Critical error - restarting browser");
 							await closeBrowser();
 							await sleep(config.sessionRefreshDelayMs * 2);
 							break;
@@ -752,30 +725,26 @@ export async function fetchBatch(requests) {
 
 					// Progress reporting
 					if (processedCount % 10 === 0 || processedCount === requests.length) {
-						const pct = Math.round((processedCount / requests.length) * 100);
-						console.log(`[MASTERCARD-V2] Progress: ${processedCount}/${requests.length} (${pct}%)`);
+						log.info(formatProgress(processedCount, requests.length));
 					}
 				}
 			} catch (error) {
-				console.error(`[MASTERCARD-V2] FAILED setting up ${pairKey}: ${error.message}`);
+				log.error(`FAILED setting up ${pairKey}: ${error.message}`);
 				failCount += dates.length;
 				processedCount += dates.length;
 
 				// On critical errors, restart browser
 				if (error.message.includes("Timeout") || error.message.includes("Target closed")) {
-					console.log("[MASTERCARD-V2] Critical error - restarting browser");
+					log.warn("Critical error - restarting browser");
 					await closeBrowser();
 					await sleep(config.sessionRefreshDelayMs * 2);
 				}
 			}
 		}
 
-		console.log(`\n[MASTERCARD-V2] Complete:`);
-		console.log(`  - Success: ${successCount}`);
-		console.log(`  - Failed: ${failCount}`);
-		console.log(`  - Unavailable: ${unavailableCount}`);
+		log.success(`Complete: Success=${successCount}, Failed=${failCount}, Unavailable=${unavailableCount}`);
 	} catch (error) {
-		console.error(`[MASTERCARD-V2] Fatal error: ${error.message}`);
+		log.error(`Fatal error: ${error.message}`);
 		throw error;
 	} finally {
 		await closeBrowser();

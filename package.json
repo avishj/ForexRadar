@@ -11,6 +11,8 @@
     "typecheck": "bunx tsc --noEmit",
     "check": "bun run typecheck",
     "lint": "eslint js shared backend",
+    "precommit": "bun run lint && bun run check && bun run test:unit",
+    "ci": "bun run lint && bun run check && bun run test:unit && bun run test:integration && bun run test:smoke && bun run test:e2e",
     "lint:fix": "eslint js shared backend --fix",
     "postinstall": "cd backend && bunx playwright install firefox chromium",
     "test": "bunx playwright test --config=tests/playwright.config.js",
@@ -37,7 +39,7 @@
     "@playwright/test": "^1.40.0",
     "@types/bun": "^1.1.14",
     "@types/node": "^20.0.0",
-    "apexcharts": "^3.45.0",
+    "apexcharts": "^5.3.6",
     "eslint": "9.39.2",
     "globals": "17.0.0",
     "typescript": "^5.0.0"

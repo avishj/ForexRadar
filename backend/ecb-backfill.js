@@ -17,6 +17,9 @@ import { parseArgs } from 'util';
 import { loadEcbWatchlist } from './cli.js';
 import { store } from './csv-store.js';
 import * as EcbClient from './ecb-client.js';
+import { createLogger } from '../shared/logger.js';
+
+const log = createLogger('ECB-BACKFILL');
 
 /** @typedef {import('../shared/types.js').ECBBackfillResult} ECBBackfillResult */
 /** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
@@ -45,24 +48,24 @@ function parseEcbBackfillArgs() {
  * @returns {Promise<ECBBackfillResult>}
  */
 async function backfillCurrency(currency) {
-  console.log(`\n--- Backfilling ECB: EUR ↔ ${currency} ---`);
+  log.info(`--- Backfilling ECB: EUR ↔ ${currency} ---`);
   
   const data = await EcbClient.fetchAllRates(currency);
   
   if (!data) {
-    console.error(`[ECB] Failed to fetch data for ${currency}`);
+    log.error(`Failed to fetch data for ${currency}`);
     return { currency, eurToInserted: 0, toEurInserted: 0, skipped: 0 };
   }
   
   // Insert EUR → Currency records
   const eurToInserted = store.add(data.eurTo);
   const eurToSkipped = data.eurTo.length - eurToInserted;
-  console.log(`[ECB] EUR→${currency}: ${eurToInserted} inserted, ${eurToSkipped} skipped`);
+  log.success(`EUR→${currency}: ${eurToInserted} inserted, ${eurToSkipped} skipped`);
   
   // Insert Currency → EUR records
   const toEurInserted = store.add(data.toEur);
   const toEurSkipped = data.toEur.length - toEurInserted;
-  console.log(`[ECB] ${currency}→EUR: ${toEurInserted} inserted, ${toEurSkipped} skipped`);
+  log.success(`${currency}→EUR: ${toEurInserted} inserted, ${toEurSkipped} skipped`);
   
   return {
     currency,

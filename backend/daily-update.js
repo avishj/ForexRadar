@@ -19,6 +19,9 @@ import { loadWatchlist, loadEcbWatchlist } from './cli.js';
 import { analyzeGaps, groupByProvider, executeProviderBatch } from './backfill-orchestrator.js';
 import * as EcbClient from './ecb-client.js';
 import { formatDate, getLatestAvailableDate } from '../shared/utils.js';
+import { createLogger } from '../shared/logger.js';
+
+const log = createLogger('DAILY');
 
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
 /** @typedef {import('../shared/types.js').Provider} Provider */
@@ -54,12 +57,12 @@ async function createGitHubIssue(failures, dateStr) {
     
     const exitCode = await proc.exited;
     if (exitCode === 0) {
-      console.log(`\n✓ Created GitHub issue for ${failures.length} failure(s)`);
+      log.success(`Created GitHub issue for ${failures.length} failure(s)`);
     } else {
-      console.warn(`\n⚠ Failed to create GitHub issue (exit code: ${exitCode})`);
+      log.warn(`Failed to create GitHub issue (exit code: ${exitCode})`);
     }
   } catch (error) {
-    console.warn(`\n⚠ Could not create GitHub issue: ${error.message}`);
+    log.warn(`Could not create GitHub issue: ${error.message}`);
   }
 }
 
@@ -70,7 +73,7 @@ async function createGitHubIssue(failures, dateStr) {
  * @returns {Promise<{updated: number, failed: number}>}
  */
 async function updateEcbRates(currencies, failures) {
-  console.log('\n--- ECB Updates ---');
+  log.info('--- ECB Updates ---');
   
   let updated = 0;
   let failed = 0;
@@ -96,13 +99,13 @@ async function updateEcbRates(currencies, failures) {
       const currInserted = store.add(data.toEur);
       
       if (eurInserted > 0 || currInserted > 0) {
-        console.log(`[ECB] EUR↔${currency}: +${eurInserted} EUR→${currency}, +${currInserted} ${currency}→EUR`);
+        log.success(`EUR↔${currency}: +${eurInserted} EUR→${currency}, +${currInserted} ${currency}→EUR`);
         updated++;
       } else {
-        console.log(`[ECB] EUR↔${currency}: No new data`);
+        log.info(`EUR↔${currency}: No new data`);
       }
     } catch (error) {
-      console.error(`[ECB] EUR↔${currency}: Error - ${error.message}`);
+      log.error(`EUR↔${currency}: Error - ${error.message}`);
       failures.push({ pair: `EUR/${currency}`, provider: 'ECB', error: error.message });
       failed++;
     }
@@ -130,23 +133,23 @@ function convertMissingToFailures(missingData) {
  * Main function
  */
 async function main() {
-  console.log('=== ForexRadar Daily Update ===\n');
+  log.info('=== ForexRadar Daily Update ===');
   
   const watchlist = await loadWatchlist();
   const ecbCurrencies = await loadEcbWatchlist();
   
   if (watchlist.length === 0 && ecbCurrencies.length === 0) {
-    console.log('No pairs in watchlists. Exiting.');
+    log.warn('No pairs in watchlists. Exiting.');
     return;
   }
   
-  console.log(`Visa/MC Watchlist: ${watchlist.length} pair(s)`);
-  console.log(`ECB Watchlist: ${ecbCurrencies.length} currencies`);
-  console.log('Providers: Visa, ECB\n');
+  log.info(`Visa/MC Watchlist: ${watchlist.length} pair(s)`);
+  log.info(`ECB Watchlist: ${ecbCurrencies.length} currencies`);
+  log.info('Providers: Visa, ECB');
   
   const latestAvailableDate = getLatestAvailableDate();
   const dateStr = formatDate(latestAvailableDate);
-  console.log(`Fetching rates for: ${dateStr}\n`);
+  log.info(`Fetching rates for: ${dateStr}`);
   
   /** @type {DailyUpdateFailure[]} */
   const failures = [];
@@ -158,15 +161,15 @@ async function main() {
   
   const visaNeeded = groupedBefore.VISA.length;
   
-  console.log(`Missing data: ${visaNeeded} Visa`);
+  log.info(`Missing data: ${visaNeeded} Visa`);
   
   // Step 2: Execute batch fetches (batch clients handle their own browser lifecycle)
   if (visaNeeded > 0) {
-    console.log('\n--- Visa Updates ---');
+    log.info('--- Visa Updates ---');
     try {
       await executeProviderBatch('VISA', groupedBefore.VISA, { silent: true });
     } catch (error) {
-      console.error(`[VISA] Batch failed: ${error.message}`);
+      log.error(`Visa batch failed: ${error.message}`);
     }
   }
   
@@ -184,13 +187,13 @@ async function main() {
   const ecbResult = await updateEcbRates(ecbCurrencies, failures);
   
   // Summary
-  console.log(`\n=== Summary ===`);
-  console.log(`Visa: ${visaUpdated}/${visaNeeded} pairs updated`);
-  console.log(`ECB: ${ecbResult.updated}/${ecbCurrencies.length} currencies updated`);
+  log.info('=== Summary ===');
+  log.info(`Visa: ${visaUpdated}/${visaNeeded} pairs updated`);
+  log.info(`ECB: ${ecbResult.updated}/${ecbCurrencies.length} currencies updated`);
   
   // Create GitHub issue for failures
   if (failures.length > 0) {
-    console.log(`\n⚠ ${failures.length} failure(s) detected`);
+    log.warn(`${failures.length} failure(s) detected`);
     await createGitHubIssue(failures, dateStr);
   }
 }

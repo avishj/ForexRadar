@@ -59,6 +59,51 @@ export const BACKFILL_DEFAULTS = {
 };
 
 /**
+ * Browser launch configuration for Playwright
+ * Provider-specific settings to handle different anti-bot measures.
+ */
+export const BROWSER_CONFIG = {
+	VISA: {
+		browser: "firefox",
+		headless: true,
+		userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:120.0) Gecko/20100101 Firefox/120.0",
+		extraHTTPHeaders: {
+			"Accept-Language": "en-US,en;q=0.9"
+		}
+	},
+
+	MASTERCARD: {
+		browser: "chromium",
+		channel: "chrome",
+		headless: false, // Akamai bot detection blocks headless mode
+		viewport: { width: 1512, height: 984 },
+		locale: "en-US",
+		args: [
+			"--disable-blink-features=AutomationControlled",
+			"--disable-gpu",
+			"--disable-dev-shm-usage",
+			"--disable-background-timer-throttling",
+			"--disable-backgrounding-occluded-windows",
+			"--disable-renderer-backgrounding",
+			"--no-sandbox",
+			"--disable-web-security",
+			"--disable-extensions",
+			"--disable-plugins",
+			"--disable-default-apps",
+			"--disable-sync",
+			"--disable-translate",
+			"--max_old_space_size=2048",
+			"--js-flags=--max-old-space-size=2048"
+		],
+		extraHTTPHeaders: {
+			"Accept-Language": "en-GB,en;q=0.9",
+			DNT: "1",
+			"Sec-GPC": "1"
+		}
+	}
+};
+
+/**
  * User agents for Mastercard client (rotated randomly per session)
  * @type {string[]}
  */

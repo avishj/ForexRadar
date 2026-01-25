@@ -9,8 +9,12 @@
 
 import { firefox } from "playwright";
 import { formatDateForApi, parseDate } from "../shared/utils.js";
-import { PROVIDER_CONFIG } from "../shared/constants.js";
+import { PROVIDER_CONFIG, BROWSER_CONFIG } from "../shared/constants.js";
+import { sleep, formatProgress } from "../shared/browser-utils.js";
 import { store } from "./csv-store.js";
+import { createLogger } from "../shared/logger.js";
+
+const log = createLogger("VISA");
 
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
 /** @typedef {import('../shared/types.js').Provider} Provider */
@@ -24,10 +28,14 @@ const VISA_API_BASE = "https://www.visa.co.in/cmsapi/fx/rates";
 const PROVIDER_NAME = "VISA";
 
 const config = PROVIDER_CONFIG.VISA;
+const browserConfig = BROWSER_CONFIG.VISA;
 
 // Reusable browser instance
+/** @type {PlaywrightBrowser | null} */
 let browserInstance = null;
+/** @type {PlaywrightBrowserContext | null} */
 let browserContext = null;
+/** @type {Promise<{browser: PlaywrightBrowser, context: PlaywrightBrowserContext}> | null} */
 let browserInitPromise = null;
 
 /**
@@ -44,13 +52,11 @@ async function getBrowser() {
 	}
 
 	browserInitPromise = (async () => {
-		console.log("[VISA] Launching headless Firefox browser...");
-		browserInstance = await firefox.launch({ headless: true });
+		log.info("Launching headless Firefox browser...");
+		browserInstance = await firefox.launch({ headless: browserConfig.headless });
 		browserContext = await browserInstance.newContext({
-			userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:120.0) Gecko/20100101 Firefox/120.0",
-			extraHTTPHeaders: {
-				"Accept-Language": "en-US,en;q=0.9"
-			}
+			userAgent: browserConfig.userAgent,
+			extraHTTPHeaders: browserConfig.extraHTTPHeaders
 		});
 		return { browser: browserInstance, context: browserContext };
 	})();
@@ -63,7 +69,7 @@ async function getBrowser() {
  */
 async function closeBrowser() {
 	if (browserInstance) {
-		console.log("[VISA] Closing browser...");
+		log.info("Closing browser...");
 		await browserInstance.close();
 		browserInstance = null;
 		browserContext = null;
@@ -81,11 +87,11 @@ async function closeBrowser() {
  */
 export async function fetchBatch(requests) {
 	if (requests.length === 0) {
-		console.log("[VISA] No requests to process");
+		log.info("No requests to process");
 		return;
 	}
 
-	console.log(`\n[VISA] Starting: ${requests.length} requests (${config.maxParallelRequests} parallel)`);
+	log.info(`Starting: ${requests.length} requests (${config.maxParallelRequests} parallel)`);
 
 	try {
 		const { context } = await getBrowser();
@@ -155,34 +161,34 @@ export async function fetchBatch(requests) {
 				const req = batch[j];
 
 				if (result.status === "rejected") {
-					console.error(`[VISA] FAILED ${req.date} ${req.from}/${req.to}: ${result.reason?.message}`);
+					log.error(`FAILED ${req.date} ${req.from}/${req.to}: ${result.reason?.message}`);
 					continue;
 				}
 
 				const { record } = result.value;
 				if (!record) {
-					console.log(`[VISA] UNAVAILABLE ${req.date} ${req.from}/${req.to}`);
+					log.info(`UNAVAILABLE ${req.date} ${req.from}/${req.to}`);
 					continue;
 				}
 
 				const inserted = store.add(record);
 				if (inserted > 0) {
 					const markup = record.markup ? ` (${record.markup}%)` : "";
-					console.log(`[VISA] SAVED ${record.date} ${record.from_curr}/${record.to_curr}: ${record.rate}${markup}`);
+					log.success(`SAVED ${record.date} ${record.from_curr}/${record.to_curr}: ${record.rate}${markup}`);
 				}
-			}
+				}
 
-			processed += batch.length;
-			console.log(`[VISA] Progress: ${processed}/${requests.length} (${Math.round((processed / requests.length) * 100)}%)`);
+				processed += batch.length;
+				log.info(formatProgress(processed, requests.length));
 
 			if (i + config.maxParallelRequests < requests.length) {
-				await new Promise((r) => setTimeout(r, config.batchDelayMs));
+				await sleep(config.batchDelayMs);
 			}
 		}
 
-		console.log(`\n[VISA] Complete: ${processed} processed`);
+		log.success(`Complete: ${processed} processed`);
 	} catch (error) {
-		console.error(`[VISA] Fatal error: ${error.message}`);
+		log.error(`Fatal error: ${error.message}`);
 		throw error;
 	} finally {
 		await closeBrowser();
