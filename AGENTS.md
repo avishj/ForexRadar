@@ -160,6 +160,14 @@ ForexRadar/
 │   ├── playwright.perf.config.js # Perf test configuration
 │   └── server.js              # Local test server
 │
+├── scripts/                   # Automation scripts
+│   ├── ralph/                 # Ralph autonomous agent
+│   │   ├── ralph.sh           # Ralph runner script
+│   │   └── prompt.md          # Ralph prompt template
+│   ├── backfill_watchdog.py   # Backfill monitoring script
+│   ├── install-backfill-automation.sh
+│   └── run_backfill_mastercard.sh
+│
 ├── .github/workflows/         # CI/CD
 │   ├── ci.yml                 # Lint + typecheck + tests on PR
 │   ├── daily.yml              # Scheduled data updates (2x daily)
@@ -169,6 +177,9 @@ ForexRadar/
 │   └── _*.yml                 # Reusable workflow jobs
 │
 └── docs/                      # Documentation
+    ├── ARCHITECTURE.md        # System architecture docs
+    ├── SPEC.md                # Project specification
+    └── qa.md                  # QA documentation
 ```
 
 ## Key Files Reference
