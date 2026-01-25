@@ -74,7 +74,7 @@ export async function fetchAllRates(currency) {
         to_curr: currency,
         provider: /** @type {const} */ ('ECB'),
         rate: d.rate,
-        markup: null
+        markup: /** @type {null} */ (null)
       })),
       toEur: inverse.map(d => ({
         date: formatDate(d.date),
@@ -82,7 +82,7 @@ export async function fetchAllRates(currency) {
         to_curr: 'EUR',
         provider: /** @type {const} */ ('ECB'),
         rate: d.rate,
-        markup: null
+        markup: /** @type {null} */ (null)
       }))
     };
   } catch (error) {
