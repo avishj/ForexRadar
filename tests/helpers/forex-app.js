@@ -16,7 +16,10 @@ export async function selectCurrency(page, side, code) {
   const input = page.locator(`#${side}-currency-input`);
   await input.focus();
   await input.fill('');
-  await page.click(`#${side}-currency-list .dropdown-item[data-code="${code}"]`);
+  // Wait for dropdown to populate and the specific item to appear
+  const item = page.locator(`#${side}-currency-list .dropdown-item[data-code="${code}"]`);
+  await item.waitFor({ state: 'visible', timeout: 10000 });
+  await item.click();
 }
 
 /**
