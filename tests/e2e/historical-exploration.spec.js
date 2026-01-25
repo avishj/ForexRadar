@@ -7,14 +7,16 @@ import { test, expect, selectCurrencyPair } from '../helpers/forex-app.js';
 test.describe('Historical Exploration Flow', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await selectCurrencyPair(page, 'USD', 'EUR');
+    // Use USD/INR - a well-archived pair with consistent data
+    await selectCurrencyPair(page, 'USD', 'INR');
     await page.locator('#chart-container').waitFor({ state: 'visible', timeout: 30000 });
+    // Wait for time range selector to be visible and stable before interacting
+    await page.locator('#time-range-selector').waitFor({ state: 'visible', timeout: 10000 });
   });
 
   test('can switch to ALL time range', async ({ page }) => {
-    // Wait for time range buttons to be visible
-    await page.locator('.time-range-btn[data-range="all"]').waitFor({ state: 'visible', timeout: 10000 });
-    await page.click('.time-range-btn[data-range="all"]');
+    const allBtn = page.locator('.time-range-btn[data-range="all"]');
+    await allBtn.click();
     
     const activeBtn = page.locator('.time-range-btn.active');
     await expect(activeBtn).toHaveAttribute('data-range', 'all');
@@ -24,21 +26,18 @@ test.describe('Historical Exploration Flow', () => {
   });
 
   test('time range buttons update chart view', async ({ page }) => {
-    // Wait for time range buttons to be visible
-    await page.locator('.time-range-btn[data-range="5y"]').waitFor({ state: 'visible', timeout: 10000 });
-    
     // Start with 1Y (default)
     await expect(page.locator('.time-range-btn.active')).toHaveAttribute('data-range', '1y');
     
     // Switch to 5Y for more historical data
-    await page.click('.time-range-btn[data-range="5y"]');
+    await page.locator('.time-range-btn[data-range="5y"]').click();
     await expect(page.locator('.time-range-btn.active')).toHaveAttribute('data-range', '5y');
     
     // Chart should update
     await expect(page.locator('.apexcharts-canvas')).toBeVisible();
     
     // Switch to 1M for recent data
-    await page.click('.time-range-btn[data-range="1m"]');
+    await page.locator('.time-range-btn[data-range="1m"]').click();
     await expect(page.locator('.time-range-btn.active')).toHaveAttribute('data-range', '1m');
   });
 
@@ -83,7 +82,7 @@ test.describe('Historical Exploration Flow', () => {
     await expect(lowStat).not.toHaveText('-');
     
     // Change time range
-    await page.click('.time-range-btn[data-range="1m"]');
+    await page.locator('.time-range-btn[data-range="1m"]').click();
     
     // Stats should still be populated (values may change)
     await page.waitForTimeout(500);
@@ -96,8 +95,10 @@ test.describe('Historical Exploration Flow', () => {
     await expect(page.locator('.time-range-btn.active')).toHaveAttribute('data-range', '1y');
     
     // Step 2: Expand to ALL historical data
-    await page.click('.time-range-btn[data-range="all"]');
+    await page.locator('.time-range-btn[data-range="all"]').click();
     await expect(page.locator('.time-range-btn.active')).toHaveAttribute('data-range', 'all');
+    // Wait for chart to update after range change
+    await page.waitForTimeout(500);
     
     // Step 3: Verify chart is visible
     await expect(page.locator('.apexcharts-canvas')).toBeVisible();
@@ -114,8 +115,9 @@ test.describe('Historical Exploration Flow', () => {
       await page.waitForTimeout(300);
     }
     
-    // Step 6: Narrow down to 3M
-    await page.click('.time-range-btn[data-range="3m"]');
+    // Step 6: Narrow down to 3M - wait for time range selector to still be visible
+    await page.locator('#time-range-selector').waitFor({ state: 'visible', timeout: 10000 });
+    await page.locator('.time-range-btn[data-range="3m"]').click();
     await expect(page.locator('.time-range-btn.active')).toHaveAttribute('data-range', '3m');
     
     // Step 7: URL should reflect new range

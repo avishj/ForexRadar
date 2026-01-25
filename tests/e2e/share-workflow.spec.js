@@ -7,8 +7,11 @@ import { test, expect, selectCurrencyPair } from '../helpers/forex-app.js';
 test.describe('Share Workflow', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await selectCurrencyPair(page, 'EUR', 'GBP');
+    // Use USD/INR - a well-archived pair with consistent data
+    await selectCurrencyPair(page, 'USD', 'INR');
     await page.locator('#stats-bar').waitFor({ state: 'visible', timeout: 30000 });
+    // Wait for time range selector to be visible and stable before interacting
+    await page.locator('#time-range-selector').waitFor({ state: 'visible', timeout: 10000 });
   });
 
   test('share button is visible after data loads', async ({ page }) => {
@@ -33,19 +36,19 @@ test.describe('Share Workflow', () => {
     
     const url = page.url();
     
-    expect(url).toContain('from=EUR');
-    expect(url).toContain('to=GBP');
+    expect(url).toContain('from=USD');
+    expect(url).toContain('to=INR');
   });
 
   test('shared URL loads same state in new tab', async ({ page }) => {
     // Change time range to make state more specific
-    await page.click('.time-range-btn[data-range="6m"]');
+    await page.locator('.time-range-btn[data-range="6m"]').click();
     await page.waitForTimeout(500);
     
     // Get current URL
     const shareUrl = page.url();
-    expect(shareUrl).toContain('from=EUR');
-    expect(shareUrl).toContain('to=GBP');
+    expect(shareUrl).toContain('from=USD');
+    expect(shareUrl).toContain('to=INR');
     expect(shareUrl).toContain('range=6m');
     
     // Navigate to the shared URL (simulates opening link)
@@ -53,10 +56,11 @@ test.describe('Share Workflow', () => {
     
     // Wait for data to load
     await page.locator('#stats-bar').waitFor({ state: 'visible', timeout: 30000 });
+    await page.locator('#time-range-selector').waitFor({ state: 'visible', timeout: 10000 });
     
     // Verify same state is restored from URL
-    await expect(page.locator('#from-currency')).toHaveValue('EUR');
-    await expect(page.locator('#to-currency')).toHaveValue('GBP');
+    await expect(page.locator('#from-currency')).toHaveValue('USD');
+    await expect(page.locator('#to-currency')).toHaveValue('INR');
     
     const activeBtn = page.locator('.time-range-btn.active');
     await expect(activeBtn).toHaveAttribute('data-range', '6m');
@@ -72,7 +76,7 @@ test.describe('Share Workflow', () => {
     const download = await downloadPromise;
     const filename = download.suggestedFilename();
     
-    expect(filename).toContain('forex-EUR-GBP');
+    expect(filename).toContain('forex-USD-INR');
     expect(filename).toMatch(/\.(png|jpg|jpeg|svg)$/i);
   });
 
@@ -90,20 +94,20 @@ test.describe('Share Workflow', () => {
 
   test('full share workflow', async ({ page, browserName }) => {
     // Step 1: Set up specific view state
-    await page.click('.time-range-btn[data-range="3m"]');
+    await page.locator('.time-range-btn[data-range="3m"]').click();
     await page.waitForTimeout(500);
     
     // Step 2: Verify URL has state
     let url = page.url();
-    expect(url).toContain('from=EUR');
-    expect(url).toContain('to=GBP');
+    expect(url).toContain('from=USD');
+    expect(url).toContain('to=INR');
     expect(url).toContain('range=3m');
     
     // Step 3: Click share button
     if (browserName !== 'firefox') {
       await page.context().grantPermissions(['clipboard-write', 'clipboard-read']);
     }
-    await page.click('#share-url-btn');
+    await page.locator('#share-url-btn').click();
     
     // Step 4: Verify notification appears
     const notification = page.locator('#notification-container .notification').filter({ hasText: 'Link copied' });
@@ -115,8 +119,9 @@ test.describe('Share Workflow', () => {
     
     // Step 6: Verify state is restored from URL
     await page.locator('#stats-bar').waitFor({ state: 'visible', timeout: 30000 });
-    await expect(page.locator('#from-currency')).toHaveValue('EUR');
-    await expect(page.locator('#to-currency')).toHaveValue('GBP');
+    await page.locator('#time-range-selector').waitFor({ state: 'visible', timeout: 10000 });
+    await expect(page.locator('#from-currency')).toHaveValue('USD');
+    await expect(page.locator('#to-currency')).toHaveValue('INR');
     await expect(page.locator('.time-range-btn.active')).toHaveAttribute('data-range', '3m');
   });
 });
