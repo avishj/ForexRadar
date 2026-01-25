@@ -4,6 +4,13 @@
 
 **Always use the `git-committing` skill** after completing logical blocks of work, unless explicitly asked not to. This ensures all changes are committed and pushed incrementally.
 
+## Agent Rules
+
+- **Do not downgrade action versions** - When editing GitHub Actions workflows, keep existing action versions unless explicitly asked to upgrade. The current versions are intentionally pinned.
+- **Combine git commit and push** - Use `git commit ... && git push` in a single command, not separate calls.
+- **Avoid duplicate CI runs** - CI is the single source of truth for tests. Deploy triggers via `workflow_run` after CI/daily succeed—do not add test jobs to deploy.yml.
+- **db-only changes skip tests** - CI detects when only `db/**` files changed and skips test jobs to save runner minutes.
+
 ## Overview
 
 ForexRadar is a web application that tracks and visualizes historical exchange rates from three providers:
@@ -218,12 +225,13 @@ date,from_curr,to_curr,provider,rate,markup
 - **Outputs**: Commits new data to `db/`, creates issues on failures
 
 ### `deploy.yml` - Frontend Deployment
-- **Triggers**: Push to main, or after `daily.yml` completes
-- **Action**: Deploys static files to GitHub Pages
+- **Triggers**: `workflow_run` after CI or daily.yml succeeds, or `workflow_dispatch`
+- **Action**: Deploys static files to GitHub Pages (no tests—CI is the gate)
 
 ### `ci.yml` - Continuous Integration
 - **Triggers**: Push/PR to main
 - **Jobs**: Lint + typecheck, unit + integration tests, smoke tests, e2e tests
+- **Note**: Skips test jobs when only `db/**` files changed (db-only detection)
 
 ### `contract.yml` - API Contract Tests
 - **Schedule**: Weekly (Sundays at 00:00 UTC)
