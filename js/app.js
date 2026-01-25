@@ -39,6 +39,7 @@ class SearchableDropdown {
     this.list = /** @type {HTMLElement} */ (container.querySelector('.dropdown-list'));
     this.highlightedIndex = -1;
     this.isOpen = false;
+    /** @type {Array<{code: string, name: string}>} */
     this.filteredItems = [];
     
     this.init();
@@ -433,6 +434,7 @@ const toggleVisaMarkupContainer = toggleVisaMarkup?.closest('.series-toggle');
 // State
 // ============================================================================
 
+/** @type {ReturnType<typeof setTimeout> | null} */
 let debounceTimer = null;
 const DEBOUNCE_MS = 300;
 
@@ -550,7 +552,7 @@ function loadRecentPairs() {
     if (stored) {
       const pairs = JSON.parse(stored);
       // Validate and filter invalid entries (including self-pairs)
-      return pairs.filter(p => p.from && p.to && p.from !== p.to && isValidCurrency(p.from) && isValidCurrency(p.to));
+      return pairs.filter(/** @param {RecentPair} p */ (p) => p.from && p.to && p.from !== p.to && isValidCurrency(p.from) && isValidCurrency(p.to));
     }
   } catch (error) {
     console.error('Error loading recent pairs:', error);
@@ -1109,7 +1111,7 @@ async function loadCurrencyPair() {
       /** @type {CurrencyCode} */ (toCurr),
       range,
       {
-        onProgress: (stage, message) => {
+        onProgress: (/** @type {string} */ stage, /** @type {string} */ message) => {
           loaderText.textContent = message;
         }
       }
