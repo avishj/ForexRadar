@@ -45,9 +45,13 @@ const config = PROVIDER_CONFIG.MASTERCARD;
 const browserConfig = BROWSER_CONFIG.MASTERCARD;
 
 // Browser state
+/** @type {PlaywrightBrowser | null} */
 let browserInstance = null;
+/** @type {PlaywrightBrowserContext | null} */
 let browserContext = null;
+/** @type {Promise<{browser: PlaywrightBrowser, context: PlaywrightBrowserContext}> | null} */
 let browserInitPromise = null;
+/** @type {PlaywrightPage | null} */
 let mainPage = null;
 
 // ============================================================================
@@ -231,6 +235,7 @@ async function selectCurrency(page, dropdownType, currencyCode) {
 	await randomDelay(500, 600); // Wait for filtering to complete
 
 	// Click the matching currency option
+	/** @type {{success: boolean, error?: string, found?: string | null, available?: string[]}} */
 	const clicked = await page.evaluate(({ selector, code }) => {
 		const dropdown = document.querySelector(selector);
 		if (!dropdown) {
@@ -250,7 +255,7 @@ async function selectCurrency(page, dropdownType, currencyCode) {
 		
 		// Debug: return what we found
 		const allLinks = Array.from(links).map(l => (l.textContent || "").replace(/\s+/g, " ").trim()).filter(Boolean);
-		return { success: false, found: null, available: allLinks.slice(0, 5) };
+		return { success: false, found: /** @type {string | null} */ (null), available: allLinks.slice(0, 5) };
 	}, { selector: dropdownSelector, code: currencyCode });
 	
 	if (!clicked.success) {
@@ -485,6 +490,7 @@ async function fetchDateOnly(page, date) {
 	const result = { rate: null, error: null };
 
 	// Set up promise to capture the API response
+	/** @type {(value: {rate?: number, error?: string}) => void} */
 	let resolveApiResponse;
 	let apiResolved = false;
 	const apiResponsePromise = new Promise((resolve) => {
@@ -497,6 +503,7 @@ async function fetchDateOnly(page, date) {
 	});
 
 	// Response handler to capture the conversion rate API call
+	/** @param {import('playwright').Response} response */
 	const responseHandler = async (response) => {
 		const url = response.url();
 		// Only match responses that contain our target date (to avoid capturing fxDate=0000-00-00 calls)
@@ -655,13 +662,14 @@ export async function fetchBatch(requests) {
 
 						if (result.rate !== null) {
 							// Save successful result
+							/** @type {RateRecord} */
 							const record = {
 								date,
 								from_curr: from,
 								to_curr: to,
 								provider: PROVIDER_NAME,
 								rate: result.rate,
-								markup: null
+								markup: /** @type {null} */ (null)
 							};
 
 							const inserted = store.add(record);

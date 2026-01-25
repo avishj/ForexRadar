@@ -25,7 +25,7 @@ const PROVIDER_NAME = 'MASTERCARD';
  * Checks if the API response indicates an error (out of range, bad request, etc.)
  * Mastercard returns HTTP 200 with error payload instead of HTTP error codes.
  * 
- * @param {object} data - Parsed JSON response
+ * @param {{ type?: string, data?: { errorCode?: string, errorMessage?: string, conversionRate?: number } }} data - Parsed JSON response
  * @returns {{isError: boolean, message: string|null, isEndOfHistory: boolean}}
  */
 function checkForApiError(data) {

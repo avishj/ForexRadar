@@ -18,7 +18,7 @@ class ThemeManager {
     // Load saved theme or default to dark
     const savedTheme = localStorage.getItem('theme');
     
-    if (savedTheme) {
+    if (savedTheme === 'dark' || savedTheme === 'light') {
       this.setTheme(savedTheme);
     } else {
       // Default to dark mode if no saved preference
@@ -38,7 +38,7 @@ class ThemeManager {
     });
   }
   
-  setTheme(theme) {
+  setTheme(/** @type {'dark' | 'light'} */ theme) {
     if (theme === 'dark') {
       this.html.classList.add('dark');
       this.html.classList.remove('light');

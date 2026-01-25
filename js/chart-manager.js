@@ -107,10 +107,25 @@ function isDarkMode() {
 }
 
 /**
+ * @typedef {Object} ChartOptions
+ * @property {Record<string, any>} chart
+ * @property {Array<{ name: string, type: string, data: Array<{x: number, y: number}> }>} series
+ * @property {Record<string, any>} xaxis
+ * @property {Record<string, any>} [theme]
+ * @property {Record<string, any>} [stroke]
+ * @property {Record<string, any>} [yaxis]
+ * @property {Record<string, any>} [grid]
+ * @property {Record<string, any>} [legend]
+ * @property {Record<string, any>} [tooltip]
+ * @property {string[]} [colors]
+ * @property {Record<string, any>} [markers]
+ */
+
+/**
  * Gets the base chart configuration
  * @param {string} fromCurr - Source currency code
  * @param {string} toCurr - Target currency code
- * @returns {Object} ApexCharts options
+ * @returns {ChartOptions} ApexCharts options
  */
 function getChartOptions(fromCurr, toCurr) {
   const dark = isDarkMode();
@@ -203,7 +218,7 @@ function getChartOptions(fromCurr, toCurr) {
         format: 'yyyy-MM-dd',
         offsetX: 0,
         offsetY: 0,
-        formatter: function(value, timestamp) {
+        formatter: function(/** @type {string} */ value, /** @type {number|undefined} */ timestamp) {
           if (!timestamp) return '';
           
           // Hide labels beyond min/max data range
@@ -254,7 +269,7 @@ function getChartOptions(fromCurr, toCurr) {
           style: {
             colors: textColor
           },
-          formatter: (value) => value?.toFixed(5) ?? ''
+          formatter: (/** @type {number|null|undefined} */ value) => value?.toFixed(5) ?? ''
         },
         axisBorder: {
           show: true,
@@ -277,7 +292,7 @@ function getChartOptions(fromCurr, toCurr) {
           style: {
             colors: VISA_MARKUP_COLOR
           },
-          formatter: (value) => (value === null || value === undefined) ? '' : `${value.toFixed(2)}%`
+          formatter: (/** @type {number|null|undefined} */ value) => (value === null || value === undefined) ? '' : `${value.toFixed(2)}%`
         },
         axisBorder: {
           show: true,
@@ -293,7 +308,7 @@ function getChartOptions(fromCurr, toCurr) {
       x: {
         format: 'MMM dd, yyyy'
       },
-      custom: function({ series, seriesIndex: _seriesIndex, dataPointIndex, w }) {
+      custom: function(/** @type {{ series: number[][], seriesIndex: number, dataPointIndex: number, w: { globals: { seriesX: number[][] } } }} */ { series, seriesIndex: _seriesIndex, dataPointIndex, w }) {
         // Custom tooltip to ensure all series are displayed even when some have null values
         const date = new Date(w.globals.seriesX[0][dataPointIndex]);
         const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -404,12 +419,6 @@ function getChartOptions(fromCurr, toCurr) {
 }
 
 /**
- * Transforms rate records into chart series data
- * @param {RateRecord[]} visaRecords - Array of Visa rate records
- * @param {RateRecord[]} mastercardRecords - Array of Mastercard rate records
- * @returns {Object} Object with visaRateSeries, mcRateSeries, and visaMarkupSeries
- */
-/**
  * Converts a YYYY-MM-DD date string to midnight UTC timestamp
  * @param {string} dateStr - Date in YYYY-MM-DD format
  * @returns {number} Timestamp at midnight UTC
@@ -432,6 +441,13 @@ function timestampToDateStr(timestamp) {
   return `${year}-${month}-${day}`;
 }
 
+/**
+ * Transforms rate records into chart series data
+ * @param {RateRecord[]} visaRecords - Visa rate records
+ * @param {RateRecord[]} mastercardRecords - Mastercard rate records
+ * @param {RateRecord[]} ecbRecords - ECB rate records
+ * @returns {{ visaRateSeries: Array<{x: number, y: number|null}>, mcRateSeries: Array<{x: number, y: number|null}>, ecbRateSeries: Array<{x: number, y: number|null}>, visaMarkupSeries: Array<{x: number, y: number|null}> }}
+ */
 function transformData(visaRecords, mastercardRecords, ecbRecords = []) {
   // Collect all unique dates across all providers
   const allDates = new Set();
@@ -502,9 +518,12 @@ let onZoomCallback = null;
 
 /**
  * Stores current records for Y-axis recalculation on zoom
+ * @type {RateRecord[]}
  */
 let currentVisaRecords = [];
+/** @type {RateRecord[]} */
 let currentMcRecords = [];
+/** @type {RateRecord[]} */
 let currentEcbRecords = [];
 
 /**
@@ -574,7 +593,7 @@ function updateYAxisLimits(minTimestamp, maxTimestamp) {
         max: rateMax + ratePadding,
         labels: {
           style: { colors: textColor },
-          formatter: (value) => value?.toFixed(5) ?? ''
+          formatter: (/** @type {number|null|undefined} */ value) => value?.toFixed(5) ?? ''
         },
         axisBorder: { show: true, color: gridColor }
       },
@@ -585,7 +604,7 @@ function updateYAxisLimits(minTimestamp, maxTimestamp) {
         max: markupMax,
         labels: {
           style: { colors: VISA_MARKUP_COLOR },
-          formatter: (value) => (value === null || value === undefined) ? '' : `${value.toFixed(2)}%`
+          formatter: (/** @type {number|null|undefined} */ value) => (value === null || value === undefined) ? '' : `${value.toFixed(2)}%`
         },
         axisBorder: { show: true, color: VISA_MARKUP_COLOR }
       }
@@ -690,7 +709,7 @@ export function initChart(containerId, visaRecords, mastercardRecords, ecbRecord
   
   // Add zoom/pan event listeners
   options.chart.events = {
-    zoomed: (chartContext, { xaxis }) => {
+    zoomed: (/** @type {unknown} */ chartContext, /** @type {{ xaxis: { min: number, max: number } }} */ { xaxis }) => {
       // For datetime axis, min/max are timestamps
       const minTs = xaxis.min;
       const maxTs = xaxis.max;
@@ -710,7 +729,7 @@ export function initChart(containerId, visaRecords, mastercardRecords, ecbRecord
         onZoomCallback(minDate, maxDate);
       }
     },
-    scrolled: (chartContext, { xaxis }) => {
+    scrolled: (/** @type {unknown} */ chartContext, /** @type {{ xaxis: { min: number, max: number } }} */ { xaxis }) => {
       // For datetime axis, min/max are timestamps
       const minTs = xaxis.min;
       const maxTs = xaxis.max;
@@ -822,7 +841,7 @@ export function updateChart(visaRecords, mastercardRecords, ecbRecords, fromCurr
         },
         labels: {
           style: { colors: textColor },
-          formatter: (value) => value?.toFixed(5) ?? ''
+          formatter: (/** @type {number|null|undefined} */ value) => value?.toFixed(5) ?? ''
         },
         axisBorder: { show: true, color: gridColor }
       },
@@ -835,7 +854,7 @@ export function updateChart(visaRecords, mastercardRecords, ecbRecords, fromCurr
         },
         labels: {
           style: { colors: VISA_MARKUP_COLOR },
-          formatter: (value) => (value === null || value === undefined) ? '' : `${(value).toFixed(2)}%`
+          formatter: (/** @type {number|null|undefined} */ value) => (value === null || value === undefined) ? '' : `${(value).toFixed(2)}%`
         },
         axisBorder: { show: true, color: VISA_MARKUP_COLOR }
       }
@@ -931,7 +950,7 @@ export function refreshChartTheme(fromCurr, toCurr) {
         },
         labels: {
           style: { colors: textColor },
-          formatter: (value) => value?.toFixed(5) ?? ''
+          formatter: (/** @type {number|null|undefined} */ value) => value?.toFixed(5) ?? ''
         },
         axisBorder: { show: true, color: gridColor }
       },
@@ -944,7 +963,7 @@ export function refreshChartTheme(fromCurr, toCurr) {
         },
         labels: {
           style: { colors: VISA_MARKUP_COLOR },
-          formatter: (value) => (value === null || value === undefined) ? '' : `${value.toFixed(2)}%`
+          formatter: (/** @type {number|null|undefined} */ value) => (value === null || value === undefined) ? '' : `${value.toFixed(2)}%`
         },
         axisBorder: { show: true, color: VISA_MARKUP_COLOR }
       }

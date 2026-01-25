@@ -31,8 +31,11 @@ const config = PROVIDER_CONFIG.VISA;
 const browserConfig = BROWSER_CONFIG.VISA;
 
 // Reusable browser instance
+/** @type {PlaywrightBrowser | null} */
 let browserInstance = null;
+/** @type {PlaywrightBrowserContext | null} */
 let browserContext = null;
+/** @type {Promise<{browser: PlaywrightBrowser, context: PlaywrightBrowserContext}> | null} */
 let browserInitPromise = null;
 
 /**
