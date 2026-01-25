@@ -109,6 +109,7 @@ export function analyzeGaps(pairs, startDate, endDate, providers, options = {}) 
  * @returns {{ VISA: BatchRequest[], MASTERCARD: BatchRequest[] }}
  */
 export function groupByProvider(missingData) {
+  /** @type {{ VISA: BatchRequest[], MASTERCARD: BatchRequest[] }} */
   const grouped = {
     VISA: [],
     MASTERCARD: []
@@ -159,6 +160,10 @@ export async function executeProviderBatch(provider, requests, options = {}) {
 
 /**
  * Print final summary
+ * @param {CurrencyPair[]} pairs
+ * @param {string} startDate - YYYY-MM-DD
+ * @param {string} endDate - YYYY-MM-DD
+ * @param {string[]} providers
  */
 function printSummary(pairs, startDate, endDate, providers) {
   console.log(`\n${SEPARATOR}`);
@@ -211,7 +216,7 @@ async function main() {
   const grouped = groupByProvider(missingData);
   
   // Step 3: Randomize batch request order (Fisher-Yates shuffle)
-  for (const provider of ['VISA', 'MASTERCARD']) {
+  for (const provider of /** @type {const} */ (['VISA', 'MASTERCARD'])) {
     const requests = grouped[provider];
     for (let i = requests.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
