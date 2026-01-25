@@ -298,14 +298,42 @@ Use conventional commits:
 - `data:` - Data updates (automated)
 - `ci:` - CI/CD changes
 
+## Important Gotchas
+
+### Data Availability Timing
+- **Visa**: Data available after 12pm ET (Eastern Time) for today's rates
+- **ECB**: Updates at UTC 12:00 (cache invalidation boundary)
+- `getLatestAvailableDate()` in `shared/utils.js` handles ET timezone logic
+
+### Mastercard Bot Evasion
+- **Must run headful** - `headless: false` in `BROWSER_CONFIG.MASTERCARD`
+- Uses Chrome via Playwright's chromium with `channel: "chrome"`
+- Simulates UI clicks on the currency converter page, not direct API calls
+- Intercepts background network responses for rate data
+- Only one user agent is active (commented list in `shared/constants.js`)
+
+### CSV Storage Structure
+- Files organized as `db/{FROM_CURRENCY}/{YEAR}.csv` (e.g., `db/USD/2025.csv`)
+- CSVStore maintains in-memory uniqueness index: `Map<fromCurr, Set<"date|to_curr|provider">>`
+- Deduplication happens on write - duplicate records are silently skipped
+
+### Frontend Caching
+- IndexedDB stores rates; localStorage tracks refresh timestamps per currency
+- Cache key prefix: `forexRadar_serverRefresh_{CURRENCY}`
+- Stale check: has UTC 12:00 passed since last refresh?
+
+### Browser Launch Config
+- **Visa**: Firefox, headless, minimal config
+- **Mastercard**: Chromium+Chrome channel, headful, extensive anti-detection args
+
 ## Troubleshooting
 
 ### Mastercard 403 Errors
 The Mastercard API uses Akamai bot detection. The client handles this by:
-1. Rotating user agents (`shared/constants.js`)
-2. Refreshing session every 6 requests
-3. Restarting browser every 18 requests
-4. Pausing 10 minutes on 403 errors
+1. Using a single user agent per session (rotated on restart)
+2. Simulating real UI interactions (clicks, form fills)
+3. Pausing 10 minutes on 403 errors (`pauseOnForbiddenMs`)
+4. Restarting browser on critical errors (timeouts, target closed)
 
 ### Missing Data
 1. Run `bun run validate` to identify gaps
