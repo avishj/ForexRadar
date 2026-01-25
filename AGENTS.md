@@ -109,9 +109,12 @@ ForexRadar/
 ├── backend/                    # Data ingestion scripts (Bun)
 │   ├── daily-update.js        # Main entry for scheduled updates
 │   ├── backfill-orchestrator.js # Long-running backfill jobs
+│   ├── cli.js                 # Shared CLI utilities (watchlist loading, arg parsing)
 │   ├── visa-client-batch.js   # Visa rate fetcher (parallel)
 │   ├── mastercard-client-batch-v2.js # Mastercard fetcher (bot evasion)
+│   ├── mastercard-client-batch.js # Legacy MC client
 │   ├── ecb-client.js          # ECB XML feed parser
+│   ├── ecb-backfill.js        # ECB historical data backfill
 │   ├── csv-store.js           # CSV read/write operations
 │   ├── validate-data.js       # Data integrity checks
 │   ├── watchlist.json         # Visa/MC currency pairs (~330 pairs)
@@ -125,12 +128,17 @@ ForexRadar/
 │   ├── storage-manager.js     # IndexedDB caching
 │   ├── currencies.js          # Currency metadata
 │   ├── theme.js               # Dark/light mode
-│   └── animations.js          # UI transitions
+│   ├── animations.js          # UI transitions
+│   ├── visa-client.js         # Browser-side Visa client
+│   ├── mastercard-client.js   # Browser-side Mastercard client
+│   └── globals.d.ts           # Global type declarations
 │
 ├── shared/                    # Isomorphic utilities
 │   ├── constants.js           # Provider configs (rate limits, etc.)
 │   ├── utils.js               # Date formatting, cache staleness
 │   ├── csv-utils.js           # CSV parsing helpers
+│   ├── browser-utils.js       # Browser environment utilities
+│   ├── logger.js              # Logging utilities
 │   └── types.js               # JSDoc type definitions
 │
 ├── css/                       # Stylesheets
@@ -145,7 +153,12 @@ ForexRadar/
 │   ├── smoke/                 # UI smoke tests (Playwright)
 │   ├── e2e/                   # End-to-end flow tests
 │   ├── perf/                  # Performance benchmarks
-│   └── playwright.config.js   # Test configuration
+│   ├── fixtures/              # Test fixtures
+│   ├── helpers/               # Test helper utilities
+│   ├── playwright.config.js   # Smoke test configuration
+│   ├── playwright.e2e.config.js # E2E test configuration
+│   ├── playwright.perf.config.js # Perf test configuration
+│   └── server.js              # Local test server
 │
 ├── .github/workflows/         # CI/CD
 │   ├── ci.yml                 # Lint + typecheck + tests on PR
