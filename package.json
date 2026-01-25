@@ -11,6 +11,8 @@
     "typecheck": "bunx tsc --noEmit",
     "check": "bun run typecheck",
     "lint": "eslint js shared backend",
+    "precommit": "bun run lint && bun run check && bun run test:unit",
+    "ci": "bun run lint && bun run check && bun run test:unit && bun run test:integration && bun run test:smoke && bun run test:e2e",
     "lint:fix": "eslint js shared backend --fix",
     "postinstall": "cd backend && bunx playwright install firefox chromium",
     "test": "bunx playwright test --config=tests/playwright.config.js",
