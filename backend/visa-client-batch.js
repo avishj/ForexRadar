@@ -9,7 +9,8 @@
 
 import { firefox } from "playwright";
 import { formatDateForApi, parseDate } from "../shared/utils.js";
-import { PROVIDER_CONFIG } from "../shared/constants.js";
+import { PROVIDER_CONFIG, BROWSER_CONFIG } from "../shared/constants.js";
+import { sleep, formatProgress } from "../shared/browser-utils.js";
 import { store } from "./csv-store.js";
 import { createLogger } from "../shared/logger.js";
 
@@ -27,6 +28,7 @@ const VISA_API_BASE = "https://www.visa.co.in/cmsapi/fx/rates";
 const PROVIDER_NAME = "VISA";
 
 const config = PROVIDER_CONFIG.VISA;
+const browserConfig = BROWSER_CONFIG.VISA;
 
 // Reusable browser instance
 let browserInstance = null;
@@ -48,12 +50,10 @@ async function getBrowser() {
 
 	browserInitPromise = (async () => {
 		log.info("Launching headless Firefox browser...");
-		browserInstance = await firefox.launch({ headless: true });
+		browserInstance = await firefox.launch({ headless: browserConfig.headless });
 		browserContext = await browserInstance.newContext({
-			userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:120.0) Gecko/20100101 Firefox/120.0",
-			extraHTTPHeaders: {
-				"Accept-Language": "en-US,en;q=0.9"
-			}
+			userAgent: browserConfig.userAgent,
+			extraHTTPHeaders: browserConfig.extraHTTPHeaders
 		});
 		return { browser: browserInstance, context: browserContext };
 	})();
@@ -176,10 +176,10 @@ export async function fetchBatch(requests) {
 				}
 
 				processed += batch.length;
-				log.info(`Progress: ${processed}/${requests.length} (${Math.round((processed / requests.length) * 100)}%)`);
+				log.info(formatProgress(processed, requests.length));
 
 			if (i + config.maxParallelRequests < requests.length) {
-				await new Promise((r) => setTimeout(r, config.batchDelayMs));
+				await sleep(config.batchDelayMs);
 			}
 		}
 

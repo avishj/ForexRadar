@@ -15,7 +15,8 @@
  */
 
 import { chromium } from "playwright";
-import { PROVIDER_CONFIG, USER_AGENTS } from "../shared/constants.js";
+import { PROVIDER_CONFIG, BROWSER_CONFIG, USER_AGENTS } from "../shared/constants.js";
+import { sleep, randomDelay, closeBrowserWithTimeout, formatProgress } from "../shared/browser-utils.js";
 import { store } from "./csv-store.js";
 import { createLogger } from "../shared/logger.js";
 
@@ -41,6 +42,7 @@ const MASTERCARD_API_PATTERN = /settlement\/currencyrate\/conversion-rate\?/;
 const PROVIDER_NAME = "MASTERCARD";
 
 const config = PROVIDER_CONFIG.MASTERCARD;
+const browserConfig = BROWSER_CONFIG.MASTERCARD;
 
 // Browser state
 let browserInstance = null;
@@ -83,35 +85,15 @@ async function getBrowser() {
 	browserInitPromise = (async () => {
 		log.info("Launching Chrome browser...");
 		browserInstance = await chromium.launch({
-			channel: "chrome", // Use installed Chrome instead of Chromium
-			headless: false, // Akamai bot detection blocks headless mode
-			args: [
-				"--disable-blink-features=AutomationControlled",
-				"--disable-gpu",
-				"--disable-dev-shm-usage",
-				"--disable-background-timer-throttling",
-				"--disable-backgrounding-occluded-windows",
-				"--disable-renderer-backgrounding",
-				"--no-sandbox",
-				"--disable-web-security",
-				"--disable-extensions",
-				"--disable-plugins",
-				"--disable-default-apps",
-				"--disable-sync",
-				"--disable-translate",
-				"--max_old_space_size=2048",
-				"--js-flags=--max-old-space-size=2048"
-			]
+			channel: browserConfig.channel,
+			headless: browserConfig.headless,
+			args: browserConfig.args
 		});
 		browserContext = await browserInstance.newContext({
 			userAgent: SESSION_USER_AGENT,
-			viewport: { width: 1512, height: 984 },
-			locale: "en-US",
-			extraHTTPHeaders: {
-				"Accept-Language": "en-GB,en;q=0.9",
-				DNT: "1",
-				"Sec-GPC": "1"
-			}
+			viewport: browserConfig.viewport,
+			locale: browserConfig.locale,
+			extraHTTPHeaders: browserConfig.extraHTTPHeaders
 		});
 
 		browserInstance.on("disconnected", () => {
@@ -133,33 +115,13 @@ async function closeBrowser() {
 		log.info("Closing browser...");
 		const browser = browserInstance;
 		resetBrowserState();
-		try {
-			await Promise.race([
-				browser.close(),
-				new Promise((_, reject) => setTimeout(() => reject(new Error("Close timeout")), 3000))
-			]);
+		const closed = await closeBrowserWithTimeout(browser);
+		if (closed) {
 			log.success("Browser closed");
-		} catch (_error) {
+		} else {
 			log.warn("Browser close timed out, continuing");
 		}
 	}
-}
-
-/**
- * Sleep utility for rate limiting and human-like delays
- * @param {number} ms - Milliseconds to sleep
- */
-function sleep(ms) {
-	return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/**
- * Random delay to simulate human behavior
- * @param {number} min - Minimum ms
- * @param {number} max - Maximum ms
- */
-function randomDelay(min, max) {
-	return sleep(Math.floor(Math.random() * (max - min + 1)) + min);
 }
 
 // ============================================================================
@@ -755,8 +717,7 @@ export async function fetchBatch(requests) {
 
 					// Progress reporting
 					if (processedCount % 10 === 0 || processedCount === requests.length) {
-						const pct = Math.round((processedCount / requests.length) * 100);
-						log.info(`Progress: ${processedCount}/${requests.length} (${pct}%)`);
+						log.info(formatProgress(processedCount, requests.length));
 					}
 				}
 			} catch (error) {
