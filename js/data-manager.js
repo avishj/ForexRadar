@@ -27,7 +27,7 @@ import { csvReader } from './csv-reader.js';
 import * as StorageManager from './storage-manager.js';
 import * as VisaClient from './visa-client.js';
 import * as MastercardClient from './mastercard-client.js';
-import { formatDate, getYesterday, addDays } from '../shared/utils.js';
+import { formatDate, getYesterday, addDays, parseDate } from '../shared/utils.js';
 
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
 /** @typedef {import('../shared/types.js').RateStats} RateStats */
@@ -359,11 +359,11 @@ async function fetchLiveDataForProvider(
   notify('live', `Fetching live ${providerName} data...`);
   
   let fetchedCount = 0;
-  const startDate = new Date(yesterdayStr);
+  const startDate = parseDate(yesterdayStr);
   // If no historical data exists, only fetch last 7 days
   const stopDateStr = latestDate || addDays(yesterdayStr, -7);
   
-  const currentDate = new Date(startDate);
+  const currentDate = new Date(startDate.getTime());
   let consecutiveErrors = 0;
   const maxErrors = 3;
 
