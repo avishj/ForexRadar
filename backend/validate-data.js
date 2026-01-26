@@ -10,7 +10,7 @@
 
 import { parseArgs } from 'util';
 import { store } from './csv-store.js';
-import { parseDate } from '../shared/utils.js';
+import { parseDate, formatDate } from '../shared/utils.js';
 
 /** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
@@ -80,7 +80,7 @@ function findMissingDates(dates) {
   const end = parseDate(dates[dates.length - 1]);
 
   for (let d = start; d <= end; d.setDate(d.getDate() + 1)) {
-    const dateStr = d.toISOString().split('T')[0];
+    const dateStr = formatDate(d);
     if (!dateSet.has(dateStr)) {
       missingDates.push(dateStr);
     }
