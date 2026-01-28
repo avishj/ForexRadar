@@ -2306,6 +2306,11 @@ h1, h2, h3, h4, h5, h6, .font-display {
   color: var(--text-primary);
 }
 
+.time-range-btn.btn--active {
+  background: var(--accent-primary);
+  color: white;
+}
+
 @media (max-width: 480px) {
   .time-range-buttons {
     gap: 0.375rem;
