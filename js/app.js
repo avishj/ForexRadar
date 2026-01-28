@@ -1398,6 +1398,12 @@ function setupKeyboardShortcuts() {
         break;
         
       case '/': {
+        // Shift+/ is the same as ? on US keyboards - show shortcuts
+        if (e.shiftKey) {
+          e.preventDefault();
+          showShortcutsModal();
+          break;
+        }
         // Focus from currency search
         e.preventDefault();
         const fromInput = document.getElementById('from-currency-input');
@@ -1721,6 +1727,12 @@ function init() {
 
   // Keyboard shortcuts
   setupKeyboardShortcuts();
+  
+  // Shortcuts button in footer
+  const shortcutsBtn = document.getElementById('show-shortcuts-btn');
+  if (shortcutsBtn) {
+    shortcutsBtn.addEventListener('click', () => showShortcutsModal());
+  }
   
   // Mark initialization complete
   isInitializing = false;
