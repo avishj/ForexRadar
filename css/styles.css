@@ -2186,62 +2186,35 @@ h1, h2, h3, h4, h5, h6, .font-display {
   box-shadow: var(--shadow-floating);
   transform: translateX(120%);
   opacity: 0;
-  transition: all var(--transition-bounce);
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), 
+              opacity 0.3s ease;
   pointer-events: auto;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  will-change: transform, opacity;
 }
 
 .notification.show {
   transform: translateX(0);
   opacity: 1;
-  animation: notification-enter 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-@keyframes notification-enter {
-  0% {
-    transform: translateX(120%) scale(0.8);
-    opacity: 0;
-  }
-  60% {
-    transform: translateX(-8px) scale(1.02);
-    opacity: 1;
-  }
-  100% {
-    transform: translateX(0) scale(1);
-    opacity: 1;
-  }
-}
-
-.notification.hide {
-  animation: notification-exit 0.3s ease-in forwards;
-}
-
-@keyframes notification-exit {
-  to {
-    transform: translateX(120%) scale(0.9);
-    opacity: 0;
-  }
 }
 
 .notification-success {
   border-left: 3px solid var(--color-success);
-  background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(16, 185, 129, 0.05) 100%);
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(16, 185, 129, 0.12) 100%);
 }
 
 .notification-error {
   border-left: 3px solid var(--color-danger);
-  background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(239, 68, 68, 0.05) 100%);
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(239, 68, 68, 0.12) 100%);
 }
 
 .notification-warning {
   border-left: 3px solid var(--color-warning);
-  background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(245, 158, 11, 0.05) 100%);
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(245, 158, 11, 0.12) 100%);
 }
 
 .notification-info {
   border-left: 3px solid var(--color-info);
-  background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(59, 130, 246, 0.05) 100%);
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(59, 130, 246, 0.12) 100%);
 }
 
 .notif-icon {
