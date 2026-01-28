@@ -18,7 +18,7 @@ test.describe('Historical Exploration Flow', () => {
     const allBtn = page.locator('.time-range-btn[data-range="all"]');
     await allBtn.click();
     
-    const activeBtn = page.locator('.time-range-btn.active');
+    const activeBtn = page.locator('.time-range-btn.btn--active');
     await expect(activeBtn).toHaveAttribute('data-range', 'all');
     
     // Chart should still be visible
@@ -27,18 +27,18 @@ test.describe('Historical Exploration Flow', () => {
 
   test('time range buttons update chart view', async ({ page }) => {
     // Start with 1Y (default)
-    await expect(page.locator('.time-range-btn.active')).toHaveAttribute('data-range', '1y');
+    await expect(page.locator('.time-range-btn.btn--active')).toHaveAttribute('data-range', '1y');
     
     // Switch to 5Y for more historical data
     await page.locator('.time-range-btn[data-range="5y"]').click();
-    await expect(page.locator('.time-range-btn.active')).toHaveAttribute('data-range', '5y');
+    await expect(page.locator('.time-range-btn.btn--active')).toHaveAttribute('data-range', '5y');
     
     // Chart should update
     await expect(page.locator('.apexcharts-canvas')).toBeVisible();
     
     // Switch to 1M for recent data
     await page.locator('.time-range-btn[data-range="1m"]').click();
-    await expect(page.locator('.time-range-btn.active')).toHaveAttribute('data-range', '1m');
+    await expect(page.locator('.time-range-btn.btn--active')).toHaveAttribute('data-range', '1m');
   });
 
   test('chart has zoom/pan capabilities', async ({ page }) => {
@@ -92,11 +92,11 @@ test.describe('Historical Exploration Flow', () => {
 
   test('full historical exploration workflow', async ({ page }) => {
     // Step 1: Start with default 1Y view
-    await expect(page.locator('.time-range-btn.active')).toHaveAttribute('data-range', '1y');
+    await expect(page.locator('.time-range-btn.btn--active')).toHaveAttribute('data-range', '1y');
     
     // Step 2: Expand to ALL historical data
     await page.locator('.time-range-btn[data-range="all"]').click();
-    await expect(page.locator('.time-range-btn.active')).toHaveAttribute('data-range', 'all');
+    await expect(page.locator('.time-range-btn.btn--active')).toHaveAttribute('data-range', 'all');
     // Wait for chart to update after range change
     await page.waitForTimeout(500);
     
@@ -118,7 +118,7 @@ test.describe('Historical Exploration Flow', () => {
     // Step 6: Narrow down to 3M - wait for time range selector to still be visible
     await page.locator('#time-range-selector').waitFor({ state: 'visible', timeout: 10000 });
     await page.locator('.time-range-btn[data-range="3m"]').click();
-    await expect(page.locator('.time-range-btn.active')).toHaveAttribute('data-range', '3m');
+    await expect(page.locator('.time-range-btn.btn--active')).toHaveAttribute('data-range', '3m');
     
     // Step 7: URL should reflect new range
     const url = page.url();

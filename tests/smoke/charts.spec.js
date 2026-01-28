@@ -12,42 +12,42 @@ test.describe('Time Range Selector', () => {
   });
 
   test('default selection is 1Y', async ({ page }) => {
-    const activeBtn = page.locator('.time-range-btn.active');
+    const activeBtn = page.locator('.time-range-btn.btn--active');
     await expect(activeBtn).toHaveAttribute('data-range', '1y');
   });
 
   test('clicking 1M changes active state', async ({ page }) => {
     await page.click('.time-range-btn[data-range="1m"]');
     
-    const activeBtn = page.locator('.time-range-btn.active');
+    const activeBtn = page.locator('.time-range-btn.btn--active');
     await expect(activeBtn).toHaveAttribute('data-range', '1m');
   });
 
   test('clicking 3M changes active state', async ({ page }) => {
     await page.click('.time-range-btn[data-range="3m"]');
     
-    const activeBtn = page.locator('.time-range-btn.active');
+    const activeBtn = page.locator('.time-range-btn.btn--active');
     await expect(activeBtn).toHaveAttribute('data-range', '3m');
   });
 
   test('clicking 6M changes active state', async ({ page }) => {
     await page.click('.time-range-btn[data-range="6m"]');
     
-    const activeBtn = page.locator('.time-range-btn.active');
+    const activeBtn = page.locator('.time-range-btn.btn--active');
     await expect(activeBtn).toHaveAttribute('data-range', '6m');
   });
 
   test('clicking 5Y changes active state', async ({ page }) => {
     await page.click('.time-range-btn[data-range="5y"]');
     
-    const activeBtn = page.locator('.time-range-btn.active');
+    const activeBtn = page.locator('.time-range-btn.btn--active');
     await expect(activeBtn).toHaveAttribute('data-range', '5y');
   });
 
   test('clicking All changes active state', async ({ page }) => {
     await page.click('.time-range-btn[data-range="all"]');
     
-    const activeBtn = page.locator('.time-range-btn.active');
+    const activeBtn = page.locator('.time-range-btn.btn--active');
     await expect(activeBtn).toHaveAttribute('data-range', 'all');
   });
 
@@ -58,7 +58,7 @@ test.describe('Time Range Selector', () => {
     await page.reload();
     await page.locator('#time-range-selector').waitFor({ state: 'visible', timeout: 30000 });
     
-    const activeBtn = page.locator('.time-range-btn.active');
+    const activeBtn = page.locator('.time-range-btn.btn--active');
     await expect(activeBtn).toHaveAttribute('data-range', '3m');
   });
 });

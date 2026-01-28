@@ -73,7 +73,7 @@ test.describe('URL State - Time Range', () => {
     await page.locator('#time-range-selector').waitFor({ state: 'visible', timeout: 30000 });
     
     // Check that 3m is active
-    const activeBtn = page.locator('.time-range-btn.active');
+    const activeBtn = page.locator('.time-range-btn.btn--active');
     await expect(activeBtn).toHaveAttribute('data-range', '3m');
   });
 
@@ -100,7 +100,7 @@ test.describe('URL State - Time Range', () => {
     await page.reload();
     await page.locator('#time-range-selector').waitFor({ state: 'visible', timeout: 30000 });
     
-    const activeBtn = page.locator('.time-range-btn.active');
+    const activeBtn = page.locator('.time-range-btn.btn--active');
     await expect(activeBtn).toHaveAttribute('data-range', '1m');
   });
 });
@@ -143,7 +143,7 @@ test.describe('URL State - Invalid Parameters', () => {
     await page.locator('#time-range-selector').waitFor({ state: 'visible', timeout: 30000 });
     
     // Should fall back to default (1y)
-    const activeBtn = page.locator('.time-range-btn.active');
+    const activeBtn = page.locator('.time-range-btn.btn--active');
     const range = await activeBtn.getAttribute('data-range');
     
     // Should be a valid range, not 'invalid'
@@ -179,7 +179,7 @@ test.describe('URL State - Shareable Links', () => {
     await expect(page.locator('#from-currency')).toHaveValue('EUR');
     await expect(page.locator('#to-currency')).toHaveValue('JPY');
     
-    const activeBtn = page.locator('.time-range-btn.active');
+    const activeBtn = page.locator('.time-range-btn.btn--active');
     await expect(activeBtn).toHaveAttribute('data-range', '6m');
   });
 
