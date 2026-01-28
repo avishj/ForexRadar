@@ -1,6 +1,13 @@
 /* ================================================
    FOREX RADAR — Premium Design System
    Agency-quality styles with stunning animations
+   ================================================
+   
+   Breakpoints (canonical):
+   - 480px  : Small mobile
+   - 768px  : Tablet / large mobile
+   - 1024px : Small desktop / tablet landscape
+   - 1200px : Desktop
    ================================================ */
 
 /* --------------------------------
@@ -450,7 +457,7 @@ h1, h2, h3, h4, h5, h6, .font-display {
   letter-spacing: -0.02em;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 480px) {
   .logo-icon {
     width: 48px;
     height: 48px;
@@ -1630,7 +1637,7 @@ h1, h2, h3, h4, h5, h6, .font-display {
   }
 }
 
-@media (max-width: 1199px) and (min-width: 769px) {
+@media (max-width: 1024px) {
   .stats-grid {
     grid-template-columns: repeat(4, 1fr);
   }
