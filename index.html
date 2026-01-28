@@ -153,7 +153,7 @@
 
   <!-- Currency Selector -->
   <section class="selector-container" data-animate>
-    <div class="selector-card">
+    <div class="card selector-card">
       <div class="selector-grid">
         <div class="selector-group">
           <label for="from-currency-input" class="selector-label">From Currency</label>
@@ -219,7 +219,7 @@
   <!-- Stats Bar -->
   <section id="stats-bar" class="stats-container hidden">
     <div class="stats-grid">
-      <div class="stat-card" data-animate>
+      <div class="card stat-card" data-animate>
         <div class="stat-label">
           Current Rate
           <span class="info-tooltip" data-tooltip="Most recent exchange rate available. Rates update daily after 12pm ET.">
@@ -229,7 +229,7 @@
         <div id="stat-current" class="stat-value accent">-</div>
       </div>
       
-      <div class="stat-card" data-animate id="stat-percentile-card">
+      <div class="card stat-card" data-animate id="stat-percentile-card">
         <div class="stat-label">
           Rate Quality
           <span class="info-tooltip" data-tooltip="How the current rate compares to historical rates. Higher = better deal.">
@@ -239,7 +239,7 @@
         <div id="stat-percentile" class="stat-value">-</div>
       </div>
       
-      <div class="stat-card" data-animate>
+      <div class="card stat-card" data-animate>
         <div class="stat-label">
           Highest
           <span class="info-tooltip" data-tooltip="Highest rate across both Visa and Mastercard in the displayed time period.">
@@ -249,7 +249,7 @@
         <div id="stat-high" class="stat-value high">-</div>
       </div>
       
-      <div class="stat-card" data-animate>
+      <div class="card stat-card" data-animate>
         <div class="stat-label">
           Lowest
           <span class="info-tooltip" data-tooltip="Lowest rate across both Visa and Mastercard in the displayed time period.">
@@ -259,7 +259,7 @@
         <div id="stat-low" class="stat-value low">-</div>
       </div>
       
-      <div class="stat-card" data-animate>
+      <div class="card stat-card" data-animate>
         <div class="stat-label">
           Avg Visa Markup
           <span class="info-tooltip" data-tooltip="Visa's average markup over ECB mid-market rate. Mastercard does not provide markup data.">
@@ -269,7 +269,7 @@
         <div id="stat-markup" class="stat-value markup">-</div>
       </div>
       
-      <div class="stat-card" data-animate>
+      <div class="card stat-card" data-animate>
         <div class="stat-label">
           MC vs Visa
           <span class="info-tooltip" data-tooltip="Current rate difference (Mastercard - Visa). Negative means MC is cheaper.">
@@ -279,7 +279,7 @@
         <div id="stat-spread" class="stat-value">-</div>
       </div>
       
-      <div class="stat-card" data-animate>
+      <div class="card stat-card" data-animate>
         <div class="stat-label">
           Better Rate
           <span class="info-tooltip" data-tooltip="Which provider currently offers the lower (better) rate for buyers.">
@@ -359,14 +359,14 @@
 
   <!-- Chart Container -->
   <section id="chart-container" class="chart-container hidden">
-    <div class="chart-card" data-animate>
+    <div class="card card--hover chart-card" data-animate>
       <div id="chart" style="min-height: 420px;"></div>
     </div>
   </section>
 
   <!-- Empty State -->
   <section id="empty-state" class="empty-state">
-    <div class="empty-card" data-animate>
+    <div class="card card--dashed empty-card" data-animate>
       <div class="empty-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>

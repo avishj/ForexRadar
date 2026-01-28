@@ -838,6 +838,32 @@ h1, h2, h3, h4, h5, h6, .font-display {
 }
 
 /* --------------------------------
+   Card Base Component
+   -------------------------------- */
+.card {
+  position: relative;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 24px;
+  box-shadow: var(--shadow-lg);
+  transition: all var(--transition-base);
+}
+
+.card--hover:hover {
+  border-color: var(--accent-primary);
+  box-shadow: var(--shadow-xl);
+}
+
+.card--dashed {
+  border: 2px dashed var(--border-color);
+}
+
+.card--dashed:hover {
+  border-color: var(--accent-primary);
+  border-style: solid;
+}
+
+/* --------------------------------
    Currency Selector
    -------------------------------- */
 .selector-container {
@@ -859,12 +885,7 @@ h1, h2, h3, h4, h5, h6, .font-display {
 }
 
 .selector-card {
-  position: relative;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 24px;
   padding: 2rem;
-  box-shadow: var(--shadow-lg);
   overflow: visible;
   transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -1532,9 +1553,6 @@ h1, h2, h3, h4, h5, h6, .font-display {
 }
 
 .stat-card {
-  position: relative;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
   border-radius: 20px;
   padding: 1.5rem;
   transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -1834,20 +1852,11 @@ h1, h2, h3, h4, h5, h6, .font-display {
 }
 
 .chart-card {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
-  border-radius: 24px;
   padding: 1.5rem;
-  box-shadow: var(--shadow-lg);
-  transition: all var(--transition-base);
 }
 
 #chart {
   width: 100%;
-}
-
-.chart-card:hover {
-  box-shadow: var(--shadow-xl);
 }
 
 /* --------------------------------
@@ -1860,19 +1869,9 @@ h1, h2, h3, h4, h5, h6, .font-display {
 }
 
 .empty-card {
-  position: relative;
-  background: var(--bg-secondary);
-  border: 2px dashed var(--border-color);
-  border-radius: 24px;
   padding: 5rem 2rem;
   text-align: center;
-  transition: all var(--transition-base);
   overflow: hidden;
-}
-
-.empty-card:hover {
-  border-color: var(--accent-primary);
-  border-style: solid;
 }
 
 .empty-icon {
