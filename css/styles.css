@@ -108,6 +108,52 @@ h1, h2, h3, h4, h5, h6, .font-display {
 }
 
 /* --------------------------------
+   Animation Primitives & Entrance System
+   -------------------------------- */
+
+/* Core motion primitives */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Unified entrance system */
+[data-animate] {
+  opacity: 0;
+}
+
+.animate-in {
+  animation: var(--enter-anim, fade-in) var(--enter-duration, 600ms) var(--enter-easing, ease-out) var(--enter-delay, 0ms) forwards;
+}
+
+/* --------------------------------
    Button Base & Modifiers
    -------------------------------- */
 .btn {
@@ -753,13 +799,17 @@ h1, h2, h3, h4, h5, h6, .font-display {
 
 .hero-title-line {
   display: block;
+  /* Entrance animation via unified system */
+  --enter-anim: slide-up;
+  --enter-duration: 600ms;
+  --enter-easing: ease-out;
   opacity: 0;
-  animation: slide-up 0.6s ease-out forwards;
+  animation: var(--enter-anim) var(--enter-duration) var(--enter-easing) var(--enter-delay, 0ms) forwards;
 }
 
-.hero-title-line:nth-child(1) { animation-delay: 0.1s; }
-.hero-title-line:nth-child(2) { animation-delay: 0.2s; }
-.hero-title-line:nth-child(3) { animation-delay: 0.3s; }
+.hero-title-line:nth-child(1) { --enter-delay: 100ms; }
+.hero-title-line:nth-child(2) { --enter-delay: 200ms; }
+.hero-title-line:nth-child(3) { --enter-delay: 300ms; }
 
 .hero-title-small {
   font-size: 0.6em;
@@ -768,24 +818,16 @@ h1, h2, h3, h4, h5, h6, .font-display {
   margin-top: 0.5rem;
 }
 
-@keyframes slide-up {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 .hero-description {
   font-size: 1.1rem;
   color: var(--text-secondary);
   max-width: 480px;
   line-height: 1.7;
+  /* Entrance animation via unified system */
+  --enter-anim: slide-up;
+  --enter-delay: 400ms;
   opacity: 0;
-  animation: slide-up 0.6s ease-out 0.4s forwards;
+  animation: var(--enter-anim) 600ms ease-out var(--enter-delay) forwards;
 }
 
 .hero-description strong {
@@ -798,8 +840,11 @@ h1, h2, h3, h4, h5, h6, .font-display {
   display: flex;
   gap: 2rem;
   margin-top: 1.5rem;
+  /* Entrance animation via unified system */
+  --enter-anim: slide-up;
+  --enter-delay: 500ms;
   opacity: 0;
-  animation: slide-up 0.6s ease-out 0.5s forwards;
+  animation: var(--enter-anim) 600ms ease-out var(--enter-delay) forwards;
 }
 
 .hero-stat {
@@ -913,11 +958,6 @@ h1, h2, h3, h4, h5, h6, .font-display {
   }
 }
 
-@keyframes shimmer-border {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
 /* --------------------------------
    Card Base Component
    -------------------------------- */
@@ -954,15 +994,10 @@ h1, h2, h3, h4, h5, h6, .font-display {
   perspective: 1000px;
   position: relative;
   z-index: 100;
-}
-
-/* Entrance animation for selector */
-.selector-container[data-animate] {
-  opacity: 0;
-}
-
-.selector-container.animate-in {
-  animation: selector-entrance 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  /* Entrance animation via unified system */
+  --enter-anim: selector-entrance;
+  --enter-duration: 800ms;
+  --enter-easing: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .selector-card {
@@ -1098,6 +1133,10 @@ h1, h2, h3, h4, h5, h6, .font-display {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  /* Entrance animation via unified system */
+  --enter-anim: group-reveal;
+  --enter-duration: 700ms;
+  --enter-easing: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .selector-container[data-animate] .selector-group {
@@ -1106,23 +1145,23 @@ h1, h2, h3, h4, h5, h6, .font-display {
 }
 
 .selector-container.animate-in .selector-group {
-  animation: group-reveal 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: var(--enter-anim) var(--enter-duration) var(--enter-easing) var(--enter-delay, 0ms) forwards;
 }
 
 .selector-container.animate-in .selector-group:first-child {
-  animation-delay: 0.15s;
+  --enter-delay: 150ms;
 }
 
 .selector-container.animate-in .selector-group:last-child {
-  animation-delay: 0.25s;
+  --enter-delay: 250ms;
 }
 
 @keyframes group-reveal {
-  0% {
+  from {
     opacity: 0;
     transform: translateY(30px) scale(0.9);
   }
-  100% {
+  to {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
@@ -1416,14 +1455,22 @@ h1, h2, h3, h4, h5, h6, .font-display {
   100% { transform: rotate(360deg) scale(1); }
 }
 
-/* Arrow entrance animation */
+/* Arrow entrance animation via unified system */
+.selector-arrow {
+  --enter-anim: arrow-pop;
+  --enter-duration: 800ms;
+  --enter-easing: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --enter-delay: 200ms;
+}
+
 .selector-container[data-animate] .selector-arrow {
   opacity: 0;
   transform: scale(0) rotate(-180deg);
 }
 
 .selector-container.animate-in .selector-arrow {
-  animation: arrow-pop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s forwards;
+  animation: var(--enter-anim) var(--enter-duration) var(--enter-easing) var(--enter-delay) forwards;
+  --arrow-float: running;
 }
 
 @keyframes arrow-pop {
@@ -1442,11 +1489,6 @@ h1, h2, h3, h4, h5, h6, .font-display {
     opacity: 1;
     transform: scale(1) rotate(0deg);
   }
-}
-
-/* Continuous floating animation after entrance */
-.selector-container.animate-in .selector-arrow {
-  --arrow-float: running;
 }
 
 .selector-arrow::before {
@@ -1546,7 +1588,7 @@ h1, h2, h3, h4, h5, h6, .font-display {
   opacity: 1;
 }
 
-/* Animation for new chips */
+/* Animation for new chips via unified system */
 @keyframes chip-enter {
   from {
     opacity: 0;
@@ -1559,7 +1601,10 @@ h1, h2, h3, h4, h5, h6, .font-display {
 }
 
 .recent-pair-chip.new {
-  animation: chip-enter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  --enter-anim: chip-enter;
+  --enter-duration: 300ms;
+  --enter-easing: cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: var(--enter-anim) var(--enter-duration) var(--enter-easing) forwards;
 }
 
 /* --------------------------------
@@ -1608,8 +1653,12 @@ h1, h2, h3, h4, h5, h6, .font-display {
   padding: 1.5rem;
   transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   overflow: hidden;
+  /* Entrance animation via unified system */
+  --enter-anim: stat-card-entrance;
+  --enter-duration: 600ms;
+  --enter-easing: cubic-bezier(0.34, 1.56, 0.64, 1);
   opacity: 0;
-  animation: stat-card-entrance 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: var(--enter-anim) var(--enter-duration) var(--enter-easing) var(--enter-delay, 0ms) forwards;
 }
 
 /* Allow tooltips to escape overflow context */
@@ -1618,13 +1667,13 @@ h1, h2, h3, h4, h5, h6, .font-display {
 }
 
 /* Staggered entrance for each stat card */
-.stat-card:nth-child(1) { animation-delay: 0.1s; }
-.stat-card:nth-child(2) { animation-delay: 0.15s; }
-.stat-card:nth-child(3) { animation-delay: 0.2s; }
-.stat-card:nth-child(4) { animation-delay: 0.25s; }
-.stat-card:nth-child(5) { animation-delay: 0.3s; }
-.stat-card:nth-child(6) { animation-delay: 0.35s; }
-.stat-card:nth-child(7) { animation-delay: 0.4s; }
+.stat-card:nth-child(1) { --enter-delay: 100ms; }
+.stat-card:nth-child(2) { --enter-delay: 150ms; }
+.stat-card:nth-child(3) { --enter-delay: 200ms; }
+.stat-card:nth-child(4) { --enter-delay: 250ms; }
+.stat-card:nth-child(5) { --enter-delay: 300ms; }
+.stat-card:nth-child(6) { --enter-delay: 350ms; }
+.stat-card:nth-child(7) { --enter-delay: 400ms; }
 
 .stat-card::before {
   content: '';
@@ -1642,7 +1691,7 @@ h1, h2, h3, h4, h5, h6, .font-display {
 
 .stat-card:hover::before {
   transform: scaleX(1);
-  animation: shimmer-border 1.5s linear infinite;
+  animation: shimmer 1.5s linear infinite;
 }
 
 .stat-card:hover {
