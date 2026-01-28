@@ -39,12 +39,26 @@ let browserContext = null;
 let browserInitPromise = null;
 
 /**
+ * Resets all browser state (called on unexpected disconnect)
+ */
+function resetBrowserState() {
+	browserInstance = null;
+	browserContext = null;
+	browserInitPromise = null;
+}
+
+/**
  * Gets or creates a shared browser instance (race-condition safe)
  * @returns {Promise<{browser: PlaywrightBrowser, context: PlaywrightBrowserContext}>}
  */
 async function getBrowser() {
-	if (browserInstance) {
+	if (browserInstance && browserInstance.isConnected()) {
 		return { browser: browserInstance, context: browserContext };
+	}
+
+	if (browserInstance && !browserInstance.isConnected()) {
+		log.warn("Browser disconnected unexpectedly, resetting state");
+		resetBrowserState();
 	}
 
 	if (browserInitPromise) {
@@ -58,6 +72,12 @@ async function getBrowser() {
 			userAgent: browserConfig.userAgent,
 			extraHTTPHeaders: browserConfig.extraHTTPHeaders
 		});
+
+		browserInstance.on("disconnected", () => {
+			log.warn("Browser disconnected event fired, resetting state");
+			resetBrowserState();
+		});
+
 		return { browser: browserInstance, context: browserContext };
 	})();
 
@@ -70,10 +90,9 @@ async function getBrowser() {
 async function closeBrowser() {
 	if (browserInstance) {
 		log.info("Closing browser...");
-		await browserInstance.close();
-		browserInstance = null;
-		browserContext = null;
-		browserInitPromise = null;
+		const browser = browserInstance;
+		resetBrowserState();
+		await browser.close();
 	}
 }
 
@@ -176,10 +195,20 @@ export async function fetchBatch(requests) {
 					const markup = record.markup ? ` (${record.markup}%)` : "";
 					log.success(`SAVED ${record.date} ${record.from_curr}/${record.to_curr}: ${record.rate}${markup}`);
 				}
-				}
+			}
 
-				processed += batch.length;
-				log.info(formatProgress(processed, requests.length));
+			// Check for rate-limit errors and abort if detected
+			const rateLimited = results.some(r =>
+				r.status === 'rejected' &&
+				String(r.reason?.message || '').includes('Rate limited')
+			);
+			if (rateLimited) {
+				log.error('Rate limited by Visa API, aborting batch');
+				throw new Error('Rate limited; aborting batch');
+			}
+
+			processed += batch.length;
+			log.info(formatProgress(processed, requests.length));
 
 			if (i + config.maxParallelRequests < requests.length) {
 				await sleep(config.batchDelayMs);

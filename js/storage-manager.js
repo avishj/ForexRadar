@@ -28,6 +28,9 @@ const REFRESH_KEY_PREFIX = 'forexRadar_serverRefresh_';
 /** @type {IDBDatabase|null} */
 let dbInstance = null;
 
+/** @type {Promise<IDBDatabase>|null} */
+let dbOpenPromise = null;
+
 // ============================================================================
 // Cache Staleness Functions
 // ============================================================================
@@ -120,6 +123,7 @@ export function clearAllRefreshTimestamps() {
 
 /**
  * Opens the IndexedDB database, creating it if necessary
+ * Uses promise memoization to prevent race conditions on concurrent calls.
  * @returns {Promise<IDBDatabase>}
  */
 export async function openDB() {
@@ -127,10 +131,15 @@ export async function openDB() {
     return dbInstance;
   }
 
-  return new Promise((resolve, reject) => {
+  if (dbOpenPromise) {
+    return dbOpenPromise;
+  }
+
+  dbOpenPromise = new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
     request.onerror = () => {
+      dbOpenPromise = null;
       reject(new Error(`Failed to open IndexedDB: ${request.error?.message}`));
     };
 
@@ -167,6 +176,8 @@ export async function openDB() {
       }
     };
   });
+
+  return dbOpenPromise;
 }
 
 /**
