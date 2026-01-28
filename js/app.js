@@ -612,7 +612,7 @@ function renderRecentPairs(pairs) {
     const isActive = pair.from === currentFrom && pair.to === currentTo;
     return `
       <button 
-        class="recent-pair-chip ${isActive ? 'active' : ''}" 
+        class="btn btn--pill ${isActive ? 'btn--active' : ''} recent-pair-chip" 
         data-from="${pair.from}" 
         data-to="${pair.to}"
         type="button"
@@ -1034,7 +1034,7 @@ function handleChartZoom(minDate, maxDate) {
   
   // Deactivate time range buttons on manual zoom
   const timeRangeButtons = document.querySelectorAll('.time-range-btn');
-  timeRangeButtons.forEach(btn => btn.classList.remove('active'));
+  timeRangeButtons.forEach(btn => btn.classList.remove('btn--active'));
   
   // Filter records to visible range for each provider
   const { visaRecords, mastercardRecords, ecbRecords } = ChartManager.getVisibleRecordsByProvider(
@@ -1534,9 +1534,9 @@ function init() {
           const timeRangeButtons = document.querySelectorAll('.time-range-btn');
           timeRangeButtons.forEach(btn => {
             if (btn.getAttribute('data-range') === event.state.range) {
-              btn.classList.add('active');
+              btn.classList.add('btn--active');
             } else {
-              btn.classList.remove('active');
+              btn.classList.remove('btn--active');
             }
           });
         }
@@ -1587,9 +1587,9 @@ function init() {
       
       try {
         await navigator.clipboard.writeText(textToCopy);
-        copyRateBtn.classList.add('copied');
+        copyRateBtn.classList.add('btn--success');
         showNotification('Rate copied to clipboard!', 'success', 2000);
-        setTimeout(() => copyRateBtn.classList.remove('copied'), 1500);
+        setTimeout(() => copyRateBtn.classList.remove('btn--success'), 1500);
       } catch (_err) {
         showNotification('Failed to copy', 'error');
       }
@@ -1615,9 +1615,9 @@ function init() {
       
       try {
         await navigator.clipboard.writeText(url.toString());
-        shareUrlBtn.classList.add('copied');
+        shareUrlBtn.classList.add('btn--success');
         showNotification('Link copied to clipboard!', 'success', 2000);
-        setTimeout(() => shareUrlBtn.classList.remove('copied'), 1500);
+        setTimeout(() => shareUrlBtn.classList.remove('btn--success'), 1500);
       } catch (_err) {
         showNotification('Failed to copy link', 'error');
       }
@@ -1637,7 +1637,7 @@ function init() {
       const toCurr = toSelect.value;
       const filename = `forex-${fromCurr}-${toCurr}-${currentTimeRange}`;
       
-      downloadChartBtn.classList.add('copied');
+      downloadChartBtn.classList.add('btn--success');
       const success = await ChartManager.exportChartAsPng(filename);
       
       if (success) {
@@ -1646,7 +1646,7 @@ function init() {
         showNotification('Failed to download chart', 'error');
       }
       
-      setTimeout(() => downloadChartBtn.classList.remove('copied'), 1500);
+      setTimeout(() => downloadChartBtn.classList.remove('btn--success'), 1500);
     });
   }
 
@@ -1677,8 +1677,8 @@ function init() {
   timeRangeButtons.forEach(button => {
     button.addEventListener('click', () => {
       // Update active state
-      timeRangeButtons.forEach(btn => btn.classList.remove('active'));
-      button.classList.add('active');
+      timeRangeButtons.forEach(btn => btn.classList.remove('btn--active'));
+      button.classList.add('btn--active');
       
       // Update current range and reload
       const rangeKey = /** @type {'1m'|'3m'|'6m'|'1y'|'5y'|'all'} */ (button.getAttribute('data-range'));
@@ -1694,9 +1694,9 @@ function init() {
   // Update time range button active state based on currentTimeRange (already set above)
   timeRangeButtons.forEach(btn => {
     if (btn.getAttribute('data-range') === currentTimeRange) {
-      btn.classList.add('active');
+      btn.classList.add('btn--active');
     } else {
-      btn.classList.remove('active');
+      btn.classList.remove('btn--active');
     }
   });
 

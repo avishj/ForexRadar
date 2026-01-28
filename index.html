@@ -174,7 +174,7 @@
           </div>
         </div>
         
-        <button id="swap-currencies" class="selector-arrow" type="button" aria-label="Swap currencies" title="Swap currencies">
+        <button id="swap-currencies" class="btn btn--icon selector-arrow" type="button" aria-label="Swap currencies" title="Swap currencies">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
             <path d="M7 16l-4-4m0 0l4-4m-4 4h18M17 8l4 4m0 0l-4 4m4-4H3"/>
           </svg>
@@ -290,14 +290,14 @@
       </div>
     </div>
     <div class="stats-actions">
-      <button id="copy-rate-btn" class="action-btn" type="button" title="Copy current rate">
+      <button id="copy-rate-btn" class="btn action-btn" type="button" title="Copy current rate">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
           <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
         </svg>
         <span>Copy Rate</span>
       </button>
-      <button id="share-url-btn" class="action-btn" type="button" title="Copy shareable link">
+      <button id="share-url-btn" class="btn action-btn" type="button" title="Copy shareable link">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="18" cy="5" r="3"></circle>
           <circle cx="6" cy="12" r="3"></circle>
@@ -307,7 +307,7 @@
         </svg>
         <span>Share</span>
       </button>
-      <button id="download-chart-btn" class="action-btn" type="button" title="Download chart as PNG">
+      <button id="download-chart-btn" class="btn action-btn" type="button" title="Download chart as PNG">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
           <polyline points="7 10 12 15 17 10"></polyline>
@@ -322,34 +322,34 @@
   <!-- Time Range Selector -->
   <section id="time-range-selector" class="time-range-container hidden">
     <div class="time-range-buttons">
-      <button class="time-range-btn" data-range="1m">1M</button>
-      <button class="time-range-btn" data-range="3m">3M</button>
-      <button class="time-range-btn" data-range="6m">6M</button>
-      <button class="time-range-btn active" data-range="1y">1Y</button>
-      <button class="time-range-btn" data-range="5y">5Y</button>
-      <button class="time-range-btn" data-range="all">All</button>
+      <button class="btn time-range-btn" data-range="1m">1M</button>
+      <button class="btn time-range-btn" data-range="3m">3M</button>
+      <button class="btn time-range-btn" data-range="6m">6M</button>
+      <button class="btn btn--active time-range-btn" data-range="1y">1Y</button>
+      <button class="btn time-range-btn" data-range="5y">5Y</button>
+      <button class="btn time-range-btn" data-range="all">All</button>
     </div>
   </section>
 
   <!-- Series Toggles -->
   <section id="series-toggles" class="series-toggles-container hidden">
     <div class="series-toggles">
-      <label class="series-toggle">
+      <label class="btn series-toggle">
         <input type="checkbox" id="toggle-visa-rate" checked>
         <span class="toggle-indicator visa-rate"></span>
         <span class="toggle-label">Visa Rate</span>
       </label>
-      <label class="series-toggle">
+      <label class="btn series-toggle">
         <input type="checkbox" id="toggle-mc-rate" checked>
         <span class="toggle-indicator mc-rate"></span>
         <span class="toggle-label">Mastercard Rate</span>
       </label>
-      <label class="series-toggle">
+      <label class="btn series-toggle">
         <input type="checkbox" id="toggle-ecb-rate" checked>
         <span class="toggle-indicator ecb-rate"></span>
         <span class="toggle-label">ECB Rate</span>
       </label>
-      <label class="series-toggle">
+      <label class="btn series-toggle">
         <input type="checkbox" id="toggle-visa-markup" checked>
         <span class="toggle-indicator visa-markup"></span>
         <span class="toggle-label">Visa Markup</span>
