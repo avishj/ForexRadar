@@ -25,4 +25,4 @@ jobs:
         run: bunx playwright install firefox
 
       - name: Contract tests (Visa + ECB)
-        run: bun run test:contract
+        run: bun run test:contract:action
