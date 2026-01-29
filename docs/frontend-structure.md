@@ -25,8 +25,8 @@ Quick reference for locating HTML sections and their corresponding CSS styles.
 | [Series Toggles](#series-toggles) | [index.html#L334-L358](../index.html#L334-L358) | `.series-toggles-container`, `.series-toggles`, `.series-toggle`, `.toggle-indicator` | [components.css](../css/components.css) |
 | [Chart Container](#chart-container) | [index.html#L360-L365](../index.html#L360-L365) | `.chart-container`, `.chart-card`, `#chart` | [sections.css](../css/sections.css) |
 | [Empty State](#empty-state) | [index.html#L367-L378](../index.html#L367-L378) | `.empty-state`, `.empty-card`, `.empty-icon`, `.empty-title`, `.empty-description` | [sections.css](../css/sections.css) |
-| [Archiving Section](#archiving-section) | [index.html#L380-L391](../index.html#L380-L391) | (inline styles) | N/A (inline) |
-| [Footer](#footer) | [index.html#L393-L436](../index.html#L393-L436) | `.footer`, `.footer-text`, `.footer-link` | [sections.css](../css/sections.css) |
+| [Archiving Section](#archiving-section) | [index.html#L373-L384](../index.html#L373-L384) | Tailwind utilities + `.footer-link` | Tailwind + [sections.css](../css/sections.css) |
+| [Footer](#footer) | [index.html#L386-L429](../index.html#L386-L429) | `.footer` + Tailwind utilities | [sections.css](../css/sections.css) + Tailwind |
 | [Notification Toast](#notification-toast) | [index.html#L452](../index.html#L452) | `#notification-container`, `.notification`, `.notif-icon`, `.notif-message` | [sections.css](../css/sections.css) |
 | [Keyboard Shortcuts Modal](#keyboard-shortcuts-modal) | (created by JS) | `.shortcuts-modal`, `.shortcuts-content`, `.shortcuts-header`, `.shortcut-row` | [sections.css](../css/sections.css) |
 
@@ -159,18 +159,20 @@ Placeholder shown before a currency pair is selected.
 - **Animation**: `empty-float` in [animations.css](../css/animations.css)
 
 ### Archiving Section
-Warning banner for non-archived pairs (uses inline styles).
+Warning banner for non-archived pairs.
 
-- **HTML**: Lines 380-391 in [index.html](../index.html#L380-L391)
-- **CSS**: Inline styles in HTML (candidate for future cleanup)
+- **HTML**: Lines 373-384 in [index.html](../index.html#L373-L384)
+- **CSS**: Tailwind utilities for layout (`text-center`, `py-4`, `px-8`, `text-sm`, `mb-2`, `text-xs`)
+- **Key classes**: `.footer-link` (from sections.css)
+- **Note**: Uses Tailwind for layout/spacing, CSS variables for theming colors
 
 ### Footer
 Attribution, links, and keyboard shortcut trigger.
 
-- **HTML**: Lines 393-436 in [index.html](../index.html#L393-L436)
-- **CSS**: [sections.css](../css/sections.css)
+- **HTML**: Lines 386-429 in [index.html](../index.html#L386-L429)
+- **CSS**: [sections.css](../css/sections.css) + Tailwind utilities
 - **Key classes**: `.footer`, `.footer-text`, `.footer-link`
-- **Note**: Contains inline styles (candidate for future cleanup)
+- **Tailwind usage**: Layout (`flex`, `flex-col`, `items-center`, `gap-*`), spacing (`m-0`, `p-0`), typography (`text-sm`, `text-xs`)
 
 ### Notification Toast
 Slide-in toast messages for success/error/info feedback.
@@ -229,3 +231,46 @@ The CSS is split into modular files, imported via [styles.css](../css/styles.css
 | [js/storage-manager.js](../js/storage-manager.js) | IndexedDB + localStorage | Cache logic |
 | [js/csv-reader.js](../js/csv-reader.js) | CSV parsing | Data layer |
 | [js/currencies.js](../js/currencies.js) | Currency metadata | Dropdown items |
+
+---
+
+## Tailwind CSS Usage
+
+The project uses **Tailwind CSS v4** via CDN for layout and spacing utilities. Custom design tokens and visual effects remain in custom CSS.
+
+### Tailwind Scope (what it handles)
+
+- **Layout**: `flex`, `flex-col`, `items-center`, `justify-center`, `gap-*`
+- **Spacing**: `m-*`, `p-*`, `py-*`, `px-*`, `mt-*`, `mb-*`
+- **Typography**: `text-xs`, `text-sm`, `text-lg`, `font-medium`, `font-display`
+- **Sizing**: `w-*`, `h-*`, `max-w-*`
+- **Display**: `hidden`, `block`, `inline-flex`
+
+### Custom CSS Scope (what it handles)
+
+- **Theming**: CSS variables (`--text-primary`, `--bg-secondary`, `--accent-primary`, etc.)
+- **Visual effects**: Gradients, shadows, glows, backdrop filters
+- **Animations**: All `@keyframes` and entrance animations
+- **Complex components**: Radar visuals, theme toggle, stat cards, dropdowns
+- **Transitions**: Hover effects, state changes
+
+### Tailwind Configuration
+
+Tailwind v4 is configured via `<style type="text/tailwindcss">` in [index.html](../index.html):
+
+```css
+@theme {
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-body: "DM Sans", system-ui, sans-serif;
+}
+```
+
+### Where Tailwind is Used
+
+| Section | Tailwind Classes | Custom CSS |
+|---------|------------------|------------|
+| Last Updated | `text-center`, `mt-4`, `text-xs` | `--text-tertiary` (color) |
+| Archiving Section | `text-center`, `py-4`, `px-8`, `text-sm`, `mb-2`, `text-xs` | `--text-secondary` (color) |
+| Footer | `max-w-5xl`, `mx-auto`, `flex`, `flex-col`, `gap-4`, `items-center`, `m-0`, `text-*` | `.footer`, `.footer-link` |
+
+> **Note**: Tailwind CDN is for development only. For production, consider switching to Tailwind CLI build for smaller CSS.
