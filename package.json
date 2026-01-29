@@ -16,7 +16,7 @@
     "test:all": "bun run test:unit && bun run test:integration && bun run test:contract && bun run test:smoke && bun run test:e2e && bun run test:perf",
     "test:unit": "bun test tests/unit/",
     "test:integration": "bun test tests/integration/",
-    "test:smoke": "bunx playwright test --config=tests/playwright.config.js",
+    "test:smoke": "bunx playwright test --config=tests/playwright.smoke.config.js",
     "test:e2e": "bunx playwright test --config=tests/playwright.e2e.config.js",
     "test:contract": "bun run test:contract:visa && bun run test:contract:ecb && bun run test:contract:mc",
     "test:contract:action": "bun run test:contract:visa && bun run test:contract:ecb",
