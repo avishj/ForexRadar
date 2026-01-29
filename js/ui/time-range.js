@@ -73,6 +73,7 @@ export function initTimeRange(cbs) {
       const rangeKey = /** @type {TimeRangeKey} */ (button.getAttribute('data-range'));
       if (rangeKey && callbacks && rangeKey !== callbacks.getCurrentRange()) {
         callbacks.onRangeChange(rangeKey);
+        updateActiveButton(rangeKey);
       }
     });
   });
