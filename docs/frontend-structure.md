@@ -221,9 +221,11 @@ The CSS is split into modular files, imported via [styles.css](../css/styles.css
 
 ## JavaScript Modules
 
+### Core Modules
+
 | File | Purpose | Related HTML/CSS |
 |------|---------|------------------|
-| [js/app.js](../js/app.js) | Main app logic, dropdown, stats, modal, notifications | Selector, stats, modal, toasts |
+| [js/app.js](../js/app.js) | Main orchestrator, composes UI modules, wires events | All sections |
 | [js/theme.js](../js/theme.js) | Theme toggle behavior | `.theme-toggle` |
 | [js/animations.js](../js/animations.js) | Entrance animations, scroll observer | `[data-animate]` elements |
 | [js/chart-manager.js](../js/chart-manager.js) | ApexCharts wrapper | `#chart` |
@@ -231,6 +233,27 @@ The CSS is split into modular files, imported via [styles.css](../css/styles.css
 | [js/storage-manager.js](../js/storage-manager.js) | IndexedDB + localStorage | Cache logic |
 | [js/csv-reader.js](../js/csv-reader.js) | CSV parsing | Data layer |
 | [js/currencies.js](../js/currencies.js) | Currency metadata | Dropdown items |
+
+### UI Modules (`js/ui/`)
+
+Extracted from app.js for better discoverability and maintenance:
+
+| File | Purpose | Exports |
+|------|---------|---------|
+| [js/ui/dropdown.js](../js/ui/dropdown.js) | Searchable currency dropdown | `SearchableDropdown` class |
+| [js/ui/notifications.js](../js/ui/notifications.js) | Toast notification system | `initNotifications`, `showNotification` |
+| [js/ui/shortcuts-modal.js](../js/ui/shortcuts-modal.js) | Keyboard shortcuts modal | `showShortcutsModal`, `hideShortcutsModal`, `isShortcutsModalOpen` |
+| [js/ui/recent-pairs.js](../js/ui/recent-pairs.js) | Recent pairs history + chips | `initRecentPairs`, `saveRecentPair`, `renderRecentPairs` |
+| [js/ui/time-range.js](../js/ui/time-range.js) | Time range button controls | `initTimeRange`, `updateActiveButton`, `parseTimeRange` |
+| [js/ui/series-toggles.js](../js/ui/series-toggles.js) | Chart series visibility | `initSeriestoggles`, `updateToggleVisibility` |
+| [js/ui/actions.js](../js/ui/actions.js) | Copy, share, download buttons | `initActions`, `triggerCopyRate`, `triggerShareUrl` |
+
+### Module Boundaries
+
+- **No circular imports**: UI modules do not import from app.js
+- **Callbacks for cross-module**: Modules receive callbacks at init time instead of importing app state
+- **DOM access**: Each module queries only its own DOM elements
+- **app.js role**: Imports all modules, initializes with callbacks, wires global event listeners
 
 ---
 
