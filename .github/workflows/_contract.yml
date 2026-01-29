@@ -14,7 +14,7 @@ jobs:
         uses: actions/checkout@v6.0.1
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v2.1.0
+        uses: oven-sh/setup-bun@v2.1.2
         with:
           bun-version: latest
 
@@ -25,4 +25,12 @@ jobs:
         run: bunx playwright install firefox
 
       - name: Contract tests (Visa + ECB)
-        run: bun run test:contract
+        run: bun run test:contract:action
+
+      - name: Upload contract report
+        uses: actions/upload-artifact@v6
+        if: ${{ !cancelled() }}
+        with:
+          name: contract-test-report
+          path: playwright-report/
+          retention-days: 90

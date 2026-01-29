@@ -1,0 +1,258 @@
+/* ================================================
+   ANIMATIONS — Keyframes & Entrance System
+   
+   All motion primitives consolidated here for:
+   - Single source of truth
+   - Future lazy-loading (Block 5)
+   - prefers-reduced-motion compliance
+   ================================================ */
+
+/* --------------------------------
+   Core Motion Primitives
+   -------------------------------- */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* --------------------------------
+   Unified Entrance System
+   -------------------------------- */
+[data-animate] {
+  opacity: 0;
+}
+
+.animate-in {
+  animation: var(--enter-anim, fade-in) var(--enter-duration, 600ms) var(--enter-easing, ease-out) var(--enter-delay, 0ms) forwards;
+}
+
+/* --------------------------------
+   Background Animations
+   -------------------------------- */
+@keyframes blob-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(30px, -30px) scale(1.05); }
+  50% { transform: translate(-20px, 20px) scale(0.95); }
+  75% { transform: translate(20px, 30px) scale(1.02); }
+}
+
+/* --------------------------------
+   Header & Logo Animations
+   -------------------------------- */
+@keyframes radar-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.3);
+    opacity: 0;
+  }
+}
+
+@keyframes radar-sweep {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* --------------------------------
+   Theme Toggle Animations
+   -------------------------------- */
+@keyframes twinkle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(0.5); }
+}
+
+@keyframes cloud-drift {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(4px); }
+}
+
+/* --------------------------------
+   Hero Section Animations
+   -------------------------------- */
+@keyframes radar-pulse-ring {
+  0% { opacity: 0.3; transform: scale(0.95); }
+  50% { opacity: 0.15; transform: scale(1); }
+  100% { opacity: 0.3; transform: scale(0.95); }
+}
+
+@keyframes radar-sweep-beam {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes blip-pulse {
+  0%, 100% { opacity: 0.4; transform: rotate(var(--angle)) translateX(var(--distance)) rotate(calc(-1 * var(--angle))) scale(0.9); }
+  50% { opacity: 1; transform: rotate(var(--angle)) translateX(var(--distance)) rotate(calc(-1 * var(--angle))) scale(1.1); }
+}
+
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes underline-draw {
+  to { transform: scaleX(1); }
+}
+
+/* --------------------------------
+   Selector Animations
+   -------------------------------- */
+@keyframes selector-entrance {
+  0% {
+    opacity: 0;
+    transform: translateY(40px) scale(0.95);
+    filter: blur(4px);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-8px) scale(1.02);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes group-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes gradient-rotate {
+  0% { background-position: 0% 0%; }
+  50% { background-position: 100% 100%; }
+  100% { background-position: 0% 0%; }
+}
+
+/* --------------------------------
+   Swap Button Animations
+   -------------------------------- */
+@keyframes swap-spin {
+  0% { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.15); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+
+@keyframes arrow-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(-180deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2) rotate(20deg);
+  }
+  70% {
+    transform: scale(0.9) rotate(-5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes arrow-ring-spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes arrow-breathe {
+  0%, 100% { 
+    transform: translateX(0);
+    opacity: 1;
+  }
+  50% { 
+    transform: translateX(3px);
+    opacity: 0.8;
+  }
+}
+
+/* --------------------------------
+   Stats & Cards Animations
+   -------------------------------- */
+@keyframes stat-card-entrance {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) rotateX(15deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) rotateX(0deg);
+  }
+}
+
+@keyframes chip-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateX(0);
+  }
+}
+
+/* --------------------------------
+   Empty State Animation
+   -------------------------------- */
+@keyframes empty-float {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(3deg); }
+}
+
+/* --------------------------------
+   Modal Animations
+   -------------------------------- */
+@keyframes modal-bounce-in {
+  0% {
+    transform: scale(0.9) translateY(20px);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.02) translateY(-5px);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+  }
+}
