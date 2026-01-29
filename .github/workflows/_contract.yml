@@ -26,3 +26,11 @@ jobs:
 
       - name: Contract tests (Visa + ECB)
         run: bun run test:contract:action
+
+      - name: Upload contract report
+        uses: actions/upload-artifact@v6
+        if: ${{ !cancelled() }}
+        with:
+          name: contract-test-report
+          path: playwright-report/
+          retention-days: 90
