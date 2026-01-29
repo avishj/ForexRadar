@@ -50,4 +50,4 @@ jobs:
         with:
           name: perf-report
           path: playwright-report/
-          retention-days: 30
+          retention-days: 90

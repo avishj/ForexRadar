@@ -47,4 +47,4 @@ jobs:
         with:
           name: smoke-test-report
           path: playwright-report/
-          retention-days: 7
+          retention-days: 90
