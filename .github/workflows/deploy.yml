@@ -53,6 +53,7 @@ jobs:
     name: Lighthouse Audit (Production)
     runs-on: ubuntu-latest
     needs: deploy
+    if: ${{ needs.deploy.result == 'success' }}
     timeout-minutes: 10
 
     steps:
@@ -75,8 +76,8 @@ jobs:
         run: |
           echo "## Lighthouse Production Audit" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-
-          MANIFEST='${{ steps.lighthouse.outputs.manifest }}'
+          RESULTS_PATH='${{ steps.lighthouse.outputs.resultsPath }}'
+          LHR=$(find "$RESULTS_PATH" -name "*.json" -type f | head -1)
           LHR=$(echo "$MANIFEST" | jq -r '.[0].jsonPath')
 
           if [ -f "$LHR" ]; then
