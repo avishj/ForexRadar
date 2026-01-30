@@ -1,0 +1,111 @@
+name: Lighthouse Audit
+
+on:
+  schedule:
+    # Run weekly on Sundays at 01:00 UTC (after perf.yml at 00:00)
+    - cron: '0 1 * * 0'
+  workflow_dispatch:
+
+jobs:
+  lighthouse:
+    name: Lighthouse Performance Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2.1.2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      - name: Start test server
+        run: |
+          bun run tests/server.js &
+          sleep 2
+          curl -s http://localhost:3000 > /dev/null || exit 1
+
+      - name: Run Lighthouse
+        id: lighthouse
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          urls: http://localhost:3000
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+          configPath: .github/lighthouse/lighthouserc.json
+
+      - name: Check thresholds
+        run: |
+          echo "## Lighthouse Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Extract scores from manifest
+          MANIFEST='${{ steps.lighthouse.outputs.manifest }}'
+          LHR=$(echo "$MANIFEST" | jq -r '.[0].jsonPath')
+
+          if [ -f "$LHR" ]; then
+            PERF=$(jq '.categories.performance.score * 100' "$LHR")
+            A11Y=$(jq '.categories.accessibility.score * 100' "$LHR")
+            BP=$(jq '.categories["best-practices"].score * 100' "$LHR")
+            SEO=$(jq '.categories.seo.score * 100' "$LHR")
+            
+            FCP=$(jq '.audits["first-contentful-paint"].numericValue' "$LHR")
+            LCP=$(jq '.audits["largest-contentful-paint"].numericValue' "$LHR")
+            CLS=$(jq '.audits["cumulative-layout-shift"].numericValue' "$LHR")
+            TBT=$(jq '.audits["total-blocking-time"].numericValue' "$LHR")
+            
+            echo "| Metric | Value | Target | Status |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|-------|--------|--------|" >> $GITHUB_STEP_SUMMARY
+            
+            # Performance score
+            if (( $(echo "$PERF >= 90" | bc -l) )); then
+              echo "| Performance | ${PERF}% | ≥90% | ✅ |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| Performance | ${PERF}% | ≥90% | ⚠️ |" >> $GITHUB_STEP_SUMMARY
+            fi
+            
+            # FCP (target < 1800ms)
+            FCP_SEC=$(echo "scale=2; $FCP / 1000" | bc)
+            if (( $(echo "$FCP < 1800" | bc -l) )); then
+              echo "| FCP | ${FCP_SEC}s | <1.8s | ✅ |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| FCP | ${FCP_SEC}s | <1.8s | ⚠️ |" >> $GITHUB_STEP_SUMMARY
+            fi
+            
+            # LCP (target < 2500ms)
+            LCP_SEC=$(echo "scale=2; $LCP / 1000" | bc)
+            if (( $(echo "$LCP < 2500" | bc -l) )); then
+              echo "| LCP | ${LCP_SEC}s | <2.5s | ✅ |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| LCP | ${LCP_SEC}s | <2.5s | ⚠️ |" >> $GITHUB_STEP_SUMMARY
+            fi
+            
+            # CLS (target < 0.1)
+            if (( $(echo "$CLS < 0.1" | bc -l) )); then
+              echo "| CLS | ${CLS} | <0.1 | ✅ |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| CLS | ${CLS} | <0.1 | ⚠️ |" >> $GITHUB_STEP_SUMMARY
+            fi
+            
+            # TBT (target < 200ms)
+            if (( $(echo "$TBT < 200" | bc -l) )); then
+              echo "| TBT | ${TBT}ms | <200ms | ✅ |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| TBT | ${TBT}ms | <200ms | ⚠️ |" >> $GITHUB_STEP_SUMMARY
+            fi
+            
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Category | Score |" >> $GITHUB_STEP_SUMMARY
+            echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Accessibility | ${A11Y}% |" >> $GITHUB_STEP_SUMMARY
+            echo "| Best Practices | ${BP}% |" >> $GITHUB_STEP_SUMMARY
+            echo "| SEO | ${SEO}% |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Report: ${{ steps.lighthouse.outputs.links }}" >> $GITHUB_STEP_SUMMARY
