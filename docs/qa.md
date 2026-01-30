@@ -284,7 +284,7 @@ Automated Lighthouse audits run weekly and after each deploy. Results are availa
 ### Core Web Vitals Targets
 
 | Metric | Target | Warning | Description |
-|--------|--------|---------|-------------|
+| ------ | ------ | ------- | ----------- |
 | **LCP** | < 2.5s | ≥ 2.5s | Largest Contentful Paint |
 | **FCP** | < 1.8s | ≥ 1.8s | First Contentful Paint |
 | **CLS** | < 0.1 | ≥ 0.1 | Cumulative Layout Shift |
