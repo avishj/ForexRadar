@@ -85,7 +85,7 @@ test.describe('Page Load & Initial State', () => {
   test('footer displays correctly', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('footer.footer')).toBeVisible();
-    await expect(page.locator('.footer-text')).toContainText('Data sourced from Visa and Mastercard');
+    await expect(page.locator('footer.footer')).toContainText('Data sourced from Visa and Mastercard');
   });
 
   test('theme toggle button exists', async ({ page }) => {
