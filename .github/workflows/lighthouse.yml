@@ -27,9 +27,11 @@ jobs:
       - name: Start test server
         run: |
           bun run tests/server.js &
-          sleep 2
-          curl -s http://localhost:3000 > /dev/null || exit 1
-
+          for i in {1..10}; do
+            curl -sf http://localhost:3000 > /dev/null && break
+            sleep 1
+          done
+          curl -sf http://localhost:3000 > /dev/null || exit 1
       - name: Run Lighthouse
         id: lighthouse
         uses: treosh/lighthouse-ci-action@v12
