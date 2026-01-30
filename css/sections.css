@@ -876,9 +876,6 @@
    Stats Cards
    -------------------------------- */
 .stats-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
   perspective: 800px;
   overflow: visible;
 }
@@ -1072,18 +1069,8 @@
 }
 
 /* --------------------------------
-   Chart Container
+   Chart
    -------------------------------- */
-.chart-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 2rem 2rem;
-}
-
-.chart-card {
-  padding: 1.5rem;
-}
-
 #chart {
   width: 100%;
 }
@@ -1091,12 +1078,6 @@
 /* --------------------------------
    Empty State
    -------------------------------- */
-.empty-state {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 2rem 4rem;
-}
-
 .empty-card {
   overflow: hidden;
 }
