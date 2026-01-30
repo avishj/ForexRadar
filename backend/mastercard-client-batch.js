@@ -19,6 +19,8 @@ console.log(`[MASTERCARD] Using User-Agent: ${SESSION_USER_AGENT}.`);
 /** @typedef {import('../shared/types.js').Provider} Provider */
 /** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
 /** @typedef {import('../shared/types.js').BatchRequest} BatchRequest */
+/** @typedef {import('../shared/types.js').MastercardApiResponse} MastercardApiResponse */
+/** @typedef {import('../shared/types.js').MastercardFetchRateResult} MastercardFetchRateResult */
 /** @typedef {import('playwright').Browser} PlaywrightBrowser */
 /** @typedef {import('playwright').BrowserContext} PlaywrightBrowserContext */
 
@@ -173,6 +175,51 @@ async function refreshSession() {
 }
 
 /**
+ * Fetches a single exchange rate from Mastercard API.
+ * Returns raw API response for contract testing.
+ *
+ * @param {string} from - Source currency code
+ * @param {string} to - Target currency code
+ * @param {string} date - Date in YYYY-MM-DD format
+ * @returns {Promise<MastercardFetchRateResult>}
+ */
+export async function fetchRate(from, to, date) {
+	const page = await getApiPage();
+	const url = new URL(MASTERCARD_API_BASE);
+	url.searchParams.set("fxDate", date);
+	url.searchParams.set("transCurr", from);
+	url.searchParams.set("crdhldBillCurr", to);
+	url.searchParams.set("bankFee", "0");
+	url.searchParams.set("transAmt", "1");
+
+	const response = await page.goto(url.toString(), { timeout: 10000, waitUntil: "domcontentloaded" });
+	const apiStatus = response.status();
+
+	if (apiStatus !== 200) {
+		return { status: apiStatus, data: null };
+	}
+
+	const apiResponse = await page.content();
+
+	// Parse JSON from page content
+	let jsonText = apiResponse;
+	const preMatch = apiResponse.match(/<pre[^>]*>(.*?)<\/pre>/is);
+	if (preMatch) {
+		jsonText = preMatch[1].trim();
+	} else {
+		const bodyMatch = apiResponse.match(/<body[^>]*>(.*?)<\/body>/is);
+		if (bodyMatch) jsonText = bodyMatch[1].trim();
+	}
+
+	try {
+		const data = JSON.parse(jsonText);
+		return { status: apiStatus, data };
+	} catch {
+		return { status: apiStatus, data: null };
+	}
+}
+
+/**
  * Fetches exchange rates for multiple date/pair combinations.
  * Processes sequentially with session management.
  * Writes results directly to csv-store.
@@ -207,45 +254,22 @@ export async function fetchBatch(requests) {
 
 			// Fetch
 			try {
-				const page = await getApiPage();
-				const url = new URL(MASTERCARD_API_BASE);
-				url.searchParams.set("fxDate", date);
-				url.searchParams.set("transCurr", from);
-				url.searchParams.set("crdhldBillCurr", to);
-				url.searchParams.set("bankFee", "0");
-				url.searchParams.set("transAmt", "1");
-
-				// Use 'domcontentloaded' - API returns JSON, no need to wait for all resources
-				const response = await page.goto(url.toString(), { timeout: 10000, waitUntil: "domcontentloaded" });
-				const apiStatus = response.status();
-				const apiResponse = await page.content();
+				const { status: apiStatus, data } = await fetchRate(from, to, date);
 
 				// Handle errors
 				if (apiStatus === 403) {
 					console.error(`[MASTERCARD] 403 Forbidden - Pausing ${config.pauseOnForbiddenMs / 1000}s`);
 					await closeBrowser();
-                    await sleep(config.pauseOnForbiddenMs);
+					await sleep(config.pauseOnForbiddenMs);
 					console.log("[MASTERCARD] Resuming");
-                    await refreshSession();
+					await refreshSession();
 					continue;
 				}
 
-				if (apiStatus !== 200) {
+				if (apiStatus !== 200 || !data) {
 					console.error(`[MASTERCARD] FAILED ${date} ${from}/${to}: HTTP ${apiStatus}`);
 					continue;
 				}
-
-				// Parse response
-				let jsonText = apiResponse;
-				const preMatch = apiResponse.match(/<pre[^>]*>(.*?)<\/pre>/is);
-				if (preMatch) {
-					jsonText = preMatch[1].trim();
-				} else {
-					const bodyMatch = apiResponse.match(/<body[^>]*>(.*?)<\/body>/is);
-					if (bodyMatch) jsonText = bodyMatch[1].trim();
-				}
-
-				const data = JSON.parse(jsonText);
 
 				// Check for API errors
 				if (data.type === "error" || data.data?.errorCode) {
@@ -258,8 +282,8 @@ export async function fetchBatch(requests) {
 					continue;
 				}
 
-				const rate = data.data?.conversionRate;
-				if (!rate) {
+				const conversionRate = data.data?.conversionRate;
+				if (!conversionRate) {
 					console.error(`[MASTERCARD] FAILED ${date} ${from}/${to}: Missing conversionRate`);
 					continue;
 				}
@@ -271,13 +295,13 @@ export async function fetchBatch(requests) {
 					from_curr: from,
 					to_curr: to,
 					provider: PROVIDER_NAME,
-					rate: parseFloat(rate),
+					rate: conversionRate,
 					markup: /** @type {null} */ (null)
 				};
 
 				const inserted = store.add(record);
 				if (inserted > 0) {
-					console.log(`[MASTERCARD] SAVED ${date} ${from}/${to}: ${rate}`);
+					console.log(`[MASTERCARD] SAVED ${date} ${from}/${to}: ${conversionRate}`);
 				}
 				await sleep(config.batchDelayMs);
 			} catch (error) {
@@ -286,8 +310,8 @@ export async function fetchBatch(requests) {
 				if (error.message.includes("Timeout")) {
 					console.log("[MASTERCARD] Timeout detected - restarting browser");
 					await closeBrowser();
-                    await sleep(config.sessionRefreshDelayMs);
-                    await refreshSession();
+					await sleep(config.sessionRefreshDelayMs);
+					await refreshSession();
 				}
 			}
 
@@ -309,4 +333,4 @@ export async function fetchBatch(requests) {
 	}
 }
 
-export { PROVIDER_NAME };
+export { PROVIDER_NAME, refreshSession, closeBrowser };
