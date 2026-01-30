@@ -5,3 +5,4 @@ node_modules/
 test-results/
 playwright-report/
 PLAN*.md
+lighthouse-report.html
