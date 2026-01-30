@@ -16,7 +16,7 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 1,
-  workers: process.env.CI ? 2 : 4,
+  workers: process.env.CI ? 2 : 2,
   reporter: [['list'], ['html', { open: 'never' }]],
   timeout: 60000, // Longer timeout for E2E flows
   
