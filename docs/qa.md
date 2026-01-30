@@ -277,6 +277,60 @@ Manual quality assurance checklist to verify no regressions during refactoring.
 
 ---
 
+## 18. Performance Budget
+
+Automated Lighthouse audits run weekly and after each deploy. Results are available in GitHub Actions workflow summaries.
+
+### Core Web Vitals Targets
+
+| Metric | Target | Warning | Description |
+|--------|--------|---------|-------------|
+| **LCP** | < 2.5s | ≥ 2.5s | Largest Contentful Paint |
+| **FCP** | < 1.8s | ≥ 1.8s | First Contentful Paint |
+| **CLS** | < 0.1 | ≥ 0.1 | Cumulative Layout Shift |
+| **TBT** | < 200ms | ≥ 200ms | Total Blocking Time |
+
+### Category Score Targets
+
+| Category | Target | Warning |
+|----------|--------|---------|
+| Performance | ≥ 90% | < 90% |
+| Accessibility | ≥ 90% | < 90% |
+| Best Practices | ≥ 90% | < 90% |
+| SEO | ≥ 90% | < 90% |
+
+### Test Environment
+
+- **Profile**: Desktop (1350×940, no CPU throttling)
+- **Runs**: 3 per audit (median used)
+- **Workflows**:
+  - `lighthouse.yml` — Weekly (Sundays 01:00 UTC) + manual dispatch, uses local server
+  - `deploy.yml` — Post-deploy audit against production (GitHub Pages)
+
+### Recording Baselines
+
+After major changes, record baseline metrics here for comparison:
+
+| Date | LCP | FCP | CLS | TBT | Perf | Notes |
+|------|-----|-----|-----|-----|------|-------|
+| _2025-01-30_ | _2.2s_ | _1.3s_ | _0.00_ | _20ms_ | _00%_ | _Initial baseline_ |
+
+### Running Locally
+
+```bash
+# Install Lighthouse CLI
+bun i -g lighthouse
+
+# Run audit against local server
+bun run tests/server.js &
+lighthouse http://localhost:3000 --preset=desktop --output=html --output-path=./lighthouse-report.html
+
+# View report
+open lighthouse-report.html
+```
+
+---
+
 ## Sign-off
 
 | Tester | Date | Browser/OS | Status |
