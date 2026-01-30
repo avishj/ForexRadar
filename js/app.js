@@ -374,9 +374,9 @@ function updateLastUpdated(dateStr) {
  */
 function updateArchivingLink(fromCurr, toCurr, isArchivedOnServer = false) {
   if (isArchivedOnServer) {
-    archivingSection.style.display = 'none';
+    archivingSection.classList.add('hidden');
   } else {
-    archivingSection.style.display = 'block';
+    archivingSection.classList.remove('hidden');
     const title = encodeURIComponent(`Add pair: ${fromCurr}/${toCurr}`);
     const body = encodeURIComponent(`Please add server-side archiving for the ${fromCurr}/${toCurr} currency pair.`);
     requestArchivingLink.href = `https://github.com/avishj/ForexRadar/issues/new?title=${title}&body=${body}`;

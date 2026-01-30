@@ -22,6 +22,35 @@
   border: 0;
 }
 
+/* Text color utilities */
+.text-color-primary {
+  color: var(--text-primary);
+}
+
+.text-color-secondary {
+  color: var(--text-secondary);
+}
+
+.text-color-tertiary {
+  color: var(--text-tertiary);
+}
+
+/* Chart container minimum height */
+.chart-min-height {
+  min-height: 420px;
+}
+
+/* Footer separator dot */
+.footer-separator {
+  color: var(--text-tertiary);
+}
+
+/* Keyboard shortcut badge (footer style) */
+.kbd-badge {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+}
+
 /* --------------------------------
    Scrollbar
    -------------------------------- */
