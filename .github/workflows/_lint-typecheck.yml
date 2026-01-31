@@ -21,8 +21,16 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile --ignore-scripts
 
-      - name: Lint
+      - name: Lint JavaScript
         run: bun run lint
 
       - name: Typecheck
         run: bun run check
+
+      - name: Lint Markdown
+        uses: DavidAnson/markdownlint-cli2-action@v22.0.0
+        with:
+          globs: "**/*.md"
+
+      - name: Lint GitHub Actions
+        uses: reviewdog/action-actionlint@v1.69.1
