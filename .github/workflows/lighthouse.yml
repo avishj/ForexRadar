@@ -1,85 +1,53 @@
-name: Deploy Frontend
+name: Lighthouse Audit
 
 on:
-  workflow_run:
-    workflows: ["CI", "Update Data"]
-    types:
-      - completed
+  schedule:
+    # Run weekly on Sundays at 01:00 UTC (after perf.yml at 00:00)
+    - cron: '0 1 * * 0'
   workflow_dispatch:
 
-concurrency:
-  group: "pages"
-  cancel-in-progress: true
-
 jobs:
-  deploy:
-    name: Deploy to GitHub Pages
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    if: >
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' &&
-       (github.event.workflow_run.head_branch == 'main' || 
-        github.ref == 'refs/heads/main'))
-
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6.0.1
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v5.0.0
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v4.0.0
-        with:
-          path: .
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4.0.5
-    outputs:
-      page_url: ${{ steps.deployment.outputs.page_url }}
-
   lighthouse:
-    name: Lighthouse Audit (Production)
+    name: Lighthouse Performance Audit
     runs-on: ubuntu-latest
-    needs: deploy
-    if: ${{ needs.deploy.result == 'success' }}
     timeout-minutes: 10
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.1
 
-      - name: Wait for deployment propagation
-        run: sleep 30
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2.1.2
+        with:
+          bun-version: latest
 
+      - name: Install dependencies
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      - name: Start test server
+        run: |
+          bun run tests/server.js &
+          for i in {1..10}; do
+            curl -sf http://localhost:3000 > /dev/null && break
+            sleep 1
+          done
+          curl -sf http://localhost:3000 > /dev/null || exit 1
       - name: Run Lighthouse
         id: lighthouse
         uses: treosh/lighthouse-ci-action@v12
         with:
-          urls: ${{ needs.deploy.outputs.page_url }}
+          urls: http://localhost:3000
           uploadArtifacts: true
           temporaryPublicStorage: true
           configPath: .github/lighthouse/lighthouserc.json
 
-      - name: Report results
+      - name: Check thresholds
         run: |
-          echo "## Lighthouse Production Audit" >> $GITHUB_STEP_SUMMARY
+          echo "## Lighthouse Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          RESULTS_PATH='${{ steps.lighthouse.outputs.resultsPath }}'
-          LHR=$(find "$RESULTS_PATH" -name "*.json" -type f | head -1)
+
+          # Extract scores from manifest
+          MANIFEST='${{ steps.lighthouse.outputs.manifest }}'
           LHR=$(echo "$MANIFEST" | jq -r '.[0].jsonPath')
 
           if [ -f "$LHR" ]; then
@@ -93,36 +61,40 @@ jobs:
             CLS=$(jq '.audits["cumulative-layout-shift"].numericValue' "$LHR")
             TBT=$(jq '.audits["total-blocking-time"].numericValue' "$LHR")
             
-            FCP_SEC=$(echo "scale=2; $FCP / 1000" | bc)
-            LCP_SEC=$(echo "scale=2; $LCP / 1000" | bc)
-            
             echo "| Metric | Value | Target | Status |" >> $GITHUB_STEP_SUMMARY
             echo "|--------|-------|--------|--------|" >> $GITHUB_STEP_SUMMARY
             
+            # Performance score
             if (( $(echo "$PERF >= 90" | bc -l) )); then
               echo "| Performance | ${PERF}% | ≥90% | ✅ |" >> $GITHUB_STEP_SUMMARY
             else
               echo "| Performance | ${PERF}% | ≥90% | ⚠️ |" >> $GITHUB_STEP_SUMMARY
             fi
             
+            # FCP (target < 1800ms)
+            FCP_SEC=$(echo "scale=2; $FCP / 1000" | bc)
             if (( $(echo "$FCP < 1800" | bc -l) )); then
               echo "| FCP | ${FCP_SEC}s | <1.8s | ✅ |" >> $GITHUB_STEP_SUMMARY
             else
               echo "| FCP | ${FCP_SEC}s | <1.8s | ⚠️ |" >> $GITHUB_STEP_SUMMARY
             fi
             
+            # LCP (target < 2500ms)
+            LCP_SEC=$(echo "scale=2; $LCP / 1000" | bc)
             if (( $(echo "$LCP < 2500" | bc -l) )); then
               echo "| LCP | ${LCP_SEC}s | <2.5s | ✅ |" >> $GITHUB_STEP_SUMMARY
             else
               echo "| LCP | ${LCP_SEC}s | <2.5s | ⚠️ |" >> $GITHUB_STEP_SUMMARY
             fi
             
+            # CLS (target < 0.1)
             if (( $(echo "$CLS < 0.1" | bc -l) )); then
               echo "| CLS | ${CLS} | <0.1 | ✅ |" >> $GITHUB_STEP_SUMMARY
             else
               echo "| CLS | ${CLS} | <0.1 | ⚠️ |" >> $GITHUB_STEP_SUMMARY
             fi
             
+            # TBT (target < 200ms)
             if (( $(echo "$TBT < 200" | bc -l) )); then
               echo "| TBT | ${TBT}ms | <200ms | ✅ |" >> $GITHUB_STEP_SUMMARY
             else
