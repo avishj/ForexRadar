@@ -65,7 +65,7 @@ bun run validate   # Data integrity (if db/ modified)
 
 ### Data Flow
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                        GitHub Actions                            │
 │  daily.yml (2x daily) ──► daily-update.js ──► db/{CURR}/{YEAR}.csv │
@@ -99,7 +99,7 @@ bun run validate   # Data integrity (if db/ modified)
 
 ## Directory Structure
 
-```
+```text
 ForexRadar/
 ├── backend/                    # Data ingestion scripts (Bun)
 │   ├── daily-update.js        # Main entry for scheduled updates

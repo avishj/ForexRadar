@@ -196,7 +196,7 @@ js/
 ### 4.2 Data Manager (`js/data-manager.js`)
 
 **Progressive Enhancement Flow:**
-```
+```text
 1. Check IndexedDB cache (fastest)
    ↓
 2. If stale (after UTC 12:00), fetch server CSV files
