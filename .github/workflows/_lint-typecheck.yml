@@ -7,7 +7,7 @@ jobs:
   lint-check:
     name: Lint & Typecheck
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
 
     steps:
       - name: Checkout
@@ -23,6 +23,12 @@ jobs:
 
       - name: Lint JavaScript
         run: bun run lint
+
+      - name: Lint CSS
+        run: bun run lint:css
+
+      - name: Lint HTML
+        run: bun run lint:html
 
       - name: Typecheck
         run: bun run check
