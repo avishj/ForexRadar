@@ -1078,58 +1078,7 @@
 /* --------------------------------
    Empty State
    -------------------------------- */
-.empty-card {
-  overflow: hidden;
-}
-
-.empty-icon {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 80px;
-  height: 80px;
-  background: var(--gradient-card);
-  border-radius: 24px;
-  margin-bottom: 1.5rem;
-  animation: empty-float 4s ease-in-out infinite;
-}
-
-.empty-icon svg {
-  width: 40px;
-  height: 40px;
-  color: var(--accent-primary);
-}
-
-.empty-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 0.75rem;
-}
-
-.empty-description {
-  font-size: 1rem;
-  color: var(--text-secondary);
-}
-
-/* --------------------------------
-   Loader
-   -------------------------------- */
-.loader-spinner {
-  width: 48px;
-  height: 48px;
-  border: 3px solid var(--border-color);
-  border-top-color: var(--accent-primary);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin-bottom: 1rem;
-}
-
-.loader-text {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-}
+/* Loader and Empty State styles migrated to Tailwind in index.html */
 
 /* --------------------------------
    Notification Toast

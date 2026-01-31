@@ -204,8 +204,8 @@
   <!-- Loader -->
   <section id="loader" class="hidden">
     <div class="flex flex-col items-center justify-center py-20 px-8">
-      <div class="loader-spinner"></div>
-      <span id="loader-text" class="loader-text">Loading exchange rates...</span>
+      <div class="size-12 rounded-full animate-spin mb-4" style="border: 3px solid var(--border-color); border-top-color: var(--accent-primary);"></div>
+      <span id="loader-text" class="text-sm text-[--text-secondary]">Loading exchange rates...</span>
     </div>
   </section>
 
@@ -359,14 +359,14 @@
 
   <!-- Empty State -->
   <section id="empty-state" class="max-w-[1200px] mx-auto px-8 pb-16">
-    <div class="card card--dashed empty-card text-center py-20 px-8" data-animate>
-      <div class="empty-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <div class="card card--dashed overflow-hidden text-center py-20 px-8" data-animate>
+      <div class="relative inline-flex items-center justify-center size-20 bg-[image:var(--gradient-card)] rounded-3xl mb-6 animate-[empty-float_4s_ease-in-out_infinite]">
+        <svg class="size-10 text-[--accent-primary]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
         </svg>
       </div>
-      <h3 class="empty-title font-display">Select a currency pair</h3>
-      <p class="empty-description max-w-sm mx-auto">Choose your source and target currencies above to view historical exchange rates and markup percentages.</p>
+      <h3 class="font-display text-2xl font-bold text-[--text-primary] mb-3">Select a currency pair</h3>
+      <p class="text-base text-[--text-secondary] max-w-sm mx-auto">Choose your source and target currencies above to view historical exchange rates and markup percentages.</p>
     </div>
   </section>
 
