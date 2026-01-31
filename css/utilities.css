@@ -40,17 +40,6 @@
   min-height: 420px;
 }
 
-/* Footer separator dot */
-.footer-separator {
-  color: var(--text-tertiary);
-}
-
-/* Keyboard shortcut badge (footer style) */
-.kbd-badge {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-color);
-}
-
 /* --------------------------------
    Scrollbar
    -------------------------------- */
