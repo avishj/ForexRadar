@@ -27,7 +27,7 @@ jobs:
       - name: Start test server
         run: |
           bun run tests/server.js &
-          for i in {1..10}; do
+          for _ in {1..10}; do
             curl -sf http://localhost:3000 > /dev/null && break
             sleep 1
           done
@@ -42,12 +42,12 @@ jobs:
           configPath: .github/lighthouse/lighthouserc.json
 
       - name: Check thresholds
+        env:
+          MANIFEST: ${{ steps.lighthouse.outputs.manifest }}
         run: |
-          echo "## Lighthouse Results" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Lighthouse Results" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
 
-          # Extract scores from manifest
-          MANIFEST='${{ steps.lighthouse.outputs.manifest }}'
           LHR=$(echo "$MANIFEST" | jq -r '.[0].jsonPath')
 
           if [ -f "$LHR" ]; then
@@ -61,53 +61,51 @@ jobs:
             CLS=$(jq '.audits["cumulative-layout-shift"].numericValue' "$LHR")
             TBT=$(jq '.audits["total-blocking-time"].numericValue' "$LHR")
             
-            echo "| Metric | Value | Target | Status |" >> $GITHUB_STEP_SUMMARY
-            echo "|--------|-------|--------|--------|" >> $GITHUB_STEP_SUMMARY
-            
-            # Performance score
-            if (( $(echo "$PERF >= 90" | bc -l) )); then
-              echo "| Performance | ${PERF}% | ≥90% | ✅ |" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "| Performance | ${PERF}% | ≥90% | ⚠️ |" >> $GITHUB_STEP_SUMMARY
-            fi
-            
-            # FCP (target < 1800ms)
             FCP_SEC=$(echo "scale=2; $FCP / 1000" | bc)
-            if (( $(echo "$FCP < 1800" | bc -l) )); then
-              echo "| FCP | ${FCP_SEC}s | <1.8s | ✅ |" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "| FCP | ${FCP_SEC}s | <1.8s | ⚠️ |" >> $GITHUB_STEP_SUMMARY
-            fi
-            
-            # LCP (target < 2500ms)
             LCP_SEC=$(echo "scale=2; $LCP / 1000" | bc)
-            if (( $(echo "$LCP < 2500" | bc -l) )); then
-              echo "| LCP | ${LCP_SEC}s | <2.5s | ✅ |" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "| LCP | ${LCP_SEC}s | <2.5s | ⚠️ |" >> $GITHUB_STEP_SUMMARY
-            fi
             
-            # CLS (target < 0.1)
-            if (( $(echo "$CLS < 0.1" | bc -l) )); then
-              echo "| CLS | ${CLS} | <0.1 | ✅ |" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "| CLS | ${CLS} | <0.1 | ⚠️ |" >> $GITHUB_STEP_SUMMARY
-            fi
-            
-            # TBT (target < 200ms)
-            if (( $(echo "$TBT < 200" | bc -l) )); then
-              echo "| TBT | ${TBT}ms | <200ms | ✅ |" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "| TBT | ${TBT}ms | <200ms | ⚠️ |" >> $GITHUB_STEP_SUMMARY
-            fi
-            
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "| Category | Score |" >> $GITHUB_STEP_SUMMARY
-            echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-            echo "| Accessibility | ${A11Y}% |" >> $GITHUB_STEP_SUMMARY
-            echo "| Best Practices | ${BP}% |" >> $GITHUB_STEP_SUMMARY
-            echo "| SEO | ${SEO}% |" >> $GITHUB_STEP_SUMMARY
+            {
+              echo "| Metric | Value | Target | Status |"
+              echo "|--------|-------|--------|--------|"
+              
+              if (( $(echo "$PERF >= 90" | bc -l) )); then
+                echo "| Performance | ${PERF}% | ≥90% | ✅ |"
+              else
+                echo "| Performance | ${PERF}% | ≥90% | ⚠️ |"
+              fi
+              
+              if (( $(echo "$FCP < 1800" | bc -l) )); then
+                echo "| FCP | ${FCP_SEC}s | <1.8s | ✅ |"
+              else
+                echo "| FCP | ${FCP_SEC}s | <1.8s | ⚠️ |"
+              fi
+              
+              if (( $(echo "$LCP < 2500" | bc -l) )); then
+                echo "| LCP | ${LCP_SEC}s | <2.5s | ✅ |"
+              else
+                echo "| LCP | ${LCP_SEC}s | <2.5s | ⚠️ |"
+              fi
+              
+              if (( $(echo "$CLS < 0.1" | bc -l) )); then
+                echo "| CLS | ${CLS} | <0.1 | ✅ |"
+              else
+                echo "| CLS | ${CLS} | <0.1 | ⚠️ |"
+              fi
+              
+              if (( $(echo "$TBT < 200" | bc -l) )); then
+                echo "| TBT | ${TBT}ms | <200ms | ✅ |"
+              else
+                echo "| TBT | ${TBT}ms | <200ms | ⚠️ |"
+              fi
+              
+              echo ""
+              echo "| Category | Score |"
+              echo "|----------|-------|"
+              echo "| Accessibility | ${A11Y}% |"
+              echo "| Best Practices | ${BP}% |"
+              echo "| SEO | ${SEO}% |"
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
 
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Report: ${{ steps.lighthouse.outputs.links }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Report: ${{ steps.lighthouse.outputs.links }}" >> "$GITHUB_STEP_SUMMARY"
