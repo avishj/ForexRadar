@@ -1,27 +1,3 @@
-/* ================================================
-   FOREX RADAR — Premium Design System
-   Agency-quality styles with stunning animations
-   ================================================
-   
-   📍 Section Map: See docs/frontend-structure.md for a complete
-      index of HTML sections and their corresponding CSS locations.
-   
-   Breakpoints (canonical):
-   - 480px  : Small mobile
-   - 768px  : Tablet / large mobile
-   - 1024px : Small desktop / tablet landscape
-   - 1200px : Desktop
-   
-   ================================================
-   IMPORT ORDER (do not reorder)
-   ================================================
-   1. base.css       — CSS variables, reset, typography, theming
-   2. animations.css — All @keyframes + entrance system
-   3. components.css — Buttons, cards, dropdowns, tooltips, toggles
-   4. sections.css   — Header, hero, selector, stats, chart, footer
-   5. utilities.css  — Hidden, sr-only, scrollbar, print styles
-   ================================================ */
-
 @import url('base.css');
 @import url('animations.css');
 @import url('components.css');
