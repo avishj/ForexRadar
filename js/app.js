@@ -479,7 +479,6 @@ async function loadCurrencyPair() {
     updateLastUpdated(stats.dateRange.end);
 
     const allRecords = [...result.visaRecords, ...result.mastercardRecords];
-    _cachedRecordsForPercentile = allRecords;
     const currentRate = stats.visa.current ?? stats.mastercard.current;
     const percentile = calculateRatePercentile(currentRate, allRecords);
     updatePercentileBadge(percentile);
