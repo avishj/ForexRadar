@@ -133,7 +133,7 @@ bun run backfill --provider=mastercard --days=30
 
 ### 3.4 Daily Update (`backend/daily-update.js`)
 
-**Trigger:** GitHub Actions cron at UTC 17:00, 19:00, 21:00, 23:00 (retry schedule)
+**Trigger:** GitHub Actions cron at UTC 17:00 and 23:00
 
 **Flow:**
 1.  Load watchlists (Visa/Mastercard pairs + ECB currencies)
