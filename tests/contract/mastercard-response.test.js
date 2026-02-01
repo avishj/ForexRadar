@@ -14,17 +14,10 @@
 
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
 import { fetchRate, refreshSession, closeBrowser } from "../../backend/mastercard-client-batch.js";
+import { sleep } from "../../shared/browser-utils.js";
 import { PROVIDER_CONFIG } from "../../shared/constants.js";
 
 const config = PROVIDER_CONFIG.MASTERCARD;
-
-/**
- * Sleep utility
- * @param {number} ms
- */
-function sleep(ms) {
-	return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 /**
  * Fetches rate with retry on 403 (respects pauseOnForbiddenMs)
@@ -49,7 +42,6 @@ async function fetchRateWithRetry(from, to, date, maxRetries = 2) {
 		return result;
 	}
 
-	// Should not reach here, but return last result
 	return fetchRate(from, to, date);
 }
 
