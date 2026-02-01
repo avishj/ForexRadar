@@ -119,8 +119,6 @@ export function showShortcutsModal() {
   /** @type {HTMLElement|null} */
   const closeBtn = shortcutsModal.querySelector('.shortcuts-close');
   if (closeBtn) {
-    // Ensure the button is focusable
-    closeBtn.setAttribute('tabindex', '-1');
     closeBtn.focus();
   }
 }
