@@ -70,7 +70,10 @@ test.describe('Page Load & Initial State', () => {
     await page.goto('/');
     const emptyState = page.locator('#empty-state');
     await expect(emptyState).toBeAttached();
-    await expect(page.locator('.empty-title')).toContainText('Select a currency pair');
+    // Check the title within the empty state container (use { force: true } equivalent via locator chain)
+    const emptyTitle = emptyState.locator('.empty-title');
+    await expect(emptyTitle).toBeAttached();
+    await expect(emptyTitle).toHaveText('Select a currency pair');
   });
 
   test('currency dropdowns have correct initial state', async ({ page }) => {
