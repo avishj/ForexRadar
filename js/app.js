@@ -465,8 +465,6 @@ async function loadCurrencyPair() {
     currentVisaRecords = result.visaRecords;
     currentMcRecords = result.mastercardRecords;
     currentEcbRecords = result.ecbRecords;
-    _currentFromCurr = fromCurr;
-    _currentToCurr = toCurr;
 
     const isArchivedOnServer = result.stats.hasServerData;
     updateArchivingLink(fromCurr, toCurr, isArchivedOnServer);
