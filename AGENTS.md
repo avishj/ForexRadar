@@ -42,21 +42,16 @@ bun run postinstall        # Install Playwright browsers (Firefox + Chromium)
 ### Test Scripts
 | Command | Description |
 |---------|-------------|
-| `bun run test` | Run Playwright smoke tests |
+| `bun run test` | Alias for `bun run test:all` (run all tests) |
 | `bun run test:unit` | Run unit tests (shared utilities) |
 | `bun run test:integration` | Run integration tests (CSVStore, ECB client) |
-| `bun run test:contract` | Run API contract tests (Visa, ECB) |
-| `bun run test:contract:all` | Run all contract tests (incl. Mastercard) |
+| `bun run test:contract` | Run API contract tests (Visa, ECB, Mastercard) |
+| `bun run test:contract:action` | Run API contract tests (Visa, ECB) |
 | `bun run test:contract:mc` | Run Mastercard contract tests only |
 | `bun run test:e2e` | Run end-to-end flow tests |
-| `bun run test:smoke` | Run UI smoke tests (alias for `test`) |
-| `bun run test:perf` | Run backend performance benchmarks |
-| `bun run test:perf:browser` | Run browser-based performance tests |
-| `bun run test:all` | Run unit + smoke + e2e tests |
-| `bun run test:headed` | Run tests in headed browser mode |
-| `bun run test:ui` | Open Playwright UI mode |
-| `bun run test:chromium` | Run smoke tests on Chromium only |
-| `bun run test:firefox` | Run smoke tests on Firefox only |
+| `bun run test:smoke` | Run UI smoke tests |
+| `bun run test:perf` | Run perf tests (bun + browser) |
+| `bun run test:all` | Run all tests |
 
 ### Verification After Changes
 Always run these commands after making changes:
@@ -70,7 +65,7 @@ bun run validate   # Data integrity (if db/ modified)
 
 ### Data Flow
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                        GitHub Actions                            │
 │  daily.yml (2x daily) ──► daily-update.js ──► db/{CURR}/{YEAR}.csv │
@@ -104,7 +99,7 @@ bun run validate   # Data integrity (if db/ modified)
 
 ## Directory Structure
 
-```
+```text
 ForexRadar/
 ├── backend/                    # Data ingestion scripts (Bun)
 │   ├── daily-update.js        # Main entry for scheduled updates
@@ -155,7 +150,7 @@ ForexRadar/
 │   ├── perf/                  # Performance benchmarks
 │   ├── fixtures/              # Test fixtures
 │   ├── helpers/               # Test helper utilities
-│   ├── playwright.config.js   # Smoke test configuration
+│   ├── playwright.smoke.config.js   # Smoke test configuration
 │   ├── playwright.e2e.config.js # E2E test configuration
 │   ├── playwright.perf.config.js # Perf test configuration
 │   └── server.js              # Local test server

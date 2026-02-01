@@ -133,7 +133,7 @@ bun run backfill --provider=mastercard --days=30
 
 ### 3.4 Daily Update (`backend/daily-update.js`)
 
-**Trigger:** GitHub Actions cron at UTC 17:00, 19:00, 21:00, 23:00 (retry schedule)
+**Trigger:** GitHub Actions cron at UTC 17:00 and 23:00
 
 **Flow:**
 1.  Load watchlists (Visa/Mastercard pairs + ECB currencies)
@@ -162,8 +162,8 @@ jobs:
   update-rates:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: oven-sh/setup-bun@v2.1.0
+      - uses: actions/checkout@v6.0.1
+      - uses: oven-sh/setup-bun@v2.1.2
       - run: bun install
       - run: bunx playwright install --with-deps chromium
       - run: xvfb-run bun run daily  # Headed browser needs display
@@ -196,7 +196,7 @@ js/
 ### 4.2 Data Manager (`js/data-manager.js`)
 
 **Progressive Enhancement Flow:**
-```
+```text
 1. Check IndexedDB cache (fastest)
    ↓
 2. If stale (after UTC 12:00), fetch server CSV files

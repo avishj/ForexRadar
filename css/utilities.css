@@ -1,0 +1,88 @@
+/* ================================================
+   UTILITIES — Helper Classes & Global Styles
+   
+   Hidden, sr-only, scrollbar, print styles
+   ================================================ */
+
+/* --------------------------------
+   Utility Classes
+   -------------------------------- */
+.hidden {
+  display: none !important;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.sr-only.focusable:focus,
+.sr-only.focusable:active {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+}
+
+/* Text color utilities */
+.text-color-primary {
+  color: var(--text-primary);
+}
+
+.text-color-secondary {
+  color: var(--text-secondary);
+}
+
+.text-color-tertiary {
+  color: var(--text-tertiary);
+}
+
+/* Chart container minimum height */
+.chart-min-height {
+  min-height: 420px;
+}
+
+/* --------------------------------
+   Scrollbar
+   -------------------------------- */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+
+/* --------------------------------
+   Print Styles
+   -------------------------------- */
+@media print {
+  .bg-pattern,
+  .header,
+  .theme-toggle {
+    display: none;
+  }
+  
+  body {
+    background: white;
+    color: black;
+  }
+}

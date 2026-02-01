@@ -65,13 +65,10 @@ test.describe('Page Load & Initial State', () => {
   });
 
   test('empty state exists in DOM', async ({ page }) => {
-    // Note: App defaults to USD/INR on fresh load, so empty state will be hidden
-    // This test just verifies the empty state element exists and has correct content
     await page.goto('/');
     const emptyState = page.locator('#empty-state');
     await expect(emptyState).toBeAttached();
-    // Check the title within the empty state container (use { force: true } equivalent via locator chain)
-    const emptyTitle = emptyState.locator('.empty-title');
+    const emptyTitle = emptyState.locator('h3');
     await expect(emptyTitle).toBeAttached();
     await expect(emptyTitle).toHaveText('Select a currency pair');
   });
@@ -87,8 +84,8 @@ test.describe('Page Load & Initial State', () => {
 
   test('footer displays correctly', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('footer.footer')).toBeVisible();
-    await expect(page.locator('.footer-text')).toContainText('Data sourced from Visa and Mastercard');
+    await expect(page.locator('footer')).toBeVisible();
+    await expect(page.locator('footer')).toContainText('Data sourced from Visa and Mastercard');
   });
 
   test('theme toggle button exists', async ({ page }) => {

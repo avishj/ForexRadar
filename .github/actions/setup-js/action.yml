@@ -1,0 +1,40 @@
+name: Setup JS Environment
+description: Setup Bun, cache deps, and optionally install Playwright browsers
+
+inputs:
+  playwright:
+    description: Whether to install Playwright browsers
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2.1.2
+      with:
+        bun-version: "1.3.x"
+
+    - name: Cache Bun dependencies
+      uses: actions/cache@v5.0.3
+      with:
+        path: ~/.bun/install/cache
+        key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+        restore-keys: bun-${{ runner.os }}-
+
+    - name: Install dependencies
+      shell: bash
+      run: bun install --frozen-lockfile --ignore-scripts
+
+    - name: Cache Playwright browsers
+      if: inputs.playwright == 'true'
+      uses: actions/cache@v5.0.3
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+        restore-keys: playwright-${{ runner.os }}-
+
+    - name: Install Playwright browsers
+      if: inputs.playwright == 'true'
+      shell: bash
+      run: bunx playwright install --with-deps chromium firefox

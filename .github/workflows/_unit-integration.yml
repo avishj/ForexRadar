@@ -13,13 +13,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6.0.1
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2.1.0
-        with:
-          bun-version: latest
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile --ignore-scripts
+      - name: Setup JS environment
+        uses: ./.github/actions/setup-js
 
       - name: Unit tests
         run: bun run test:unit

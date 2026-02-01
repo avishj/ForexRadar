@@ -134,27 +134,35 @@ export async function fetchBatch(requests) {
 					url.searchParams.set("toCurr", from);
 
 					const page = await context.newPage();
-					let apiResponse = null;
 					let apiStatus = null;
 
 					page.on("response", async (response) => {
 						if (response.url().includes("/cmsapi/fx/rates")) {
 							apiStatus = response.status();
-							try {
-								apiResponse = await response.text();
-							} catch { /* Response body unavailable */ }
 						}
 					});
 
 					await page.goto(url.toString(), { waitUntil: "networkidle", timeout: 30000 });
-					if (!apiResponse) await page.waitForTimeout(3000);
+
+					if (apiStatus === 500 || apiStatus === 400) {
+						await page.close();
+						return { req, record: null };
+					}
+					if (apiStatus === 429 || apiStatus === 403) {
+						await page.close();
+						throw new Error(`Rate limited: ${apiStatus}`);
+					}
+					if (apiStatus !== 200) {
+						await page.close();
+						throw new Error(`HTTP ${apiStatus}`);
+					}
+
+					// Extract JSON from page body (Firefox renders JSON in a <pre> tag)
+					// This avoids the NS_ERROR_FAILURE bug with response.text()
+					const bodyText = await page.evaluate(() => document.body.innerText);
 					await page.close();
 
-					if (apiStatus === 500 || apiStatus === 400) return { req, record: null };
-					if (apiStatus === 429 || apiStatus === 403) throw new Error(`Rate limited: ${apiStatus}`);
-					if (apiStatus !== 200) throw new Error(`HTTP ${apiStatus}`);
-
-					const data = JSON.parse(apiResponse);
+					const data = JSON.parse(bodyText);
 					const rate = data.originalValues?.fxRateVisa;
 					const markup = data.benchMarkAmount || 0;
 

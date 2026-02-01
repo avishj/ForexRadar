@@ -53,28 +53,30 @@ describe("Visa API Response Contract", () => {
 		url.searchParams.set("toCurr", from);
 
 		const page = await context.newPage();
-		let apiResponse = null;
 		let apiStatus = null;
 
 		page.on("response", async (response) => {
 			if (response.url().includes("/cmsapi/fx/rates")) {
 				apiStatus = response.status();
-				try {
-					apiResponse = await response.text();
-				} catch {
-					/* Response body unavailable */
-				}
 			}
 		});
 
 		await page.goto(url.toString(), { waitUntil: "networkidle", timeout: 30000 });
-		if (!apiResponse) await page.waitForTimeout(3000);
+
+		// Extract JSON from page body (Firefox renders JSON in a <pre> tag)
+		// This avoids the NS_ERROR_FAILURE bug with response.text()
+		let data = null;
+		if (apiStatus === 200) {
+			const bodyText = await page.evaluate(() => document.body.innerText);
+			try {
+				data = JSON.parse(bodyText);
+			} catch {
+				/* Invalid JSON */
+			}
+		}
 		await page.close();
 
-		return {
-			status: apiStatus,
-			data: apiResponse ? JSON.parse(apiResponse) : null
-		};
+		return { status: apiStatus, data };
 	}
 
 	test("Response contains originalValues.fxRateVisa", async () => {

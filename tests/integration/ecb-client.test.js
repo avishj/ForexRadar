@@ -128,7 +128,7 @@ describe('ECB Client Integration', () => {
   });
 
   describe('fetchAllRates() live (optional)', () => {
-    test.skipIf(!process.env.TEST_LIVE_ECB)('fetches live EUR/USD rates', async () => {
+    test('fetches live EUR/USD rates', async () => {
       const result = await fetchAllRates(/** @type {any} */ ('USD'));
 
       expect(result).not.toBeNull();
@@ -143,7 +143,7 @@ describe('ECB Client Integration', () => {
       expect(eurToUsd?.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     });
 
-    test.skipIf(!process.env.TEST_LIVE_ECB)('fetches live EUR/GBP rates', async () => {
+    test('fetches live EUR/GBP rates', async () => {
       const result = await fetchAllRates(/** @type {any} */ ('GBP'));
 
       expect(result).not.toBeNull();

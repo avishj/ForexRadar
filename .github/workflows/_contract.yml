@@ -13,16 +13,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6.0.1
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2.1.0
+      - name: Setup JS environment
+        uses: ./.github/actions/setup-js
         with:
-          bun-version: latest
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile --ignore-scripts
-
-      - name: Install Playwright browsers (Firefox only for Visa)
-        run: bunx playwright install firefox
+          playwright: "true"
 
       - name: Contract tests (Visa + ECB)
-        run: bun run test:contract
+        run: bun run test:contract:action
+
+      - name: Upload contract report
+        uses: actions/upload-artifact@v6
+        if: ${{ !cancelled() }}
+        with:
+          name: contract-test-report
+          path: playwright-report/
+          retention-days: 90

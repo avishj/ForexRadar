@@ -459,3 +459,29 @@ export function getCurrencyList() {
  * @property {number} inserted - Records inserted
  * @property {number} skipped - Records skipped (duplicates)
  */
+
+// ============================================================================
+// MASTERCARD API TYPES
+// ============================================================================
+
+/**
+ * Mastercard API response data payload
+ * @typedef {Object} MastercardApiData
+ * @property {number} [conversionRate] - Exchange rate
+ * @property {string} [errorCode] - Error code on failure
+ * @property {string} [errorMessage] - Error message on failure
+ */
+
+/**
+ * Mastercard API response structure
+ * @typedef {Object} MastercardApiResponse
+ * @property {string} [type] - Response type (e.g., "error")
+ * @property {MastercardApiData} [data] - Response payload
+ */
+
+/**
+ * Result from fetchRate function
+ * @typedef {Object} MastercardFetchRateResult
+ * @property {number} status - HTTP status code
+ * @property {MastercardApiResponse | null} data - Parsed JSON response or null
+ */

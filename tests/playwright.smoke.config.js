@@ -6,17 +6,17 @@ import { fileURLToPath } from 'url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 /**
- * Playwright configuration for ForexRadar UI tests.
- * 
+ * Playwright configuration for ForexRadar smoke UI tests.
+ *
  * @see https://playwright.dev/docs/test-configuration
  */
 export default defineConfig({
   testDir: './smoke',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 1,
-  workers: process.env.CI ? 2 : 1,
-  reporter: 'html',
+  retries: process.env.CI ? 3 : 1,
+  workers: process.env.CI ? 4 : 2,
+  reporter: [['list'], ['html', { open: 'never' }]],
   timeout: 45000,
   
   use: {

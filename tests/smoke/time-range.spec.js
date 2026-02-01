@@ -45,7 +45,7 @@ test.describe('Time Range - Chart Behavior', () => {
     await expect(page.locator('.apexcharts-canvas')).toBeVisible();
     
     // Verify the active button changed
-    const activeBtn = page.locator('.time-range-btn.active');
+    const activeBtn = page.locator('.time-range-btn.btn--active');
     await expect(activeBtn).toHaveAttribute('data-range', '3m');
   });
 });

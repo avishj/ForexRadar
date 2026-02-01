@@ -62,7 +62,7 @@ test.describe('Share Workflow', () => {
     await expect(page.locator('#from-currency')).toHaveValue('USD');
     await expect(page.locator('#to-currency')).toHaveValue('INR');
     
-    const activeBtn = page.locator('.time-range-btn.active');
+    const activeBtn = page.locator('.time-range-btn.btn--active');
     await expect(activeBtn).toHaveAttribute('data-range', '6m');
   });
 
@@ -122,6 +122,6 @@ test.describe('Share Workflow', () => {
     await page.locator('#time-range-selector').waitFor({ state: 'visible', timeout: 10000 });
     await expect(page.locator('#from-currency')).toHaveValue('USD');
     await expect(page.locator('#to-currency')).toHaveValue('INR');
-    await expect(page.locator('.time-range-btn.active')).toHaveAttribute('data-range', '3m');
+    await expect(page.locator('.time-range-btn.btn--active')).toHaveAttribute('data-range', '3m');
   });
 });
