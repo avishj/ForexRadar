@@ -18,9 +18,9 @@ function createShortcutsModal() {
   modal.className = 'shortcuts-modal';
   modal.innerHTML = `
     <div class="shortcuts-backdrop"></div>
-    <div class="shortcuts-content">
+    <div class="shortcuts-content" role="dialog" aria-modal="true" aria-labelledby="shortcuts-modal-title">
       <div class="shortcuts-header">
-        <h3>Keyboard Shortcuts</h3>
+        <h3 id="shortcuts-modal-title">Keyboard Shortcuts</h3>
         <button class="shortcuts-close" aria-label="Close">&times;</button>
       </div>
       <div class="shortcuts-body">
