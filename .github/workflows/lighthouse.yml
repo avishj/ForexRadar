@@ -40,9 +40,6 @@ jobs:
         env:
           RESULTS_PATH: ${{ steps.lighthouse.outputs.resultsPath }}
         run: |
-          echo "## Lighthouse Results" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-
           LHR=$(find "$RESULTS_PATH" -name "lhr-*.json" -type f | head -1)
 
           if [ -f "$LHR" ]; then
@@ -60,6 +57,8 @@ jobs:
             LCP_SEC=$(echo "scale=2; $LCP / 1000" | bc)
             
             {
+              echo "## Lighthouse Results"
+              echo ""
               echo "| Metric | Value | Target | Status |"
               echo "|--------|-------|--------|--------|"
               
@@ -99,8 +98,7 @@ jobs:
               echo "| Accessibility | ${A11Y}% |"
               echo "| Best Practices | ${BP}% |"
               echo "| SEO | ${SEO}% |"
+              echo ""
+              echo "Report: ${{ steps.lighthouse.outputs.links }}"
             } >> "$GITHUB_STEP_SUMMARY"
           fi
-
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Report: ${{ steps.lighthouse.outputs.links }}" >> "$GITHUB_STEP_SUMMARY"
