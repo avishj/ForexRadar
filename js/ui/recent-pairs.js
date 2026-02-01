@@ -39,6 +39,7 @@ let callbacks = null;
  * Initialize the recent pairs module
  * @param {RecentPairsElements} els - DOM elements
  * @param {RecentPairsCallbacks} cbs - Callback functions
+ * @returns {void}
  */
 export function initRecentPairs(els, cbs) {
   elements = els;
@@ -71,6 +72,7 @@ export function loadRecentPairs() {
  * Saves a pair to recent pairs history
  * @param {string} from - Source currency code
  * @param {string} to - Target currency code
+ * @returns {void}
  */
 export function saveRecentPair(from, to) {
   if (!from || !to || from === to) return;
@@ -88,6 +90,7 @@ export function saveRecentPair(from, to) {
 /**
  * Renders the recent pairs chips
  * @param {RecentPair[]} [pairs] - Pairs to render (loads from storage if not provided)
+ * @returns {void}
  */
 export function renderRecentPairs(pairs) {
   if (!elements || !callbacks) return;
