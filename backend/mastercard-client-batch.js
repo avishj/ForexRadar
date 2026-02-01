@@ -118,6 +118,7 @@ async function getBrowser() {
 
 /**
  * Closes the shared browser instance with timeout protection
+ * @returns {Promise<void>}
  */
 async function closeBrowser() {
 	if (browserInstance) {
@@ -158,6 +159,7 @@ async function getApiPage() {
 
 /**
  * Refreshes the session by visiting the UI page
+ * @returns {Promise<void>}
  */
 async function refreshSession() {
 	console.log("[MASTERCARD] Refreshing session");
