@@ -750,3 +750,69 @@
     justify-content: center;
   }
 }
+
+/* --------------------------------
+   Odometer - Digit Counter Animation
+   -------------------------------- */
+.odometer {
+  display: inline-flex;
+  align-items: baseline;
+  overflow: hidden;
+  line-height: 1.2;
+}
+
+.odometer-slot {
+  display: inline-block;
+  height: 1.2em;
+  overflow: hidden;
+  position: relative;
+}
+
+.odometer-wheel {
+  display: flex;
+  flex-direction: column;
+  will-change: transform;
+}
+
+.odometer-digit {
+  display: block;
+  height: 1.2em;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.odometer-static {
+  display: inline-block;
+  line-height: 1.2;
+}
+
+/* Subtle blur during fast motion */
+.odometer-wheel[style*="transition"] {
+  filter: blur(0);
+}
+
+@keyframes odometer-blur {
+  0%, 100% { filter: blur(0); }
+  50% { filter: blur(0.5px); }
+}
+
+/* Highlight effect on change */
+.odometer-slot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(16, 185, 129, 0.15) 0%,
+    transparent 30%,
+    transparent 70%,
+    rgba(16, 185, 129, 0.15) 100%
+  );
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.odometer.updating .odometer-slot::after {
+  opacity: 1;
+}
