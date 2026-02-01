@@ -292,8 +292,101 @@ export class SearchableDropdown {
     this.input.blur();
     
     if (prevValue !== code) {
+      // Animate the input with a success pulse using Web Animations API
+      this.animateSelectionPulse();
       this.dispatchChange();
     }
+  }
+  
+  /**
+   * Animates a wild ripple burst effect on selection
+   */
+  animateSelectionPulse() {
+    // Get computed accent color (CSS vars don't work in Web Animations API)
+    const styles = getComputedStyle(document.documentElement);
+    const accentColor = styles.getPropertyValue('--accent-primary').trim() || '#10b981';
+    
+    // Create multiple expanding ripple rings
+    const createRipple = (/** @type {number} */ delay, /** @type {number} */ scale) => {
+      const ripple = document.createElement('div');
+      ripple.style.cssText = `
+        position: absolute;
+        inset: 0;
+        border-radius: 20px;
+        pointer-events: none;
+        z-index: -1;
+        border: 3px solid ${accentColor};
+        box-shadow: 0 0 20px ${accentColor}, inset 0 0 20px ${accentColor}40;
+      `;
+      
+      this.container.appendChild(ripple);
+      
+      const anim = ripple.animate([
+        { 
+          opacity: 0.9,
+          transform: 'scale(1)',
+          filter: 'blur(0px)'
+        },
+        { 
+          opacity: 0.5,
+          transform: `scale(${scale * 0.5})`,
+          filter: 'blur(2px)',
+          offset: 0.4
+        },
+        { 
+          opacity: 0,
+          transform: `scale(${scale})`,
+          filter: 'blur(4px)'
+        }
+      ], {
+        duration: 800,
+        delay: delay,
+        easing: 'cubic-bezier(0.4, 0, 0.6, 1)',
+        fill: 'forwards'
+      });
+      
+      anim.onfinish = () => ripple.remove();
+    };
+    
+    // Fire off 3 staggered ripples
+    createRipple(0, 1.3);
+    createRipple(100, 1.5);
+    createRipple(200, 1.7);
+    
+    // Also create a center flash
+    const flash = document.createElement('div');
+    flash.style.cssText = `
+      position: absolute;
+      inset: -8px;
+      border-radius: 24px;
+      pointer-events: none;
+      z-index: -1;
+      background: radial-gradient(circle at center, ${accentColor} 0%, transparent 70%);
+    `;
+    
+    this.container.appendChild(flash);
+    
+    const flashAnim = flash.animate([
+      { 
+        opacity: 0,
+        transform: 'scale(0.8)'
+      },
+      { 
+        opacity: 0.7,
+        transform: 'scale(1.1)',
+        offset: 0.2
+      },
+      { 
+        opacity: 0,
+        transform: 'scale(1.3)'
+      }
+    ], {
+      duration: 600,
+      easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+      fill: 'forwards'
+    });
+    
+    flashAnim.onfinish = () => flash.remove();
   }
   
   clear() {
