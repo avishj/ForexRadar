@@ -9,6 +9,9 @@
 /** @type {HTMLElement|null} */
 let shortcutsModal = null;
 
+/** @type {HTMLElement|null} */
+let previouslyFocusedElement = null;
+
 /**
  * Creates the keyboard shortcuts help modal
  * @returns {HTMLElement}
@@ -99,22 +102,43 @@ function createShortcutsModal() {
 
 /**
  * Shows the keyboard shortcuts modal
+ * @returns {void}
  */
 export function showShortcutsModal() {
   if (!shortcutsModal) {
     shortcutsModal = createShortcutsModal();
   }
+  
+  // Store previously focused element for restoration
+  previouslyFocusedElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  
   shortcutsModal.classList.add('open');
   document.body.style.overflow = 'hidden';
+  
+  // Move focus to the close button (primary focus target)
+  /** @type {HTMLElement|null} */
+  const closeBtn = shortcutsModal.querySelector('.shortcuts-close');
+  if (closeBtn) {
+    // Ensure the button is focusable
+    closeBtn.setAttribute('tabindex', '-1');
+    closeBtn.focus();
+  }
 }
 
 /**
  * Hides the keyboard shortcuts modal
+ * @returns {void}
  */
 export function hideShortcutsModal() {
   if (shortcutsModal) {
     shortcutsModal.classList.remove('open');
     document.body.style.overflow = '';
+  }
+  
+  // Restore focus to the previously focused element
+  if (previouslyFocusedElement) {
+    previouslyFocusedElement.focus();
+    previouslyFocusedElement = null;
   }
 }
 
