@@ -81,8 +81,6 @@ let currentVisaRecords = [];
 let currentMcRecords = [];
 /** @type {RateRecord[]} */
 let currentEcbRecords = [];
-let _currentFromCurr = '';
-let _currentToCurr = '';
 
 /** @type {TimeRangeKey} */
 let currentTimeRange = '1y';
