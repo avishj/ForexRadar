@@ -15,7 +15,7 @@ import { SearchableDropdown } from './ui/dropdown.js';
 import { initNotifications, showNotification } from './ui/notifications.js';
 import { showShortcutsModal, hideShortcutsModal, isShortcutsModalOpen } from './ui/shortcuts-modal.js';
 import { initRecentPairs, saveRecentPair, renderRecentPairs } from './ui/recent-pairs.js';
-import { initTimeRange, updateActiveButton, deactivateAllButtons, parseTimeRange, isValidTimeRange, triggerRangeByKey } from './ui/time-range.js';
+import { initTimeRange, updateActiveButton, deactivateAllButtons, parseTimeRange, isValidTimeRange, triggerRangeByKey, refreshIndicatorPosition } from './ui/time-range.js';
 import { initSeriestoggles, updateToggleVisibility, getVisibilityFromData } from './ui/series-toggles.js';
 import { initActions, triggerCopyRate, triggerShareUrl, triggerDownloadChart } from './ui/actions.js';
 import { setOdometerValue } from './ui/odometer.js';
@@ -156,6 +156,8 @@ function showResults() {
   
   if (timeRangeSection) {
     timeRangeSection.classList.remove('hidden');
+    // Refresh indicator position now that section is visible
+    requestAnimationFrame(() => refreshIndicatorPosition());
   }
   
   if (seriesTogglesSection) {

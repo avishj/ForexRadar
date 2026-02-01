@@ -641,9 +641,31 @@
   color: var(--text-primary);
 }
 
-.time-range-btn.btn--active {
+/* Sliding indicator for time range buttons */
+.time-range-indicator {
+  position: absolute;
+  top: 0;
+  height: 100%;
   background: var(--accent-primary);
-  color: white;
+  border-radius: 8px;
+  opacity: 0;
+  z-index: 0;
+  pointer-events: none;
+  box-shadow: 
+    0 0 20px -5px var(--accent-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+/* Make buttons relative to stack above indicator */
+.time-range-btn {
+  position: relative;
+  z-index: 1;
+}
+
+/* Active button text should be white (indicator provides background) */
+.time-range-btn.btn--active {
+  background: transparent;
+  border-color: transparent;
 }
 
 @media (max-width: 480px) {
