@@ -75,12 +75,12 @@ jobs:
           configPath: .github/lighthouse/lighthouserc.json
 
       - name: Report results
+        env:
+          RESULTS_PATH: ${{ steps.lighthouse.outputs.resultsPath }}
         run: |
-          echo "## Lighthouse Production Audit" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          RESULTS_PATH='${{ steps.lighthouse.outputs.resultsPath }}'
-          LHR=$(find "$RESULTS_PATH" -name "*.json" -type f | head -1)
-          LHR=$(echo "$MANIFEST" | jq -r '.[0].jsonPath')
+          echo "## Lighthouse Production Audit" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          LHR=$(find "$RESULTS_PATH" -name "lhr-*.json" -type f | head -1)
 
           if [ -f "$LHR" ]; then
             PERF=$(jq '.categories.performance.score * 100' "$LHR")

@@ -43,12 +43,12 @@ jobs:
 
       - name: Check thresholds
         env:
-          MANIFEST: ${{ steps.lighthouse.outputs.manifest }}
+          RESULTS_PATH: ${{ steps.lighthouse.outputs.resultsPath }}
         run: |
           echo "## Lighthouse Results" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
 
-          LHR=$(echo "$MANIFEST" | jq -r '.[0].jsonPath')
+          LHR=$(find "$RESULTS_PATH" -name "lhr-*.json" -type f | head -1)
 
           if [ -f "$LHR" ]; then
             PERF=$(jq '.categories.performance.score * 100' "$LHR")
