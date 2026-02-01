@@ -109,20 +109,19 @@ async function handleDownloadChart() {
   const fromCurr = callbacks.getFromCurrency();
   const toCurr = callbacks.getToCurrency();
   const timeRange = callbacks.getTimeRange();
-  const filename = `forex-${fromCurr}-${toCurr}-${timeRange}`;
-  
-  const btn = document.getElementById('download-chart-btn');
-  btn?.classList.add('btn--success');
-  
-  const success = await callbacks.exportChart(filename);
-  
-  if (success) {
-    showNotification('Chart downloaded!', 'success', 2000);
-  } else {
-    showNotification('Failed to download chart', 'error');
-  }
-  
-  setTimeout(() => btn?.classList.remove('btn--success'), 1500);
+	const filename = `forex-${fromCurr}-${toCurr}-${timeRange}`;
+
+	const btn = document.getElementById('download-chart-btn');
+
+	const success = await callbacks.exportChart(filename);
+
+	if (success) {
+		btn?.classList.add('btn--success');
+		showNotification('Chart downloaded!', 'success', 2000);
+		setTimeout(() => btn?.classList.remove('btn--success'), 1500);
+	} else {
+		showNotification('Failed to download chart', 'error');
+	}
 }
 
 /**
