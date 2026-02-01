@@ -28,4 +28,7 @@ jobs:
         run: bun run check
 
       - name: Lint GitHub Actions
-        uses: reviewdog/action-actionlint@v1.69.1
+        run: |
+          bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          ./actionlint -color
+        shell: bash
