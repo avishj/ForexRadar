@@ -82,62 +82,65 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           LHR=$(find "$RESULTS_PATH" -name "lhr-*.json" -type f | head -1)
 
-          if [ -f "$LHR" ]; then
-            PERF=$(jq '.categories.performance.score * 100' "$LHR")
-            A11Y=$(jq '.categories.accessibility.score * 100' "$LHR")
-            BP=$(jq '.categories["best-practices"].score * 100' "$LHR")
-            SEO=$(jq '.categories.seo.score * 100' "$LHR")
-            
-            FCP=$(jq '.audits["first-contentful-paint"].numericValue' "$LHR")
-            LCP=$(jq '.audits["largest-contentful-paint"].numericValue' "$LHR")
-            CLS=$(jq '.audits["cumulative-layout-shift"].numericValue' "$LHR")
-            TBT=$(jq '.audits["total-blocking-time"].numericValue' "$LHR")
-            
-            FCP_SEC=$(echo "scale=2; $FCP / 1000" | bc)
-            LCP_SEC=$(echo "scale=2; $LCP / 1000" | bc)
-            
-            {
-              echo "| Metric | Value | Target | Status |"
-              echo "|--------|-------|--------|--------|"
-              
-              if (( $(echo "$PERF >= 90" | bc -l) )); then
-                echo "| Performance | ${PERF}% | ≥90% | ✅ |"
-              else
-                echo "| Performance | ${PERF}% | ≥90% | ⚠️ |"
-              fi
-              
-              if (( $(echo "$FCP < 1800" | bc -l) )); then
-                echo "| FCP | ${FCP_SEC}s | <1.8s | ✅ |"
-              else
-                echo "| FCP | ${FCP_SEC}s | <1.8s | ⚠️ |"
-              fi
-              
-              if (( $(echo "$LCP < 2500" | bc -l) )); then
-                echo "| LCP | ${LCP_SEC}s | <2.5s | ✅ |"
-              else
-                echo "| LCP | ${LCP_SEC}s | <2.5s | ⚠️ |"
-              fi
-              
-              if (( $(echo "$CLS < 0.1" | bc -l) )); then
-                echo "| CLS | ${CLS} | <0.1 | ✅ |"
-              else
-                echo "| CLS | ${CLS} | <0.1 | ⚠️ |"
-              fi
-              
-              if (( $(echo "$TBT < 200" | bc -l) )); then
-                echo "| TBT | ${TBT}ms | <200ms | ✅ |"
-              else
-                echo "| TBT | ${TBT}ms | <200ms | ⚠️ |"
-              fi
-              
-              echo ""
-              echo "| Category | Score |"
-              echo "|----------|-------|"
-              echo "| Accessibility | ${A11Y}% |"
-              echo "| Best Practices | ${BP}% |"
-              echo "| SEO | ${SEO}% |"
-            } >> "$GITHUB_STEP_SUMMARY"
+          if [ -z "$LHR" ] || [ ! -f "$LHR" ]; then
+            echo "Lighthouse report not found under $RESULTS_PATH" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
           fi
+
+          PERF=$(jq '.categories.performance.score * 100' "$LHR")
+          A11Y=$(jq '.categories.accessibility.score * 100' "$LHR")
+          BP=$(jq '.categories["best-practices"].score * 100' "$LHR")
+          SEO=$(jq '.categories.seo.score * 100' "$LHR")
+          
+          FCP=$(jq '.audits["first-contentful-paint"].numericValue' "$LHR")
+          LCP=$(jq '.audits["largest-contentful-paint"].numericValue' "$LHR")
+          CLS=$(jq '.audits["cumulative-layout-shift"].numericValue' "$LHR")
+          TBT=$(jq '.audits["total-blocking-time"].numericValue' "$LHR")
+          
+          FCP_SEC=$(echo "scale=2; $FCP / 1000" | bc)
+          LCP_SEC=$(echo "scale=2; $LCP / 1000" | bc)
+          
+          {
+            echo "| Metric | Value | Target | Status |"
+            echo "|--------|-------|--------|--------|"
+            
+            if (( $(echo "$PERF >= 90" | bc -l) )); then
+              echo "| Performance | ${PERF}% | ≥90% | ✅ |"
+            else
+              echo "| Performance | ${PERF}% | ≥90% | ⚠️ |"
+            fi
+            
+            if (( $(echo "$FCP < 1800" | bc -l) )); then
+              echo "| FCP | ${FCP_SEC}s | <1.8s | ✅ |"
+            else
+              echo "| FCP | ${FCP_SEC}s | <1.8s | ⚠️ |"
+            fi
+            
+            if (( $(echo "$LCP < 2500" | bc -l) )); then
+              echo "| LCP | ${LCP_SEC}s | <2.5s | ✅ |"
+            else
+              echo "| LCP | ${LCP_SEC}s | <2.5s | ⚠️ |"
+            fi
+            
+            if (( $(echo "$CLS < 0.1" | bc -l) )); then
+              echo "| CLS | ${CLS} | <0.1 | ✅ |"
+            else
+              echo "| CLS | ${CLS} | <0.1 | ⚠️ |"
+            fi
+            
+            if (( $(echo "$TBT < 200" | bc -l) )); then
+              echo "| TBT | ${TBT}ms | <200ms | ✅ |"
+            else
+              echo "| TBT | ${TBT}ms | <200ms | ⚠️ |"
+            fi
+            
+            echo ""
+            echo "| Category | Score |"
+            echo "|----------|-------|"
+            echo "| Accessibility | ${A11Y}% |"
+            echo "| Best Practices | ${BP}% |"
+            echo "| SEO | ${SEO}% |"
+          } >> "$GITHUB_STEP_SUMMARY"
 
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "Report: ${{ steps.lighthouse.outputs.links }}" >> "$GITHUB_STEP_SUMMARY"
