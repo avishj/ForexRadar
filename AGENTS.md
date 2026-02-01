@@ -42,7 +42,7 @@ bun run postinstall        # Install Playwright browsers (Firefox + Chromium)
 ### Test Scripts
 | Command | Description |
 |---------|-------------|
-| `bun run test` | Run all tests |
+| `bun run test` | Alias for `bun run test:all` (run all tests) |
 | `bun run test:unit` | Run unit tests (shared utilities) |
 | `bun run test:integration` | Run integration tests (CSVStore, ECB client) |
 | `bun run test:contract` | Run API contract tests (Visa, ECB, Mastercard) |
