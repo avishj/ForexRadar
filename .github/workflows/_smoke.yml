@@ -39,21 +39,7 @@ jobs:
         run: bunx playwright install-deps chromium firefox
 
       - name: Smoke tests with resource monitor
-        run: |
-          echo "Starting CPU/memory monitor in background..."
-          while true; do
-            echo "--- RESOURCE SNAPSHOT ---"
-            top -b -n1 | head -n5   # top processes
-            free -h                 # memory usage
-            sleep 10
-          done &
-          MONITOR_PID=$!           # store background PID
-
-          echo "Running Playwright smoke tests..."
-          bun run test:smoke
-
-          echo "Stopping CPU/memory monitor..."
-          kill $MONITOR_PID
+        run: bun run test:smoke
 
 
       - name: Upload smoke report
