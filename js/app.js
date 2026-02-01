@@ -274,7 +274,7 @@ function animateValue(element, targetValue, decimals, suffix = '', prefix = '') 
  * @returns {number|null}
  */
 function calculateRatePercentile(currentRate, allRecords) {
-  if (!currentRate || allRecords.length < 2) return null;
+	if (currentRate == null || allRecords.length < 2) return null;
   
   const rates = allRecords.map(r => r.rate).filter(r => r !== null && r !== undefined);
   if (rates.length < 2) return null;
@@ -323,8 +323,8 @@ function updateStats(stats) {
   const currentRate = stats.visa.current ?? stats.mastercard.current;
   animateValue(statCurrent, currentRate, 4);
   
-  const allHighs = [stats.visa.high, stats.mastercard.high].filter(v => v !== null);
-  const allLows = [stats.visa.low, stats.mastercard.low].filter(v => v !== null);
+	const allHighs = [stats.visa.high, stats.mastercard.high].filter(v => typeof v === 'number');
+	const allLows = [stats.visa.low, stats.mastercard.low].filter(v => typeof v === 'number');
   const high = allHighs.length > 0 ? Math.max(.../** @type {number[]} */ (allHighs)) : null;
   const low = allLows.length > 0 ? Math.min(.../** @type {number[]} */ (allLows)) : null;
   
