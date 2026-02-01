@@ -107,20 +107,52 @@ export function renderRecentPairs(pairs) {
   const currentFrom = callbacks.getFromValue();
   const currentTo = callbacks.getToValue();
   
-  elements.list.innerHTML = recentPairs.map((pair) => {
+  elements.list.innerHTML = recentPairs.map((pair, index) => {
     const isActive = pair.from === currentFrom && pair.to === currentTo;
     return `
       <button 
         class="btn btn--pill ${isActive ? 'btn--active' : ''} recent-pair-chip" 
         data-from="${pair.from}" 
         data-to="${pair.to}"
+        data-index="${index}"
         type="button"
         aria-label="Load ${pair.from} to ${pair.to}"
+        style="opacity: 0; transform: translateY(10px) scale(0.9);"
       >
         ${pair.from} <span class="chip-arrow">→</span> ${pair.to}
       </button>
     `;
   }).join('');
+  
+  // Animate chips entrance with staggered spring physics
+  const chips = elements.list.querySelectorAll('.recent-pair-chip');
+  chips.forEach((chip, index) => {
+    const delay = index * 150; // Stagger delay
+    
+    chip.animate([
+      { 
+        opacity: 0, 
+        transform: 'translateY(10px) scale(0.9)',
+        filter: 'blur(2px)'
+      },
+      { 
+        opacity: 1, 
+        transform: 'translateY(-2px) scale(1.02)',
+        filter: 'blur(0)',
+        offset: 0.7
+      },
+      { 
+        opacity: 1, 
+        transform: 'translateY(0) scale(1)',
+        filter: 'blur(0)'
+      }
+    ], {
+      duration: 750,
+      delay: delay,
+      easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)', // Spring bounce
+      fill: 'forwards'
+    });
+  });
   
   elements.list.querySelectorAll('.recent-pair-chip').forEach(chip => {
     chip.addEventListener('click', () => {
