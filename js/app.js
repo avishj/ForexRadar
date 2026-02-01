@@ -212,8 +212,10 @@ function animateValue(element, targetValue, decimals, suffix = '', prefix = '') 
   }
   
   if (targetValue === null || targetValue === undefined) {
+    element.classList.remove('stat-updating');
     element.textContent = '-';
     currentValues.delete(element);
+    activeAnimations.delete(element);
     return;
   }
   
