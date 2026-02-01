@@ -13,6 +13,7 @@
     "lint:fix": "eslint js shared backend --fix",
     "lint:css": "stylelint css/**/*.css",
     "lint:html": "htmlhint index.html",
+    "lint:md": "markdownlint-cli2",
     "postinstall": "cd backend && bunx playwright install firefox chromium",
     "test": "bun run test:all",
     "test:all": "bun run test:unit && bun run test:integration && bun run test:contract:action && bun run test:smoke && bun run test:e2e && bun run test:perf",
@@ -39,6 +40,7 @@
     "eslint": "9.39.2",
     "globals": "17.2.0",
     "htmlhint": "1.8.0",
+    "markdownlint-cli2": "0.18.1",
     "stylelint": "17.1.0",
     "stylelint-config-standard": "40.0.0",
     "typescript": "5.9.3"
