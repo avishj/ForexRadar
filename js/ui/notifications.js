@@ -51,26 +51,83 @@ export function showNotification(message, type = 'info', duration = 4000) {
     </button>
   `;
 
-  const closeBtn = notification.querySelector('.notif-close');
-  closeBtn?.addEventListener('click', () => {
-    notification.classList.remove('show');
-    setTimeout(() => notification.remove(), 300);
-  });
-
   notificationContainer.appendChild(notification);
 
   const existingNotifs = notificationContainer.querySelectorAll('.notification');
   const staggerDelay = (existingNotifs.length - 1) * 100;
   
+  // Entrance animation with Web Animations API
   setTimeout(() => {
     notification.classList.add('show');
+    
+    // Enhanced spring entrance
+    notification.animate([
+      { 
+        transform: 'translateX(120%) scale(0.8)', 
+        opacity: 0,
+        filter: 'blur(4px)'
+      },
+      { 
+        transform: 'translateX(-8%) scale(1.02)', 
+        opacity: 1,
+        filter: 'blur(0)',
+        offset: 0.6
+      },
+      { 
+        transform: 'translateX(2%) scale(0.99)', 
+        opacity: 1,
+        offset: 0.8
+      },
+      { 
+        transform: 'translateX(0) scale(1)', 
+        opacity: 1,
+        filter: 'blur(0)'
+      }
+    ], {
+      duration: 500,
+      easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+      fill: 'forwards'
+    });
   }, staggerDelay);
 
+  /**
+   * Animate out and remove notification
+   */
+  const dismissNotification = () => {
+    const exitAnim = notification.animate([
+      { 
+        transform: 'translateX(0) scale(1)', 
+        opacity: 1 
+      },
+      { 
+        transform: 'translateX(10%) scale(0.95)', 
+        opacity: 0.8,
+        offset: 0.3
+      },
+      { 
+        transform: 'translateX(120%) scale(0.8)', 
+        opacity: 0 
+      }
+    ], {
+      duration: 350,
+      easing: 'cubic-bezier(0.4, 0, 1, 1)',
+      fill: 'forwards'
+    });
+    
+    exitAnim.onfinish = () => notification.remove();
+  };
+
+  // Update close button to use animated dismiss
+  const closeBtn = notification.querySelector('.notif-close');
+  if (closeBtn) {
+    // Remove old listener by cloning
+    const newCloseBtn = closeBtn.cloneNode(true);
+    closeBtn.parentNode?.replaceChild(newCloseBtn, closeBtn);
+    newCloseBtn.addEventListener('click', dismissNotification);
+  }
+
   if (duration > 0) {
-    setTimeout(() => {
-      notification.classList.remove('show');
-      setTimeout(() => notification.remove(), 300);
-    }, duration + staggerDelay);
+    setTimeout(dismissNotification, duration + staggerDelay);
   }
 
   return notification;
