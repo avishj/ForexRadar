@@ -74,6 +74,7 @@ export function loadRecentPairs() {
  */
 export function saveRecentPair(from, to) {
   if (!from || !to || from === to) return;
+  if (callbacks && (!callbacks.isValidCurrency(from) || !callbacks.isValidCurrency(to))) return;
   
   const recentPairs = loadRecentPairs();
   const filtered = recentPairs.filter(p => !(p.from === from && p.to === to));
@@ -91,7 +92,7 @@ export function saveRecentPair(from, to) {
 export function renderRecentPairs(pairs) {
   if (!elements || !callbacks) return;
   
-  const recentPairs = pairs || loadRecentPairs();
+  const recentPairs = pairs === undefined ? loadRecentPairs() : pairs;
   
   if (recentPairs.length === 0) {
     elements.container.classList.add('hidden');
