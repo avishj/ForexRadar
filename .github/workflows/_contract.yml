@@ -28,8 +28,15 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile --ignore-scripts
 
-      - name: Install Playwright browsers (Firefox only for Visa)
-        run: bunx playwright install firefox
+      - name: Cache Playwright browsers
+        uses: actions/cache@v5.0.3
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: playwright-${{ runner.os }}-
+
+      - name: Install Playwright browsers
+        run: bunx playwright install --with-deps chromium firefox
 
       - name: Contract tests (Visa + ECB)
         run: bun run test:contract:action
