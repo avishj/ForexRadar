@@ -685,6 +685,11 @@
   transform: none;
 }
 
+.series-toggle:focus-within {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
 .series-toggle input[type="checkbox"] {
   position: absolute;
   opacity: 0;
