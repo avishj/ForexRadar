@@ -193,6 +193,9 @@ export async function fetchRate(from, to, date) {
 	url.searchParams.set("transAmt", "1");
 
 	const response = await page.goto(url.toString(), { timeout: 10000, waitUntil: "domcontentloaded" });
+	if (!response) {
+		return { status: 0, data: null };
+	}
 	const apiStatus = response.status();
 
 	if (apiStatus !== 200) {
