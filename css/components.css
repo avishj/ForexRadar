@@ -1,0 +1,752 @@
+/* ================================================
+   COMPONENTS — Reusable UI Elements
+   
+   Buttons, cards, dropdowns, tooltips, toggles
+   ================================================ */
+
+/* --------------------------------
+   Button Base & Modifiers
+   -------------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast),
+              background var(--transition-fast), border-color var(--transition-fast),
+              color var(--transition-fast);
+}
+
+/* Subtle shine effect on hover */
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  transition: left 0.5s ease;
+  pointer-events: none;
+}
+
+.btn:hover::before {
+  left: 100%;
+}
+
+.btn:hover {
+  background: var(--bg-secondary);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px -4px var(--accent-glow);
+}
+
+.btn:active {
+  transform: translateY(0) scale(0.98);
+  transition-duration: 50ms;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+/* Disabled state */
+.btn:disabled,
+.btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Active state modifier */
+.btn--active {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: white;
+  box-shadow: var(--shadow-sm), 0 0 0 1px var(--accent-primary);
+}
+
+.btn--active:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* Pill shape modifier */
+.btn--pill {
+  border-radius: var(--radius-full);
+}
+
+/* Icon-only button modifier */
+.btn--icon {
+  padding: 0;
+  border-radius: 50%;
+  border: none;
+}
+
+.btn--icon:hover {
+  box-shadow: var(--shadow-lg), var(--shadow-glow);
+}
+
+/* Success state modifier */
+.btn--success {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  color: white;
+}
+
+.btn--success:hover {
+  background: #059669;
+  border-color: #059669;
+  color: white;
+}
+
+/* --------------------------------
+   Card Base Component
+   -------------------------------- */
+.card {
+  position: relative;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-elevated);
+  transition: all var(--transition-base);
+}
+
+/* Subtle inner highlight for depth */
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.03) 0%,
+    transparent 50%
+  );
+  pointer-events: none;
+}
+
+.card--hover:hover {
+  border-color: var(--accent-primary);
+  box-shadow: var(--shadow-floating);
+  transform: translateY(-4px);
+}
+
+.card--hover:hover::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    var(--accent-primary) 0%,
+    transparent 50%,
+    transparent 50%,
+    var(--accent-tertiary) 100%
+  );
+  z-index: -1;
+  opacity: 0.15;
+}
+
+.card--dashed {
+  border: 2px dashed var(--border-color);
+  background: transparent;
+}
+
+.card--dashed:hover {
+  border-color: var(--accent-primary);
+  border-style: solid;
+  background: var(--bg-secondary);
+}
+
+/* --------------------------------
+   Searchable Dropdown
+   -------------------------------- */
+.searchable-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.searchable-input {
+  width: 100%;
+  cursor: text;
+}
+
+/* Remove transform animations from searchable inputs to keep clear button aligned */
+.searchable-input:hover,
+.searchable-input:focus,
+.searchable-input:active {
+  transform: none;
+}
+
+.searchable-input::placeholder {
+  color: var(--text-tertiary);
+  opacity: 0.7;
+}
+
+/* Dropdown list container */
+.dropdown-list {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  max-height: 320px;
+  overflow-y: auto;
+  background: var(--bg-secondary);
+  border: 2px solid var(--accent-primary);
+  border-radius: 16px;
+  box-shadow: 
+    0 20px 40px -15px rgba(0, 0, 0, 0.3),
+    0 0 0 1px var(--accent-glow);
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px) scale(0.98);
+  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-primary) transparent;
+}
+
+.dropdown-list.open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+}
+
+.dropdown-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdown-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dropdown-list::-webkit-scrollbar-thumb {
+  background: var(--accent-primary);
+  border-radius: 3px;
+}
+
+/* Dropdown group headers */
+.dropdown-group-header {
+  padding: 0.75rem 1rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent-primary);
+  background: var(--bg-tertiary);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.dropdown-group-header:not(:first-child) {
+  margin-top: 0.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+/* Dropdown items */
+.dropdown-item {
+  padding: 0.875rem 1rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item:hover,
+.dropdown-item.highlighted {
+  background: var(--bg-tertiary);
+}
+
+.dropdown-item.highlighted {
+  background: linear-gradient(135deg, var(--accent-glow) 0%, transparent 100%);
+}
+
+.dropdown-item.selected {
+  background: var(--accent-glow);
+  color: var(--accent-primary);
+}
+
+.dropdown-item-code {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--accent-primary);
+  min-width: 3rem;
+}
+
+.dropdown-item-name {
+  flex: 1;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Match highlight */
+.dropdown-item-name mark,
+.dropdown-item-code mark {
+  background: var(--accent-primary);
+  color: var(--bg-primary);
+  padding: 0 0.15rem;
+  border-radius: 2px;
+}
+
+/* No results message */
+.dropdown-no-results {
+  padding: 1.5rem;
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: 0.9rem;
+}
+
+/* Clear button inside input */
+.searchable-dropdown .clear-btn {
+  position: absolute;
+  right: 2.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: var(--text-tertiary);
+  color: var(--bg-primary);
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.searchable-dropdown .clear-btn:hover {
+  background: var(--accent-primary);
+}
+
+.searchable-dropdown.has-value .clear-btn {
+  opacity: 0.7;
+  visibility: visible;
+}
+
+.searchable-dropdown.has-value .clear-btn:hover {
+  opacity: 1;
+}
+
+/* --------------------------------
+   Swap Button (Selector Arrow)
+   -------------------------------- */
+.selector-arrow {
+  width: 48px;
+  height: 48px;
+  background: var(--gradient-hero);
+  margin-bottom: 6px;
+  box-shadow: var(--shadow-md);
+  position: relative;
+}
+
+.selector-arrow:hover {
+  transform: scale(1.1);
+  background: var(--gradient-hero);
+  color: white;
+}
+
+.selector-arrow:active {
+  transform: scale(0.95);
+}
+
+.selector-arrow:focus-visible {
+  outline-offset: 3px;
+}
+
+/* Swap animation */
+.selector-arrow.swapping {
+  animation: swap-spin 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Arrow entrance animation via unified system */
+.selector-arrow {
+  --enter-anim: arrow-pop;
+  --enter-duration: 800ms;
+  --enter-easing: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --enter-delay: 200ms;
+}
+
+.selector-container[data-animate] .selector-arrow {
+  opacity: 0;
+  transform: scale(0) rotate(-180deg);
+}
+
+.selector-container.animate-in .selector-arrow {
+  animation: var(--enter-anim) var(--enter-duration) var(--enter-easing) var(--enter-delay) forwards;
+  --arrow-float: running;
+}
+
+.selector-arrow::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-primary), transparent, var(--accent-primary));
+  opacity: 0;
+  z-index: -1;
+  animation: arrow-ring-spin 3s linear infinite;
+  animation-play-state: paused;
+}
+
+.selector-card:hover .selector-arrow::before {
+  opacity: 0.5;
+  animation-play-state: running;
+}
+
+/* Arrow icon breathing */
+.selector-arrow svg {
+  width: 20px;
+  height: 20px;
+  color: white;
+  animation: arrow-breathe 2s ease-in-out infinite;
+}
+
+/* --------------------------------
+   Recent Pairs Chips
+   -------------------------------- */
+.recent-pairs {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--border-subtle);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.recent-pairs::-webkit-scrollbar {
+  display: none;
+}
+
+.recent-pairs-label {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.recent-pairs-list {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+}
+
+/* .recent-pair-chip extends .btn.btn--pill */
+.recent-pair-chip {
+  gap: 0.25rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.recent-pair-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.recent-pair-chip .chip-arrow {
+  opacity: 0.6;
+  font-size: 0.65rem;
+}
+
+.recent-pair-chip:hover .chip-arrow,
+.recent-pair-chip.btn--active .chip-arrow {
+  opacity: 1;
+}
+
+/* Animation for new chips via unified system */
+.recent-pair-chip.new {
+  --enter-anim: chip-enter;
+  --enter-duration: 300ms;
+  --enter-easing: cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: var(--enter-anim) var(--enter-duration) var(--enter-easing) forwards;
+}
+
+/* --------------------------------
+   Info Tooltip Component
+   -------------------------------- */
+.info-tooltip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  min-width: 14px;
+  color: var(--text-tertiary);
+  cursor: help;
+  position: relative;
+  vertical-align: middle;
+  opacity: 0.7;
+  transition: opacity 0.2s ease, color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.info-tooltip:hover {
+  opacity: 1;
+  color: var(--accent-primary);
+}
+
+.info-tooltip svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Tooltip popup - positioned via JS */
+.tooltip-popup {
+  position: fixed;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  line-height: 1.5;
+  padding: 0.625rem 0.875rem;
+  border-radius: 10px;
+  white-space: normal;
+  width: max-content;
+  max-width: 240px;
+  box-shadow: 
+    0 10px 40px -10px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+  z-index: 99999;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.tooltip-popup.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.tooltip-popup::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--border-color);
+}
+
+/* --------------------------------
+   Action Buttons (Stats Bar)
+   -------------------------------- */
+.stats-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+/* .action-btn extends .btn */
+.action-btn {
+  padding: 0.625rem 1rem;
+  font-size: 0.8rem;
+}
+
+.action-btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* SVG inherits color in success state */
+.action-btn.btn--success svg {
+  stroke: white;
+}
+
+@media (max-width: 480px) {
+  .stats-actions {
+    flex-wrap: wrap;
+  }
+  
+  .action-btn {
+    flex: 1;
+    justify-content: center;
+    min-width: 120px;
+  }
+}
+
+/* --------------------------------
+   Time Range Buttons
+   -------------------------------- */
+.time-range-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem 2rem;
+}
+
+.time-range-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  align-items: center;
+}
+
+/* .time-range-btn extends .btn */
+.time-range-btn {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  font-size: 0.875rem;
+}
+
+.time-range-btn:hover {
+  color: var(--text-primary);
+}
+
+.time-range-btn.btn--active {
+  background: var(--accent-primary);
+  color: white;
+}
+
+@media (max-width: 480px) {
+  .time-range-buttons {
+    gap: 0.375rem;
+  }
+  
+  .time-range-btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* --------------------------------
+   Series Toggle Controls
+   -------------------------------- */
+.series-toggles-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem 1rem;
+}
+
+.series-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  align-items: center;
+}
+
+/* .series-toggle extends .btn (label element) */
+.series-toggle {
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  background: var(--bg-secondary);
+}
+
+.series-toggle:hover {
+  transform: none;
+}
+
+.series-toggle:focus-within {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+.series-toggle input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.toggle-indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  transition: all var(--transition-fast);
+}
+
+.toggle-indicator.visa-rate {
+  background: #10b981;
+}
+
+.toggle-indicator.mc-rate {
+  background: #ef4444;
+}
+
+.toggle-indicator.ecb-rate {
+  background: #3b82f6;
+}
+
+.toggle-indicator.visa-markup {
+  background: #f59e0b;
+  border: 2px dashed #f59e0b;
+  background: transparent;
+}
+
+.series-toggle input[type="checkbox"]:checked + .toggle-indicator.visa-markup {
+  background: #f59e0b;
+}
+
+.series-toggle input[type="checkbox"]:not(:checked) + .toggle-indicator {
+  opacity: 0.3;
+}
+
+.toggle-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.series-toggle input[type="checkbox"]:not(:checked) ~ .toggle-label {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+@media (max-width: 480px) {
+  .series-toggles {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .series-toggle {
+    justify-content: center;
+  }
+}

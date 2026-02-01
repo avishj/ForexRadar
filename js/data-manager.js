@@ -151,7 +151,6 @@ export async function fetchRates(fromCurr, toCurr, range, options = {}) {
   const recordSources = new Map();
   
   let fromCache = 0;
-  let fromServer = 0;
   let fromLive = 0;
   let hasServerData = false;
 
@@ -196,17 +195,8 @@ export async function fetchRates(fromCurr, toCurr, range, options = {}) {
         // Mark new records from server (overwrite cache source)
         for (const record of serverRecords) {
           const key = makeRecordKey(record.date, record.provider);
-          
-          // If this was already in cache, don't count it again
-          if (!mergedData.has(key)) {
-            fromServer++;
-          } else if (recordSources.get(key) === 'cache') {
-            // Already had it from cache, but server confirmed it
-            // Don't change source - it was already counted as cache
-          }
-          
           mergedData.set(key, record);
-          // Only mark as server if it wasn't in cache
+          // Only mark as server if it wasn't already in cache
           if (!recordSources.has(key)) {
             recordSources.set(key, 'server');
           }

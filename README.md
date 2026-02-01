@@ -76,7 +76,7 @@ bun run ecb-backfill    # ECB rates
 
 ### Project Structure
 
-```
+```text
 ForexRadar/
 ├── backend/          # Data fetching scripts
 ├── js/               # Frontend modules

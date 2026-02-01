@@ -1,0 +1,7 @@
+{
+  "config": {
+    "extends": "./.markdownlint.jsonc"
+  },
+  "globs": ["**/*.md"],
+  "ignores": ["node_modules/", ".git/", "PLAN_*.md", "scripts/ralph/"]
+}
