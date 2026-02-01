@@ -75,11 +75,11 @@ jobs:
           configPath: .github/lighthouse/lighthouserc.json
 
       - name: Report results
-        env:
-          MANIFEST: ${{ steps.lighthouse.outputs.manifest }}
         run: |
-          echo "## Lighthouse Production Audit" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "## Lighthouse Production Audit" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          RESULTS_PATH='${{ steps.lighthouse.outputs.resultsPath }}'
+          LHR=$(find "$RESULTS_PATH" -name "*.json" -type f | head -1)
           LHR=$(echo "$MANIFEST" | jq -r '.[0].jsonPath')
 
           if [ -f "$LHR" ]; then
