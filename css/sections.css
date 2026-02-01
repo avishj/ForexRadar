@@ -786,7 +786,12 @@
   --enter-anim: group-reveal;
   --enter-duration: 700ms;
   --enter-easing: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Orbit animation support */
+  position: relative;
+  will-change: transform;
 }
+
+
 
 .selector-container[data-animate] .selector-group {
   opacity: 0;

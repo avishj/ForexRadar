@@ -668,8 +668,55 @@ function init() {
         swapButton.classList.remove('swapping');
       }, { once: true });
       
-      fromSelect.value = toCurr;
-      toSelect.value = fromCurr;
+      const selectorGrid = document.querySelector('.selector-grid');
+      const selectorGroups = selectorGrid?.querySelectorAll('.selector-group');
+      const fromGroup = /** @type {HTMLElement|undefined} */ (selectorGroups?.[0]);
+      const toGroup = /** @type {HTMLElement|undefined} */ (selectorGroups?.[1]);
+      
+      if (fromGroup && toGroup && window.matchMedia('(min-width: 769px)').matches) {
+        const fromRect = fromGroup.getBoundingClientRect();
+        const toRect = toGroup.getBoundingClientRect();
+        const distance = toRect.left - fromRect.left;
+        
+        const DURATION = 500;
+        const ARC_HEIGHT = 50;
+        
+        const leftKeyframes = [
+          { transform: 'translate3d(0, 0, 0)', offset: 0 },
+          { transform: `translate3d(${distance * 0.5}px, -${ARC_HEIGHT}px, 0)`, offset: 0.5 },
+          { transform: `translate3d(${distance}px, 0, 0)`, offset: 1 }
+        ];
+        
+        const rightKeyframes = [
+          { transform: 'translate3d(0, 0, 0)', offset: 0 },
+          { transform: `translate3d(${-distance * 0.5}px, ${ARC_HEIGHT}px, 0)`, offset: 0.5 },
+          { transform: `translate3d(${-distance}px, 0, 0)`, offset: 1 }
+        ];
+        
+        const options = {
+          duration: DURATION,
+          easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+          fill: /** @type {FillMode} */ ('forwards')
+        };
+        
+        fromGroup.style.zIndex = '2';
+        toGroup.style.zIndex = '1';
+        
+        const leftAnim = fromGroup.animate(leftKeyframes, options);
+        const rightAnim = toGroup.animate(rightKeyframes, options);
+        
+        leftAnim.onfinish = () => {
+          leftAnim.cancel();
+          rightAnim.cancel();
+          fromGroup.style.zIndex = '';
+          toGroup.style.zIndex = '';
+          fromSelect.value = toCurr;
+          toSelect.value = fromCurr;
+        };
+      } else {
+        fromSelect.value = toCurr;
+        toSelect.value = fromCurr;
+      }
       
       localStorage.setItem('forexRadar_lastPair', JSON.stringify({ from: toCurr, to: fromCurr }));
       saveRecentPair(toCurr, fromCurr);
