@@ -50,7 +50,7 @@ jobs:
           MONITOR_PID=$!           # store background PID
 
           echo "Running Playwright smoke tests..."
-          bunx playwright test tests/smoke --workers=2 --reporter=list
+          bun run test:smoke
 
           echo "Stopping CPU/memory monitor..."
           kill $MONITOR_PID
