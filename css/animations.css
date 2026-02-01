@@ -1,12 +1,3 @@
-/* ================================================
-   ANIMATIONS — Keyframes & Entrance System
-   
-   All motion primitives consolidated here for:
-   - Single source of truth
-   - Future lazy-loading (Block 5)
-   - prefers-reduced-motion compliance
-   ================================================ */
-
 /* --------------------------------
    Core Motion Primitives
    -------------------------------- */
