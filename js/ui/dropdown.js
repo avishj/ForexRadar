@@ -301,6 +301,7 @@ export class SearchableDropdown {
     this.input.value = '';
     this.container.classList.remove('has-value');
     this.renderList('');
+    this.dispatchChange();
     this.input.focus();
   }
   
@@ -309,7 +310,8 @@ export class SearchableDropdown {
     this.isOpen = true;
     this.list.classList.add('open');
     this.input.setAttribute('aria-expanded', 'true');
-    this.renderList(this.input.value);
+    const query = this.value ? '' : this.input.value;
+    this.renderList(query);
     
     if (this.value) {
       setTimeout(() => {
