@@ -924,11 +924,6 @@
   animation: var(--enter-anim) var(--enter-duration) var(--enter-easing) var(--enter-delay, 0ms) forwards;
 }
 
-/* Allow tooltips to escape overflow context */
-.stat-label {
-  position: static;
-}
-
 /* Staggered entrance for each stat card */
 .stat-card:nth-child(1) { --enter-delay: 100ms; }
 .stat-card:nth-child(2) { --enter-delay: 150ms; }
