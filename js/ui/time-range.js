@@ -28,6 +28,9 @@ let slidingIndicator = null;
 /** @type {HTMLElement|null} */
 let buttonsContainer = null;
 
+/** @type {ReturnType<typeof setTimeout>|null} */
+let rangeChangeTimeout = null;
+
 /**
  * Time range mapping for number keys
  */
@@ -89,7 +92,10 @@ export function initTimeRange(cbs) {
       if (rangeKey && callbacks && rangeKey !== callbacks.getCurrentRange()) {
         // Animate first, then trigger data load after delay
         updateActiveButton(rangeKey);
-        setTimeout(() => {
+        if (rangeChangeTimeout) {
+          clearTimeout(rangeChangeTimeout);
+        }
+        rangeChangeTimeout = setTimeout(() => {
           callbacks?.onRangeChange(rangeKey);
         }, 250);
       }
