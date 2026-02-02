@@ -115,8 +115,13 @@ function animateWheel(wheel, fromDigit, toDigit, delay) {
   const fromIndex = DIGIT_CHARS.indexOf(fromDigit);
   const toIndex = DIGIT_CHARS.indexOf(toDigit);
   
-  if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
-    // Just snap to position if not a valid transition
+  // Return early without modifying wheel.style if either digit is invalid
+  if (fromIndex === -1 || toIndex === -1) {
+    return;
+  }
+  
+  // Snap to position if digits are identical (no animation needed)
+  if (fromIndex === toIndex) {
     wheel.style.transform = `translateY(-${toIndex * CONFIG.digitHeight}em)`;
     return;
   }
