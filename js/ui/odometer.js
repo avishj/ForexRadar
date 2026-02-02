@@ -126,8 +126,13 @@ function animateWheel(wheel, fromDigit, toDigit, delay) {
   // Force reflow
   wheel.offsetHeight;
   
+  // Clear any pending timer to prevent stale callbacks from overwriting newer transforms
+  if (wheel._odomTimer) {
+    clearTimeout(wheel._odomTimer);
+  }
+  
   // Apply animation with delay
-  setTimeout(() => {
+  wheel._odomTimer = setTimeout(() => {
     wheel.style.transition = `transform ${CONFIG.baseDuration}ms ${CONFIG.easing}`;
     wheel.style.transform = `translateY(${targetY}em)`;
   }, delay);
