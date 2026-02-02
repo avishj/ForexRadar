@@ -120,9 +120,7 @@ test.describe('Historical Exploration Flow', () => {
     await page.locator('.time-range-btn[data-range="3m"]').click();
     await expect(page.locator('.time-range-btn.btn--active')).toHaveAttribute('data-range', '3m');
     
-    // Step 7: URL should reflect new range - wait for URL update
-    await page.waitForTimeout(500);
-    const url = page.url();
-    expect(url).toContain('range=3m');
+    // Step 7: URL should reflect new range
+    await expect(page).toHaveURL(/range=3m/);
   });
 });
