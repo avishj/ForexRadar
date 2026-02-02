@@ -165,25 +165,6 @@
   100% { transform: rotate(360deg) scale(1); }
 }
 
-/* Currency swap orbit - smooth circular path using CSS variables for distance */
-@keyframes orbit-left {
-  0% {
-    transform: translate3d(0, 0, 0);
-  }
-  100% {
-    transform: translate3d(var(--orbit-distance), 0, 0);
-  }
-}
-
-@keyframes orbit-right {
-  0% {
-    transform: translate3d(0, 0, 0);
-  }
-  100% {
-    transform: translate3d(calc(-1 * var(--orbit-distance)), 0, 0);
-  }
-}
-
 @keyframes arrow-pop {
   0% {
     opacity: 0;
