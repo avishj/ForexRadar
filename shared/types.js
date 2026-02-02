@@ -485,3 +485,25 @@ export function getCurrencyList() {
  * @property {number} status - HTTP status code
  * @property {MastercardApiResponse | null} data - Parsed JSON response or null
  */
+
+// ============================================================================
+// ODOMETER TYPES
+// ============================================================================
+
+/**
+ * Represents a single digit slot in the odometer
+ * @typedef {Object} DigitSlot
+ * @property {HTMLElement} element - The DOM element for this digit
+ * @property {string} currentDigit - The currently displayed digit
+ * @property {string} targetDigit - The target digit to animate to
+ */
+
+/**
+ * Odometer instance managing animated digit display
+ * @typedef {Object} OdometerInstance
+ * @property {HTMLElement} container - The container element
+ * @property {string} currentValue - The current displayed value
+ * @property {DigitSlot[]} slots - Array of digit slots
+ * @property {string} prefix - Prefix string (e.g., currency symbol)
+ * @property {string} suffix - Suffix string (e.g., unit label)
+ */

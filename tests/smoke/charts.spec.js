@@ -55,6 +55,8 @@ test.describe('Time Range Selector', () => {
     await page.click('.time-range-btn[data-range="3m"]');
     await expect(page.locator('.time-range-btn[data-range="3m"]')).toHaveClass(/active/);
     
+    await page.waitForURL(/range=3m/);
+    
     await page.reload();
     await page.locator('#time-range-selector').waitFor({ state: 'visible', timeout: 30000 });
     

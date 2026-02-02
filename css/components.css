@@ -622,6 +622,7 @@
 }
 
 .time-range-buttons {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
@@ -641,9 +642,31 @@
   color: var(--text-primary);
 }
 
-.time-range-btn.btn--active {
+/* Sliding indicator for time range buttons */
+.time-range-indicator {
+  position: absolute;
+  top: 0;
+  height: 100%;
   background: var(--accent-primary);
-  color: white;
+  border-radius: 8px;
+  opacity: 0;
+  z-index: 0;
+  pointer-events: none;
+  box-shadow: 
+    0 0 20px -5px var(--accent-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+/* Make buttons relative to stack above indicator */
+.time-range-btn {
+  position: relative;
+  z-index: 1;
+}
+
+/* Active button text should be white (indicator provides background) */
+.time-range-btn.btn--active {
+  background: transparent;
+  border-color: transparent;
 }
 
 @media (max-width: 480px) {
@@ -749,4 +772,70 @@
   .series-toggle {
     justify-content: center;
   }
+}
+
+/* --------------------------------
+   Odometer - Digit Counter Animation
+   -------------------------------- */
+.odometer {
+  display: inline-flex;
+  align-items: baseline;
+  overflow: hidden;
+  line-height: 1.2;
+}
+
+.odometer-slot {
+  display: inline-block;
+  height: 1.2em;
+  overflow: hidden;
+  position: relative;
+}
+
+.odometer-wheel {
+  display: flex;
+  flex-direction: column;
+  will-change: transform;
+}
+
+.odometer-digit {
+  display: block;
+  height: 1.2em;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.odometer-static {
+  display: inline-block;
+  line-height: 1.2;
+}
+
+/* Subtle blur during fast motion */
+.odometer-wheel[style*="transition"] {
+  filter: blur(0);
+}
+
+@keyframes odometer-blur {
+  0%, 100% { filter: blur(0); }
+  50% { filter: blur(0.5px); }
+}
+
+/* Highlight effect on change */
+.odometer-slot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(16, 185, 129, 0.15) 0%,
+    transparent 30%,
+    transparent 70%,
+    rgba(16, 185, 129, 0.15) 100%
+  );
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.odometer.updating .odometer-slot::after {
+  opacity: 1;
 }

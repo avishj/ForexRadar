@@ -15,9 +15,10 @@ import { SearchableDropdown } from './ui/dropdown.js';
 import { initNotifications, showNotification } from './ui/notifications.js';
 import { showShortcutsModal, hideShortcutsModal, isShortcutsModalOpen } from './ui/shortcuts-modal.js';
 import { initRecentPairs, saveRecentPair, renderRecentPairs } from './ui/recent-pairs.js';
-import { initTimeRange, updateActiveButton, deactivateAllButtons, parseTimeRange, isValidTimeRange, triggerRangeByKey } from './ui/time-range.js';
+import { initTimeRange, updateActiveButton, deactivateAllButtons, parseTimeRange, isValidTimeRange, triggerRangeByKey, refreshIndicatorPosition } from './ui/time-range.js';
 import { initSeriestoggles, updateToggleVisibility, getVisibilityFromData } from './ui/series-toggles.js';
 import { initActions, triggerCopyRate, triggerShareUrl, triggerDownloadChart } from './ui/actions.js';
+import { setOdometerValue } from './ui/odometer.js';
 
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
 /** @typedef {import('../shared/types.js').MultiProviderStats} MultiProviderStats */
@@ -155,6 +156,8 @@ function showResults() {
   
   if (timeRangeSection) {
     timeRangeSection.classList.remove('hidden');
+    // Refresh indicator position now that section is visible
+    requestAnimationFrame(() => refreshIndicatorPosition());
   }
   
   if (seriesTogglesSection) {
@@ -183,89 +186,7 @@ function showEmptyState() {
   }
 }
 
-// ============================================================================
-// Animated Stat Transitions
-// ============================================================================
 
-/** @type {Map<HTMLElement, number>} */
-const activeAnimations = new Map();
-/** @type {Map<HTMLElement, number>} */
-const currentValues = new Map();
-
-/**
- * Animates a numeric value from current to target with easing
- * @param {HTMLElement|null} element
- * @param {number|null} targetValue
- * @param {number} decimals
- * @param {string} [suffix='']
- * @param {string} [prefix='']
- */
-function animateValue(element, targetValue, decimals, suffix = '', prefix = '') {
-  if (!element) return;
-  
-  const existingAnimation = activeAnimations.get(element);
-  if (existingAnimation) {
-    cancelAnimationFrame(existingAnimation);
-    activeAnimations.delete(element);
-  }
-  
-  if (targetValue === null || targetValue === undefined) {
-    element.classList.remove('stat-updating');
-    element.textContent = '-';
-    currentValues.delete(element);
-    activeAnimations.delete(element);
-    return;
-  }
-  
-  const startValue = currentValues.get(element) ?? targetValue;
-  
-  if (Math.abs(startValue - targetValue) < Math.pow(10, -(decimals + 1))) {
-    const displayPrefix = prefix || (targetValue >= 0 && suffix === '' ? '' : '');
-    element.textContent = `${displayPrefix}${targetValue.toFixed(decimals)}${suffix}`;
-    currentValues.set(element, targetValue);
-    return;
-  }
-  
-  element.classList.add('stat-updating');
-  
-  const duration = 400;
-  const startTime = performance.now();
-  
-  /**
-   * @param {number} t
-   * @returns {number}
-   */
-  function easeOutCubic(t) {
-    return 1 - Math.pow(1 - t, 3);
-  }
-  
-  /**
-   * @param {number} currentTime
-   */
-  function animate(currentTime) {
-    const elapsed = currentTime - startTime;
-    const progress = Math.min(elapsed / duration, 1);
-    const easedProgress = easeOutCubic(progress);
-    
-    const currentValue = startValue + (targetValue - startValue) * easedProgress;
-    const displayPrefix = prefix || '';
-    element.textContent = `${displayPrefix}${currentValue.toFixed(decimals)}${suffix}`;
-    
-    if (progress < 1) {
-      const frameId = requestAnimationFrame(animate);
-      activeAnimations.set(element, frameId);
-    } else {
-      activeAnimations.delete(element);
-      currentValues.set(element, targetValue);
-      setTimeout(() => {
-        element.classList.remove('stat-updating');
-      }, 150);
-    }
-  }
-  
-  const frameId = requestAnimationFrame(animate);
-  activeAnimations.set(element, frameId);
-}
 
 /**
  * Calculates the percentile rank of the current rate
@@ -321,24 +242,24 @@ let _cachedRecordsForPercentile = [];
  */
 function updateStats(stats) {
   const currentRate = stats.visa.current ?? stats.mastercard.current;
-  animateValue(statCurrent, currentRate, 4);
+  setOdometerValue(statCurrent, currentRate, 4);
   
 	const allHighs = [stats.visa.high, stats.mastercard.high].filter(v => typeof v === 'number');
 	const allLows = [stats.visa.low, stats.mastercard.low].filter(v => typeof v === 'number');
   const high = allHighs.length > 0 ? Math.max(.../** @type {number[]} */ (allHighs)) : null;
   const low = allLows.length > 0 ? Math.min(.../** @type {number[]} */ (allLows)) : null;
   
-  animateValue(statHigh, high, 4);
-  animateValue(statLow, low, 4);
-  animateValue(statMarkup, stats.visa.avgMarkup, 3, '%');
+  setOdometerValue(statHigh, high, 4);
+  setOdometerValue(statLow, low, 4);
+  setOdometerValue(statMarkup, stats.visa.avgMarkup, 3, '%');
   
   if (statSpread) {
     if (stats.currentSpread !== null) {
       const spreadSign = stats.currentSpread >= 0 ? '+' : '';
-      animateValue(statSpread, stats.currentSpread, 4, '', spreadSign);
+      setOdometerValue(statSpread, stats.currentSpread, 4, '', spreadSign);
       statSpread.className = 'stat-value ' + (stats.currentSpread >= 0 ? 'low' : 'high');
     } else {
-      statSpread.textContent = '-';
+      setOdometerValue(statSpread, null, 4);
       statSpread.className = 'stat-value';
     }
   }
@@ -749,13 +670,66 @@ function init() {
         swapButton.classList.remove('swapping');
       }, { once: true });
       
-      fromSelect.value = toCurr;
-      toSelect.value = fromCurr;
+      const selectorGrid = document.querySelector('.selector-grid');
+      const selectorGroups = selectorGrid?.querySelectorAll('.selector-group');
+      const fromGroup = /** @type {HTMLElement|undefined} */ (selectorGroups?.[0]);
+      const toGroup = /** @type {HTMLElement|undefined} */ (selectorGroups?.[1]);
       
-      localStorage.setItem('forexRadar_lastPair', JSON.stringify({ from: toCurr, to: fromCurr }));
-      saveRecentPair(toCurr, fromCurr);
-      updateURL();
-      loadCurrencyPair();
+      if (fromGroup && toGroup && window.matchMedia('(min-width: 769px)').matches) {
+        const fromRect = fromGroup.getBoundingClientRect();
+        const toRect = toGroup.getBoundingClientRect();
+        const distance = toRect.left - fromRect.left;
+        
+        const DURATION = 500;
+        const ARC_HEIGHT = 50;
+        
+        const leftKeyframes = [
+          { transform: 'translate3d(0, 0, 0)', offset: 0 },
+          { transform: `translate3d(${distance * 0.5}px, -${ARC_HEIGHT}px, 0)`, offset: 0.5 },
+          { transform: `translate3d(${distance}px, 0, 0)`, offset: 1 }
+        ];
+        
+        const rightKeyframes = [
+          { transform: 'translate3d(0, 0, 0)', offset: 0 },
+          { transform: `translate3d(${-distance * 0.5}px, ${ARC_HEIGHT}px, 0)`, offset: 0.5 },
+          { transform: `translate3d(${-distance}px, 0, 0)`, offset: 1 }
+        ];
+        
+        const options = {
+          duration: DURATION,
+          easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+          fill: /** @type {FillMode} */ ('forwards')
+        };
+        
+        fromGroup.style.zIndex = '2';
+        toGroup.style.zIndex = '1';
+        
+        const leftAnim = fromGroup.animate(leftKeyframes, options);
+        const rightAnim = toGroup.animate(rightKeyframes, options);
+        
+        const cleanup = () => {
+          leftAnim.cancel();
+          rightAnim.cancel();
+          fromGroup.style.zIndex = '';
+          toGroup.style.zIndex = '';
+          fromSelect.value = toCurr;
+          toSelect.value = fromCurr;
+          localStorage.setItem('forexRadar_lastPair', JSON.stringify({ from: toCurr, to: fromCurr }));
+          saveRecentPair(toCurr, fromCurr);
+          updateURL();
+          loadCurrencyPair();
+        };
+        
+        leftAnim.onfinish = cleanup;
+        leftAnim.oncancel = cleanup;
+      } else {
+        fromSelect.value = toCurr;
+        toSelect.value = fromCurr;
+        localStorage.setItem('forexRadar_lastPair', JSON.stringify({ from: toCurr, to: fromCurr }));
+        saveRecentPair(toCurr, fromCurr);
+        updateURL();
+        loadCurrencyPair();
+      }
     });
   }
 
