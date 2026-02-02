@@ -59,7 +59,7 @@ export async function mockCSVData(page) {
 }
 
 /**
- * CSS to disable all animations and transitions for deterministic screenshots.
+ * CSS to disable all CSS animations and transitions for deterministic screenshots.
  */
 const DISABLE_ANIMATIONS_CSS = `
 *, *::before, *::after {
@@ -69,6 +69,47 @@ const DISABLE_ANIMATIONS_CSS = `
   transition-delay: 0s !important;
   scroll-behavior: auto !important;
 }
+`;
+
+/**
+ * Script to disable Web Animations API and requestAnimationFrame-based animations.
+ * Must run before page scripts load.
+ */
+const DISABLE_WEB_ANIMATIONS_SCRIPT = `
+// Override Element.animate to complete immediately
+const originalAnimate = Element.prototype.animate;
+Element.prototype.animate = function(keyframes, options) {
+  const anim = originalAnimate.call(this, keyframes, { ...options, duration: 0 });
+  anim.finish();
+  return anim;
+};
+
+// Make requestAnimationFrame execute synchronously (once)
+const originalRAF = window.requestAnimationFrame;
+let rafDisabled = false;
+window.requestAnimationFrame = function(callback) {
+  if (rafDisabled) return 0;
+  rafDisabled = true;
+  callback(performance.now());
+  rafDisabled = false;
+  return 0;
+};
+
+// Disable IntersectionObserver animations by triggering immediately
+const originalIO = window.IntersectionObserver;
+window.IntersectionObserver = class extends originalIO {
+  constructor(callback, options) {
+    super((entries, observer) => {
+      // Mark all entries as intersecting immediately
+      const modifiedEntries = entries.map(entry => ({
+        ...entry,
+        isIntersecting: true,
+        intersectionRatio: 1,
+      }));
+      callback(modifiedEntries, observer);
+    }, options);
+  }
+};
 `;
 
 /**
@@ -127,26 +168,40 @@ export async function selectPairAndWait(page, fromCode, toCode) {
  * Extended test fixture for visual regression tests.
  * - Clears storage
  * - Freezes time
- * - Disables animations
+ * - Disables CSS animations, Web Animations API, and rAF-based animations
  * - Mocks CSV data
  */
 export const test = base.extend({
   page: async ({ context, page }, use) => {
     await context.clearCookies();
     
+    // Clear storage before app loads
     await context.addInitScript(() => {
       localStorage.clear();
       sessionStorage.clear();
     });
     
-    await page.clock.setFixedTime(VISUAL_TEST_DATE);
-    await mockCSVData(page);
+    // Disable Web Animations API before page scripts run
+    await context.addInitScript(DISABLE_WEB_ANIMATIONS_SCRIPT);
     
-    await page.addInitScript((css) => {
+    // Inject CSS to disable CSS animations/transitions
+    await context.addInitScript((css) => {
       const style = document.createElement('style');
       style.textContent = css;
-      document.head.appendChild(style);
+      if (document.head) {
+        document.head.appendChild(style);
+      } else {
+        document.addEventListener('DOMContentLoaded', () => {
+          document.head.appendChild(style);
+        });
+      }
     }, DISABLE_ANIMATIONS_CSS);
+    
+    // Freeze time
+    await page.clock.setFixedTime(VISUAL_TEST_DATE);
+    
+    // Mock CSV data from fixtures
+    await mockCSVData(page);
     
     await use(page);
   },
