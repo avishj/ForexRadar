@@ -170,8 +170,8 @@ export function setOdometerValue(element, value, decimals, suffix = '', prefix =
       const prev = previousChars[i] || '';
       const isDigit = DIGIT_CHARS.includes(char);
       const wasDigit = DIGIT_CHARS.includes(prev);
-      // Rebuild if digit/non-digit status changed
-      return isDigit !== wasDigit;
+      // Rebuild if digit/non-digit status changed or non-digit character differs
+      return isDigit !== wasDigit || (!isDigit && char !== prev);
     });
   
   if (needsRebuild) {
