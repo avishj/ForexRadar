@@ -117,13 +117,9 @@ export function showNotification(message, type = 'info', duration = 4000) {
     exitAnim.onfinish = () => notification.remove();
   };
 
-  // Update close button to use animated dismiss
   const closeBtn = notification.querySelector('.notif-close');
   if (closeBtn) {
-    // Remove old listener by cloning
-    const newCloseBtn = closeBtn.cloneNode(true);
-    closeBtn.parentNode?.replaceChild(newCloseBtn, closeBtn);
-    newCloseBtn.addEventListener('click', dismissNotification);
+    closeBtn.addEventListener('click', dismissNotification);
   }
 
   if (duration > 0) {
