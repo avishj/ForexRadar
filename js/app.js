@@ -714,6 +714,10 @@ function init() {
           toGroup.style.zIndex = '';
           fromSelect.value = toCurr;
           toSelect.value = fromCurr;
+          localStorage.setItem('forexRadar_lastPair', JSON.stringify({ from: toCurr, to: fromCurr }));
+          saveRecentPair(toCurr, fromCurr);
+          updateURL();
+          loadCurrencyPair();
         };
         
         leftAnim.onfinish = cleanup;
@@ -721,12 +725,11 @@ function init() {
       } else {
         fromSelect.value = toCurr;
         toSelect.value = fromCurr;
+        localStorage.setItem('forexRadar_lastPair', JSON.stringify({ from: toCurr, to: fromCurr }));
+        saveRecentPair(toCurr, fromCurr);
+        updateURL();
+        loadCurrencyPair();
       }
-      
-      localStorage.setItem('forexRadar_lastPair', JSON.stringify({ from: toCurr, to: fromCurr }));
-      saveRecentPair(toCurr, fromCurr);
-      updateURL();
-      loadCurrencyPair();
     });
   }
 
