@@ -23,7 +23,9 @@
     "test:contract:visa": "bun test tests/contract/visa-response.test.js",
     "test:contract:ecb": "bun test tests/contract/ecb-response.test.js",
     "test:contract:mc": "bun test tests/contract/mastercard-response.test.js",
-    "test:perf": "bun test tests/perf/*.test.js && bunx playwright test --config=tests/playwright.perf.config.js"
+    "test:perf": "bun test tests/perf/*.test.js && bunx playwright test --config=tests/playwright.perf.config.js",
+    "test:visual": "bunx playwright test --config=tests/playwright.visual.config.js",
+    "test:visual:update": "bunx playwright test --config=tests/playwright.visual.config.js --update-snapshots"
   },
   "dependencies": {
     "playwright": "1.58.0"
