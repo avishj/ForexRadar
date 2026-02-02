@@ -7,7 +7,7 @@
  * @module ui/odometer
  */
 
-/** @typedef {{ element: HTMLElement, currentDigit: string, targetDigit: string }} DigitSlot */
+/** @typedef {import('../../shared/types.js').OdometerInstance} OdometerInstance */
 
 /**
  * Manages odometer instances for stat elements
@@ -29,15 +29,6 @@ const CONFIG = {
   digitHeight: 1.2,         // Height of each digit in em units
   easing: 'cubic-bezier(0.16, 1, 0.3, 1)'  // Smooth exponential deceleration
 };
-
-/**
- * @typedef {Object} OdometerInstance
- * @property {HTMLElement} container
- * @property {string} currentValue
- * @property {DigitSlot[]} slots
- * @property {string} prefix
- * @property {string} suffix
- */
 
 /**
  * Initialize or get an odometer instance for an element
