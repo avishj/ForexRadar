@@ -95,19 +95,28 @@ window.requestAnimationFrame = function(callback) {
   return 0;
 };
 
-// Disable IntersectionObserver animations by triggering immediately
+// Force all [data-animate] elements to be visible immediately
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('[data-animate]').forEach(el => {
+    el.classList.add('animate-in');
+  });
+});
+// Also run immediately in case DOM is already loaded
+if (document.readyState !== 'loading') {
+  document.querySelectorAll('[data-animate]').forEach(el => {
+    el.classList.add('animate-in');
+  });
+}
+// Override IntersectionObserver to immediately trigger with isIntersecting=true
 const originalIO = window.IntersectionObserver;
 window.IntersectionObserver = class extends originalIO {
   constructor(callback, options) {
-    super((entries, observer) => {
-      // Mark all entries as intersecting immediately
-      const modifiedEntries = entries.map(entry => ({
-        ...entry,
-        isIntersecting: true,
-        intersectionRatio: 1,
-      }));
-      callback(modifiedEntries, observer);
-    }, options);
+    super(callback, options);
+  }
+  observe(target) {
+    // Immediately mark as intersecting
+    target.classList?.add?.('animate-in');
+    return super.observe(target);
   }
 };
 `;
