@@ -258,6 +258,6 @@ export function setOdometerValue(element, value, decimals, suffix = '', prefix =
 export function clearOdometer(element) {
   if (!element) return;
   instances.delete(element);
-  element.innerHTML = '-';
+  element.innerHTML = '<span class="odometer-static">-</span>';
   element.classList.remove('odometer');
 }
