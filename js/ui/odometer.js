@@ -16,6 +16,12 @@
 const instances = new WeakMap();
 
 /**
+ * Tracks pending animation timers per wheel element
+ * @type {WeakMap<HTMLElement, ReturnType<typeof setTimeout>>}
+ */
+const wheelTimers = new WeakMap();
+
+/**
  * Characters that can appear in the odometer (for wheel generation)
  */
 const DIGIT_CHARS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
@@ -127,15 +133,17 @@ function animateWheel(wheel, fromDigit, toDigit, delay) {
   wheel.offsetHeight;
   
   // Clear any pending timer to prevent stale callbacks from overwriting newer transforms
-  if (wheel._odomTimer) {
-    clearTimeout(wheel._odomTimer);
+  const existingTimer = wheelTimers.get(wheel);
+  if (existingTimer) {
+    clearTimeout(existingTimer);
   }
   
   // Apply animation with delay
-  wheel._odomTimer = setTimeout(() => {
+  const timerId = setTimeout(() => {
     wheel.style.transition = `transform ${CONFIG.baseDuration}ms ${CONFIG.easing}`;
     wheel.style.transform = `translateY(${targetY}em)`;
   }, delay);
+  wheelTimers.set(wheel, timerId);
 }
 
 /**
