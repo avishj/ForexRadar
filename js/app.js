@@ -707,7 +707,7 @@ function init() {
         const leftAnim = fromGroup.animate(leftKeyframes, options);
         const rightAnim = toGroup.animate(rightKeyframes, options);
         
-        leftAnim.onfinish = () => {
+        const cleanup = () => {
           leftAnim.cancel();
           rightAnim.cancel();
           fromGroup.style.zIndex = '';
@@ -715,6 +715,9 @@ function init() {
           fromSelect.value = toCurr;
           toSelect.value = fromCurr;
         };
+        
+        leftAnim.onfinish = cleanup;
+        leftAnim.oncancel = cleanup;
       } else {
         fromSelect.value = toCurr;
         toSelect.value = fromCurr;
