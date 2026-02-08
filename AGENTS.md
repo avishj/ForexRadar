@@ -53,6 +53,8 @@ bun run postinstall        # Install Playwright browsers (Firefox + Chromium)
 | `bun run test:e2e` | Run end-to-end flow tests |
 | `bun run test:smoke` | Run UI smoke tests |
 | `bun run test:perf` | Run perf tests (bun + browser) |
+| `bun run test:visual` | Run visual regression tests |
+| `bun run test:visual:update` | Update visual test baselines |
 | `bun run test:all` | Run all tests |
 
 ### Verification After Changes

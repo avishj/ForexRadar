@@ -1,5 +1,6 @@
 repomix-output.xml
 *.png
+!tests/visual/__snapshots__/**/*.png
 node_modules/
 .DS_Store
 test-results/
