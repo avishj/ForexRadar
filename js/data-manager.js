@@ -272,8 +272,12 @@ export async function fetchRates(fromCurr, toCurr, range, options = {}) {
       ));
     }
 
-    const liveCounts = await Promise.all(livePromises);
-    fromLive = liveCounts.reduce((sum, c) => sum + c, 0);
+    const liveResults = await Promise.allSettled(livePromises);
+    for (const result of liveResults) {
+      if (result.status === 'fulfilled') {
+        fromLive += result.value;
+      }
+    }
 
     if (fromLive === 0 && (fetchVisa || fetchMastercard)) {
       notify('live', 'Data is up to date');
@@ -376,31 +380,40 @@ async function fetchLiveDataForProvider(
 
   notify('live', `Fetching ${missingDates.length} ${providerName} dates...`);
 
-  // Fetch all missing dates in parallel
-  const results = await Promise.allSettled(
-    missingDates.map(date => client.fetchRate(date, fromCurr, toCurr))
-  );
-
+  // Fetch with concurrency limit of 3, fail-fast on first error
+  const MAX_CONCURRENCY = 3;
   let fetchedCount = 0;
   /** @type {RateRecord[]} */
   const recordsToSave = [];
+  let failed = false;
 
-  for (let i = 0; i < results.length; i++) {
-    const result = results[i];
-    const dateStr = formatDate(missingDates[i]);
-    const key = makeRecordKey(dateStr, providerName);
+  for (let i = 0; i < missingDates.length && !failed; i += MAX_CONCURRENCY) {
+    const batch = missingDates.slice(i, i + MAX_CONCURRENCY);
+    const results = await Promise.allSettled(
+      batch.map(date => client.fetchRate(date, fromCurr, toCurr))
+    );
 
-    if (result.status === 'fulfilled' && result.value !== null) {
-      mergedData.set(key, result.value);
-      recordSources.set(key, 'live');
-      recordsToSave.push(result.value);
-      fetchedCount++;
-    } else if (result.status === 'rejected') {
-      notify('live', `${providerName} error for ${dateStr}: ${result.reason.message}`);
+    for (let j = 0; j < results.length; j++) {
+      const result = results[j];
+      const dateStr = formatDate(batch[j]);
+      const key = makeRecordKey(dateStr, providerName);
+
+      if (result.status === 'rejected') {
+        notify('live', `${providerName} failed on ${dateStr}: ${result.reason.message}, stopping`);
+        failed = true;
+        break;
+      }
+
+      if (result.value !== null) {
+        mergedData.set(key, result.value);
+        recordSources.set(key, 'live');
+        recordsToSave.push(result.value);
+        fetchedCount++;
+      }
     }
   }
 
-  // Batch save to IndexedDB
+  // Batch save everything that succeeded
   if (recordsToSave.length > 0) {
     await StorageManager.saveRates(recordsToSave);
     notify('live', `Fetched ${fetchedCount} ${providerName} records`);
