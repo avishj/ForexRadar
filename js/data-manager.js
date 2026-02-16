@@ -238,9 +238,12 @@ export async function fetchRates(fromCurr, toCurr, range, options = {}) {
       }
     }
 
-    // Fetch live data for Visa if needed
+    // Fetch live data for Visa and Mastercard in parallel
+    /** @type {Promise<number>[]} */
+    const livePromises = [];
+
     if (fetchVisa && (!latestVisaDate || latestVisaDate < yesterdayStr)) {
-      const liveCount = await fetchLiveDataForProvider(
+      livePromises.push(fetchLiveDataForProvider(
         'VISA',
         VisaClient,
         fromCurr,
@@ -251,13 +254,11 @@ export async function fetchRates(fromCurr, toCurr, range, options = {}) {
         mergedData,
         recordSources,
         notify
-      );
-      fromLive += liveCount;
+      ));
     }
 
-    // Fetch live data for Mastercard if needed
     if (fetchMastercard && (!latestMcDate || latestMcDate < yesterdayStr)) {
-      const liveCount = await fetchLiveDataForProvider(
+      livePromises.push(fetchLiveDataForProvider(
         'MASTERCARD',
         MastercardClient,
         fromCurr,
@@ -268,9 +269,11 @@ export async function fetchRates(fromCurr, toCurr, range, options = {}) {
         mergedData,
         recordSources,
         notify
-      );
-      fromLive += liveCount;
+      ));
     }
+
+    const liveCounts = await Promise.all(livePromises);
+    fromLive = liveCounts.reduce((sum, c) => sum + c, 0);
 
     if (fromLive === 0 && (fetchVisa || fetchMastercard)) {
       notify('live', 'Data is up to date');
@@ -348,63 +351,58 @@ async function fetchLiveDataForProvider(
 ) {
   notify('live', `Fetching live ${providerName} data...`);
   
-  let fetchedCount = 0;
   const startDate = parseDate(yesterdayStr);
   // If no historical data exists, only fetch last 7 days
   const stopDateStr = latestDate || addDays(yesterdayStr, -7);
   
+  // Collect all missing dates
+  /** @type {Date[]} */
+  const missingDates = [];
   const currentDate = new Date(startDate.getTime());
-  let consecutiveErrors = 0;
-  const maxErrors = 3;
-
+  
   while (formatDate(currentDate) > stopDateStr) {
     const dateStr = formatDate(currentDate);
     const key = makeRecordKey(dateStr, providerName);
     
-    // Skip if we already have this date for this provider
-    if (mergedData.has(key)) {
-      currentDate.setDate(currentDate.getDate() - 1);
-      continue;
+    if (!mergedData.has(key)) {
+      missingDates.push(new Date(currentDate.getTime()));
     }
-
-    try {
-      notify('live', `Fetching ${providerName} ${dateStr}...`);
-      
-      const record = await client.fetchRate(currentDate, fromCurr, toCurr);
-      
-      if (record === null) {
-        // End of history
-        notify('live', `${providerName}: Reached end of available history`);
-        break;
-      }
-
-      // Save to IndexedDB cache immediately
-      await StorageManager.saveRate(record);
-      
-      // Add to merged data
-      mergedData.set(key, record);
-      recordSources.set(key, 'live');
-      fetchedCount++;
-      consecutiveErrors = 0;
-      
-    } catch (error) {
-      consecutiveErrors++;
-      notify('live', `${providerName} error for ${dateStr}: ${error.message}`);
-      
-      if (consecutiveErrors >= maxErrors) {
-        notify('live', `${providerName}: Too many consecutive errors, stopping`);
-        break;
-      }
-    }
-
-    // Move to previous day
     currentDate.setDate(currentDate.getDate() - 1);
-    
-    // Small delay to be respectful
-    await new Promise(resolve => setTimeout(resolve, 50));
   }
 
-  if (fetchedCount > 0) {
+  if (missingDates.length === 0) {
+    return 0;
+  }
+
+  notify('live', `Fetching ${missingDates.length} ${providerName} dates...`);
+
+  // Fetch all missing dates in parallel
+  const results = await Promise.allSettled(
+    missingDates.map(date => client.fetchRate(date, fromCurr, toCurr))
+  );
+
+  let fetchedCount = 0;
+  /** @type {RateRecord[]} */
+  const recordsToSave = [];
+
+  for (let i = 0; i < results.length; i++) {
+    const result = results[i];
+    const dateStr = formatDate(missingDates[i]);
+    const key = makeRecordKey(dateStr, providerName);
+
+    if (result.status === 'fulfilled' && result.value !== null) {
+      mergedData.set(key, result.value);
+      recordSources.set(key, 'live');
+      recordsToSave.push(result.value);
+      fetchedCount++;
+    } else if (result.status === 'rejected') {
+      notify('live', `${providerName} error for ${dateStr}: ${result.reason.message}`);
+    }
+  }
+
+  // Batch save to IndexedDB
+  if (recordsToSave.length > 0) {
+    await StorageManager.saveRates(recordsToSave);
     notify('live', `Fetched ${fetchedCount} ${providerName} records`);
   }
 
