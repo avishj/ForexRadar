@@ -1,8 +1,12 @@
 name: Deploy Frontend
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'db/**'
   workflow_run:
-    workflows: ["CI", "Update Data"]
+    workflows: ["CI"]
     types:
       - completed
   workflow_dispatch:
@@ -18,9 +22,9 @@ jobs:
     timeout-minutes: 5
     if: >
       github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'push' ||
       (github.event.workflow_run.conclusion == 'success' &&
-       (github.event.workflow_run.head_branch == 'main' || 
-        github.ref == 'refs/heads/main'))
+       github.event.workflow_run.head_branch == 'main')
 
     permissions:
       contents: read
