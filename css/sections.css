@@ -782,10 +782,18 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  position: relative;
+  z-index: 1;
   /* Entrance animation via unified system */
   --enter-anim: group-reveal;
   --enter-duration: 700ms;
   --enter-easing: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* When a dropdown is open or focused, raise the parent group above siblings */
+.selector-group:has(.dropdown-list.open),
+.selector-group:focus-within {
+  z-index: 10;
 }
 
 

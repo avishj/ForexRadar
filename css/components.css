@@ -184,6 +184,13 @@
 .searchable-dropdown {
   position: relative;
   width: 100%;
+  z-index: 1;
+  isolation: isolate;
+}
+
+/* Elevate dropdown container when focused to prevent occlusion by siblings */
+.searchable-dropdown:focus-within {
+  z-index: 9999;
 }
 
 .searchable-input {
@@ -449,6 +456,8 @@
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  position: relative;
+  z-index: 0;
 }
 
 .recent-pairs::-webkit-scrollbar {
