@@ -202,7 +202,24 @@
   cursor: text;
 }
 
-/* Remove transform animations from searchable inputs to keep clear button aligned */
+/* Move transform to .searchable-dropdown so clear button moves with input */
+.searchable-dropdown {
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.searchable-dropdown:hover {
+  transform: translateY(-3px);
+}
+
+.searchable-dropdown:focus-within {
+  transform: translateY(-4px) scale(1.02);
+}
+
+.searchable-dropdown:active {
+  transform: translateY(-1px) scale(0.99);
+}
+
+/* Remove transform from input itself since dropdown wrapper handles it */
 .searchable-input:hover,
 .searchable-input:focus,
 .searchable-input:active {

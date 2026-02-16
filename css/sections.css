@@ -861,10 +861,14 @@
 .selector-input:hover {
   border-color: var(--accent-primary);
   background-color: var(--bg-secondary);
-  transform: translateY(-3px);
   box-shadow: 
     0 10px 30px -10px rgba(0, 0, 0, 0.2),
     0 0 0 1px var(--accent-primary);
+}
+
+/* Only apply transform on non-searchable inputs (searchable wrapper handles it) */
+.selector-input:not(.searchable-input):hover {
+  transform: translateY(-3px);
 }
 
 .selector-input:focus {
@@ -874,10 +878,13 @@
   box-shadow: 
     0 0 0 4px var(--accent-glow),
     0 20px 40px -15px var(--accent-glow);
+}
+
+.selector-input:not(.searchable-input):focus {
   transform: translateY(-4px) scale(1.02);
 }
 
-.selector-input:active {
+.selector-input:not(.searchable-input):active {
   transform: translateY(-1px) scale(0.99);
   transition: all 0.1s ease;
 }
