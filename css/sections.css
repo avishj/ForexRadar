@@ -791,9 +791,10 @@
 }
 
 /* When a dropdown is open or focused, raise the parent group above siblings */
+.selector-group.dropdown-active,
 .selector-group:has(.dropdown-list.open),
 .selector-group:focus-within {
-  z-index: 10;
+  z-index: 9999;
 }
 
 
