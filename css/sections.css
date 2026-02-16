@@ -894,8 +894,8 @@
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.75rem;
 }
 
 @media (min-width: 1200px) {
@@ -924,7 +924,7 @@
 
 .stat-card {
   border-radius: var(--radius-lg);
-  padding: 1.5rem;
+  padding: 1rem;
   transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   overflow: hidden;
   /* Entrance animation via unified system */
@@ -999,7 +999,7 @@
 
 .stat-value {
   font-family: var(--font-display);
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--text-primary);
 }
