@@ -804,7 +804,7 @@
    -------------------------------- */
 .odometer {
   display: inline-flex;
-  align-items: baseline;
+  align-items: stretch;
   overflow: hidden;
   line-height: 1.2;
 }
@@ -831,7 +831,9 @@
 
 .odometer-static {
   display: inline-block;
+  height: 1.2em;
   line-height: 1.2;
+  vertical-align: top;
 }
 
 /* Subtle blur during fast motion */
