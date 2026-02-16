@@ -378,7 +378,7 @@ async function fetchLiveDataForProvider(
     return 0;
   }
 
-  notify('live', `Fetching ${missingDates.length} ${providerName} dates...`);
+  notify('live', `Fetching live data for ${missingDates.length} ${providerName} dates...`);
 
   // Fetch with concurrency limit of 3, fail-fast on first error
   const MAX_CONCURRENCY = 3;
