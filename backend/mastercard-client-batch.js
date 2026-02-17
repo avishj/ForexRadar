@@ -8,7 +8,7 @@
  */
 
 import { chromium } from "playwright";
-import { PROVIDER_CONFIG, USER_AGENTS } from "../shared/constants.js";
+import { PROVIDER_CONFIG, USER_AGENTS, BROWSER_CONFIG } from "../shared/constants.js";
 import { store } from "./csv-store.js";
 
 // Select a random user agent at script startup (stays consistent for session)
@@ -71,37 +71,18 @@ async function getBrowser() {
 	}
 
 	browserInitPromise = (async () => {
+		const mcConfig = BROWSER_CONFIG.MASTERCARD;
 		console.log("[MASTERCARD] Launching Chromium browser...");
 		browserInstance = await chromium.launch({
-			headless: false, // Akamai bot detection blocks headless mode
-			args: [
-				"--disable-blink-features=AutomationControlled",
-				// Stability flags to prevent random crashes
-				"--disable-gpu",
-				"--disable-dev-shm-usage",
-				"--disable-background-timer-throttling",
-				"--disable-backgrounding-occluded-windows",
-				"--disable-renderer-backgrounding",
-				"--no-sandbox",
-				"--disable-web-security",
-				"--disable-extensions",
-				"--disable-plugins",
-				"--disable-default-apps",
-				"--disable-sync",
-				"--disable-translate",
-				"--max_old_space_size=2048",
-				"--js-flags=--max-old-space-size=2048"
-			]
+			headless: mcConfig.headless,
+			channel: mcConfig.channel,
+			args: mcConfig.args
 		});
 		browserContext = await browserInstance.newContext({
 			userAgent: SESSION_USER_AGENT,
-			viewport: { width: 1280, height: 720 },
-			locale: "en-US",
-			extraHTTPHeaders: {
-				"Accept-Language": "en-GB,en;q=0.9",
-				DNT: "1",
-				"Sec-GPC": "1"
-			}
+			viewport: mcConfig.viewport,
+			locale: mcConfig.locale,
+			extraHTTPHeaders: mcConfig.extraHTTPHeaders
 		});
 
 		// Auto-reset state if browser crashes unexpectedly
