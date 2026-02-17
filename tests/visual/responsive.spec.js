@@ -36,6 +36,8 @@ for (const vp of responsiveViewports) {
     test('chart matches baseline', async ({ page }) => {
       await page.goto('/');
       await selectPairAndWait(page, 'EUR', 'INR');
+      await expect(page.locator('.apexcharts-series path').first()).toBeVisible({ timeout: 10000 });
+      await page.waitForTimeout(300);
       await expect(page.locator('#chart-container')).toHaveScreenshot(`chart-${vp.name}.png`);
     });
 
