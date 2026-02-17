@@ -275,12 +275,12 @@ export class SearchableDropdown {
         
       case 'Escape':
         e.preventDefault();
-        this.close();
+        this.close({ restoreInput: true });
         this.input.blur();
         break;
         
       case 'Tab':
-        this.close();
+        this.close({ restoreInput: true });
         break;
     }
   }
