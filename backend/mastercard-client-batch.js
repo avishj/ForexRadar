@@ -109,8 +109,8 @@ async function closeBrowser() {
 		// Reset state immediately so we don't try to reuse a closing browser
 		resetBrowserState();
 		try {
-			// Try graceful close with 3 second timeout
-			await Promise.race([browser.close(), new Promise((_, reject) => setTimeout(() => reject(new Error("Close timeout")), 3000))]);
+			// Try graceful close with timeout
+			await Promise.race([browser.close(), new Promise((_, reject) => setTimeout(() => reject(new Error("Close timeout")), BROWSER_CONFIG.MASTERCARD.closeTimeout))]);
 			console.log("[MASTERCARD] Browser closed");
 		} catch (_error) {
 			console.warn("[MASTERCARD] Browser close timed out, force-killing process");
@@ -151,7 +151,7 @@ async function refreshSession() {
 	const page = await getApiPage();
 	try {
 		// Use domcontentloaded - we just need cookies, not full page render
-		await page.goto(MASTERCARD_UI_PAGE, { timeout: 15000, waitUntil: "domcontentloaded" });
+		await page.goto(MASTERCARD_UI_PAGE, { timeout: BROWSER_CONFIG.MASTERCARD.navigationTimeout, waitUntil: "domcontentloaded" });
 		await sleep(config.sessionRefreshDelayMs);
 	} catch (error) {
 		console.warn("[MASTERCARD] Session refresh failed:", error.message);
@@ -179,7 +179,7 @@ export async function fetchRate(from, to, date) {
 	url.searchParams.set("bankFee", "0");
 	url.searchParams.set("transAmt", "1");
 
-	const response = await page.goto(url.toString(), { timeout: 10000, waitUntil: "domcontentloaded" });
+	const response = await page.goto(url.toString(), { timeout: BROWSER_CONFIG.MASTERCARD.apiRequestTimeout, waitUntil: "domcontentloaded" });
 	if (!response) {
 		return { status: 0, data: null };
 	}
@@ -236,7 +236,7 @@ export async function fetchBatch(requests) {
 			if (requestCounter % config.browserRestartInterval === 0 && requestCounter > 0) {
 				console.log(`[MASTERCARD] Restarting browser after ${requestCounter} requests`);
 				await closeBrowser();
-				await sleep(3000);
+				await sleep(BROWSER_CONFIG.MASTERCARD.relaunchDelayMs);
 			}
 			if (requestCounter % config.sessionRefreshInterval === 0) {
 				await refreshSession();
