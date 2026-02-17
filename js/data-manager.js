@@ -276,6 +276,8 @@ export async function fetchRates(fromCurr, toCurr, range, options = {}) {
     for (const result of liveResults) {
       if (result.status === 'fulfilled') {
         fromLive += result.value;
+      } else {
+        console.error('Live fetch failed:', result.reason);
       }
     }
 
