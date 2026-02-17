@@ -77,7 +77,7 @@ export const BROWSER_CONFIG = {
 		channel: "chrome",
 		headless: false, // Akamai bot detection blocks headless mode
 		launchTimeout: 30000,
-		closeTimeout: 3000,
+		closeTimeout: 10000,
 		relaunchDelayMs: 3000,
 		navigationTimeout: 15000,
 		apiRequestTimeout: 10000,
