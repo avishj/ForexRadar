@@ -100,6 +100,7 @@ export class SearchableDropdown {
   
   set value(code) {
     this.hiddenInput.value = code;
+    this._lastQuery = null;
     const currency = this.items.find(c => c.code === code);
     if (currency) {
       this.input.value = `${currency.code} – ${currency.name}`;
