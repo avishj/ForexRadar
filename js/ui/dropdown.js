@@ -230,10 +230,10 @@ export class SearchableDropdown {
   }
   
   handleInput() {
-    const query = this.input.value;
-    
     cancelAnimationFrame(this._rafFilter);
     this._rafFilter = requestAnimationFrame(() => {
+      this._rafFilter = 0;
+      const query = this.input.value;
       if (query === this._lastQuery) return;
       this._lastQuery = query;
       
@@ -241,6 +241,20 @@ export class SearchableDropdown {
       this.highlightedIndex = -1;
       if (!this.isOpen) this.open();
     });
+  }
+  
+  /**
+   * Flush any pending RAF filter so DOM and filteredItems are current
+   */
+  flushPendingFilter() {
+    if (!this._rafFilter) return;
+    cancelAnimationFrame(this._rafFilter);
+    this._rafFilter = 0;
+    const query = this.input.value;
+    if (query === this._lastQuery) return;
+    this._lastQuery = query;
+    this.renderList(query);
+    this.highlightedIndex = -1;
   }
   
   /**
@@ -261,6 +275,7 @@ export class SearchableDropdown {
    * @param {KeyboardEvent} e 
    */
   handleKeydown(e) {
+    this.flushPendingFilter();
     const items = this.list.querySelectorAll('.dropdown-item');
     
     switch (e.key) {
