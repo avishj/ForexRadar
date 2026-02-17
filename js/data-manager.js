@@ -399,7 +399,7 @@ async function fetchLiveDataForProvider(
       const key = makeRecordKey(dateStr, providerName);
 
       if (result.status === 'rejected') {
-        notify('live', `${providerName} failed on ${dateStr}: ${result.reason.message}, stopping`);
+        notify('live', `${providerName} failed on ${dateStr}: ${result.reason?.message ?? result.reason}, stopping`);
         failed = true;
         continue;
       }
