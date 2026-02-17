@@ -483,6 +483,7 @@ export class SearchableDropdown {
     if (!this.isOpen) return;
     this.isOpen = false;
     
+    cancelAnimationFrame(this._rafFilter);
     this.list.classList.remove('open');
     this.container.classList.remove('is-active');
     
