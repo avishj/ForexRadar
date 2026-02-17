@@ -237,6 +237,8 @@ export class SearchableDropdown {
       if (currency) {
         this.input.value = `${currency.code} – ${currency.name}`;
       }
+    } else {
+      this.input.value = '';
     }
   }
   
