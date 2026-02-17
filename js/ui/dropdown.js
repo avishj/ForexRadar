@@ -64,8 +64,8 @@ export class SearchableDropdown {
       this.clear();
     });
     
-    this.list.addEventListener('pointerdown', (e) => {
-      e.preventDefault();
+    this.list.addEventListener('mousedown', (e) => e.preventDefault());
+    this.list.addEventListener('click', (e) => {
       const item = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('.dropdown-item'));
       if (item) {
         const code = item.dataset.code;
