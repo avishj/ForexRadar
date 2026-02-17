@@ -88,7 +88,7 @@ export async function fetchRate(date, fromCurr, toCurr) {
     clearTimeout(timeoutId);
     
     if (error.name === 'AbortError') {
-      throw new Error('Request timeout');
+      throw new Error('Request timeout', { cause: error });
     }
     
     if (error.message.includes('Rate limited')) {
@@ -97,7 +97,7 @@ export async function fetchRate(date, fromCurr, toCurr) {
     
     // Network errors
     if (error.name === 'TypeError') {
-      throw new Error(`Network error: ${error.message}`);
+      throw new Error(`Network error: ${error.message}`, { cause: error });
     }
     
     throw error;
