@@ -112,7 +112,10 @@ async function closeBrowser() {
 			await Promise.race([browser.close(), new Promise((_, reject) => setTimeout(() => reject(new Error("Close timeout")), 3000))]);
 			console.log("[MASTERCARD] Browser closed");
 		} catch (_error) {
-			console.warn("[MASTERCARD] Browser close timed out, continuing (process may need manual cleanup)");
+			console.warn("[MASTERCARD] Browser close timed out, force-killing process");
+			try {
+				/** @type {any} */ (browser).process()?.kill("SIGKILL");
+			} catch { /* already dead */ }
 		}
 	}
 }
