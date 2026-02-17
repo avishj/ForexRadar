@@ -401,7 +401,7 @@ async function fetchLiveDataForProvider(
       if (result.status === 'rejected') {
         notify('live', `${providerName} failed on ${dateStr}: ${result.reason.message}, stopping`);
         failed = true;
-        break;
+        continue;
       }
 
       if (result.value !== null) {
