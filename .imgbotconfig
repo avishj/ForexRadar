@@ -1,5 +1,5 @@
 {
     "ignoredFiles": [
-        "tests/visual/*"
+        "tests/visual/**"
     ]
 }
