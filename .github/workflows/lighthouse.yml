@@ -8,9 +8,13 @@ on:
 
 jobs:
   lighthouse:
-    name: Lighthouse Performance Audit
+    name: Lighthouse (${{ matrix.profile }})
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [mobile, tablet, desktop]
 
     steps:
       - name: Checkout
@@ -34,7 +38,7 @@ jobs:
           urls: http://localhost:3000
           uploadArtifacts: true
           temporaryPublicStorage: true
-          configPath: .github/lighthouse/lighthouserc.json
+          configPath: .github/lighthouse/lighthouserc-${{ matrix.profile }}.json
 
       - name: Check thresholds
         env:
