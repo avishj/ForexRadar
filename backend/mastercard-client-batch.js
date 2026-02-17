@@ -232,7 +232,7 @@ export async function fetchBatch(requests) {
 			if (requestCounter % config.browserRestartInterval === 0 && requestCounter > 0) {
 				console.log(`[MASTERCARD] Restarting browser after ${requestCounter} requests`);
 				await closeBrowser();
-				await sleep(config.sessionRefreshDelayMs);
+				await sleep(3000);
 			}
 			if (requestCounter % config.sessionRefreshInterval === 0) {
 				await refreshSession();
