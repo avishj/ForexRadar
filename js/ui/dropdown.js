@@ -32,6 +32,8 @@ export class SearchableDropdown {
     
     /** @type {(e: PointerEvent) => void} */
     this._boundDocPointerDown = (e) => this.handleDocumentPointerDown(e);
+    /** @type {(e: FocusEvent) => void} */
+    this._boundFocusOut = (e) => this.handleFocusOut(e);
     /** @type {number} */
     this._rafFilter = 0;
     /** @type {string|null} */
@@ -90,6 +92,18 @@ export class SearchableDropdown {
     if (!this.isOpen) return;
     const target = e.target;
     if (target instanceof Node && !this.container.contains(target)) {
+      this.close({ restoreInput: true });
+    }
+  }
+  
+  /**
+   * Handle focus leaving the dropdown container (e.g., programmatic focus() elsewhere)
+   * @param {FocusEvent} e
+   */
+  handleFocusOut(e) {
+    if (!this.isOpen) return;
+    const related = e.relatedTarget;
+    if (related instanceof Node && !this.container.contains(related)) {
       this.close({ restoreInput: true });
     }
   }
@@ -459,6 +473,7 @@ export class SearchableDropdown {
     this.input.setAttribute('aria-expanded', 'true');
     
     document.addEventListener('pointerdown', this._boundDocPointerDown, true);
+    this.container.addEventListener('focusout', this._boundFocusOut);
     
     const query = this.value ? '' : this.input.value;
     if (query !== this._lastQuery) {
@@ -496,6 +511,7 @@ export class SearchableDropdown {
     this.highlightedIndex = -1;
     
     document.removeEventListener('pointerdown', this._boundDocPointerDown, true);
+    this.container.removeEventListener('focusout', this._boundFocusOut);
     
     if (restoreInput) {
       this.restoreInputToValue();
