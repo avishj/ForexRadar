@@ -76,7 +76,8 @@ async function getBrowser() {
 		browserInstance = await chromium.launch({
 			headless: mcConfig.headless,
 			channel: mcConfig.channel,
-			args: mcConfig.args
+			args: mcConfig.args,
+			timeout: mcConfig.launchTimeout
 		});
 		browserContext = await browserInstance.newContext({
 			userAgent: SESSION_USER_AGENT,
