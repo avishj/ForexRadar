@@ -87,9 +87,12 @@ async function getBrowser() {
 		});
 
 		// Auto-reset state if browser crashes unexpectedly
-		browserInstance.on("disconnected", () => {
-			console.warn("[MASTERCARD] Browser disconnected event fired, resetting state");
-			resetBrowserState();
+		const currentBrowser = browserInstance;
+		currentBrowser.on("disconnected", () => {
+			if (browserInstance === currentBrowser) {
+				console.warn("[MASTERCARD] Browser disconnected event fired, resetting state");
+				resetBrowserState();
+			}
 		});
 
 		return { browser: browserInstance, context: browserContext };
