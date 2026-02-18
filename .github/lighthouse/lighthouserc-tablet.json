@@ -7,15 +7,12 @@
           "rttMs": 40,
           "throughputKbps": 10240
         },
-        "throttlingMethod": "simulate",
         "screenEmulation": {
           "mobile": true,
           "width": 768,
           "height": 1024,
-          "deviceScaleFactor": 2,
-          "disabled": false
+          "deviceScaleFactor": 2
         },
-        "formFactor": "mobile",
         "budgetPath": ".github/lighthouse/budget.json"
       },
       "numberOfRuns": 5

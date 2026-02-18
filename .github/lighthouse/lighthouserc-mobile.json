@@ -2,20 +2,6 @@
   "ci": {
     "collect": {
       "settings": {
-        "throttling": {
-          "cpuSlowdownMultiplier": 4,
-          "rttMs": 150,
-          "throughputKbps": 1638
-        },
-        "throttlingMethod": "simulate",
-        "screenEmulation": {
-          "mobile": true,
-          "width": 360,
-          "height": 640,
-          "deviceScaleFactor": 2.625,
-          "disabled": false
-        },
-        "formFactor": "mobile",
         "budgetPath": ".github/lighthouse/budget.json"
       },
       "numberOfRuns": 5

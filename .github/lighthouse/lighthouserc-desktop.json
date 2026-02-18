@@ -3,18 +3,6 @@
     "collect": {
       "settings": {
         "preset": "desktop",
-        "throttling": {
-          "cpuSlowdownMultiplier": 1
-        },
-        "throttlingMethod": "simulate",
-        "screenEmulation": {
-          "mobile": false,
-          "width": 1350,
-          "height": 940,
-          "deviceScaleFactor": 1,
-          "disabled": false
-        },
-        "formFactor": "desktop",
         "budgetPath": ".github/lighthouse/budget.json"
       },
       "numberOfRuns": 5
