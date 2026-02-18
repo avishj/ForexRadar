@@ -28,6 +28,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6.0.1
 
+      - name: Setup JS environment
+        if: inputs.local-server
+        uses: ./.github/actions/setup-js
+
+      - name: Start test server
+        if: inputs.local-server
+        run: |
+          bun run tests/server.js &
+          for i in $(seq 1 10); do
+            curl -s http://localhost:3000 > /dev/null && break
+            sleep 1
+          done
+
       - name: Run Lighthouse
         id: lighthouse
         uses: treosh/lighthouse-ci-action@v12
