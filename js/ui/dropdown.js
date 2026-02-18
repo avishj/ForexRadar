@@ -355,11 +355,13 @@ export class SearchableDropdown {
     if (elRect.top >= listRect.top && elRect.bottom <= listRect.bottom) return;
     
     const offsetTop = el.offsetTop;
-    const target = center
-      ? offsetTop - (list.clientHeight / 2) + (el.clientHeight / 2)
-      : offsetTop;
-    
-    list.scrollTop = Math.max(0, target);
+    if (center) {
+      list.scrollTop = Math.max(0, offsetTop - (list.clientHeight / 2) + (el.clientHeight / 2));
+    } else if (elRect.bottom > listRect.bottom) {
+      list.scrollTop = offsetTop - list.clientHeight + el.clientHeight;
+    } else {
+      list.scrollTop = offsetTop;
+    }
   }
   
   /**
