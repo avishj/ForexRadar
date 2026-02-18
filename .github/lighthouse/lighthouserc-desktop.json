@@ -15,7 +15,8 @@
           "disabled": false
         },
         "formFactor": "desktop",
-        "onlyCategories": ["performance", "accessibility", "best-practices", "seo"]
+        "onlyCategories": ["performance", "accessibility", "best-practices", "seo"],
+        "budgetPath": ".github/lighthouse/budget.json"
       },
       "numberOfRuns": 5
     },
@@ -47,7 +48,7 @@
             "unused-javascript": ["warn"],
             "unused-css-rules": ["warn"],
             "unsized-images": ["warn"],
-            "total-byte-weight": ["warn", { "maxNumericValue": 5000000 }],
+            "total-byte-weight": ["warn", { "maxNumericValue": 750000 }],
             "dom-size-insight": ["warn"],
             "cache-insight": ["warn"],
             "bf-cache": ["warn"],
@@ -91,6 +92,8 @@
             "speed-index": ["error", { "maxNumericValue": 5000 }],
             "interactive": ["error", { "maxNumericValue": 3500 }],
             "redirects": ["error"],
+
+            "performance-budget": ["error"],
 
             "viewport": ["error"],
             "doctype": ["error"],
