@@ -13,7 +13,7 @@ if [ -z "$conflicted" ]; then
 fi
 
 count=0
-for f in $conflicted; do
+while IFS= read -r f; do
   # Strip conflict markers, keep header + unique data rows sorted
   {
     echo "date,to_curr,provider,rate,markup"
@@ -25,7 +25,7 @@ for f in $conflicted; do
   git add "$f"
   count=$((count + 1))
   echo "✓ $f"
-done
+done <<< "$conflicted"
 
 echo ""
 echo "Resolved $count CSV file(s). Run 'git merge --continue' to finish."
