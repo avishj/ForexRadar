@@ -102,7 +102,7 @@ export class SearchableDropdown {
    */
   handleFocusOut(e) {
     if (!this.isOpen) return;
-    const related = e.relatedTarget;
+    const related = /** @type {Node|null} */ (e.relatedTarget);
     if (!related || !this.container.contains(related)) {
       this.close({ restoreInput: true });
     }
