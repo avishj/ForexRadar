@@ -13,6 +13,11 @@ on:
         type: boolean
         required: false
         default: false
+      wait-seconds:
+        description: Seconds to wait before auditing (e.g. deployment propagation)
+        type: number
+        required: false
+        default: 0
 
 jobs:
   lighthouse:
@@ -40,6 +45,10 @@ jobs:
             curl -s http://localhost:3000 > /dev/null && break
             sleep 1
           done
+
+      - name: Wait for propagation
+        if: inputs.wait-seconds > 0
+        run: sleep ${{ inputs.wait-seconds }}
 
       - name: Run Lighthouse
         id: lighthouse
