@@ -27,7 +27,7 @@ while IFS= read -r f; do
 
   {
     echo "date,to_curr,provider,rate,markup"
-    echo "$sorted" | sort -t, -k1,1 -k2,2 -k3,3 -u
+    echo "$sorted" | grep . | sort -t, -k1,1 -k2,2 -k3,3 -u
   } > "${f}.resolved"
 
   mv "${f}.resolved" "$f"
