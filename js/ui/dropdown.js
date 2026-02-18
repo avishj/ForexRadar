@@ -263,6 +263,9 @@ export class SearchableDropdown {
    * Restore input display to match the current value
    */
   restoreInputToValue() {
+    cancelAnimationFrame(this._rafFilter);
+    this._rafFilter = 0;
+    this._lastQuery = null;
     if (this.value) {
       const currency = this.items.find(c => c.code === this.value);
       if (currency) {
@@ -467,8 +470,11 @@ export class SearchableDropdown {
   }
   
   clear() {
+    cancelAnimationFrame(this._rafFilter);
+    this._rafFilter = 0;
     this.hiddenInput.value = '';
     this.input.value = '';
+    this._lastQuery = '';
     this.container.classList.remove('has-value');
     this.renderList('');
     this.dispatchChange();
