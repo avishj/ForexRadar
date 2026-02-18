@@ -41,7 +41,7 @@ jobs:
         if: inputs.local-server
         run: |
           bun run tests/server.js &
-          for i in $(seq 1 10); do
+          for _ in $(seq 1 10); do
             curl -s http://localhost:3000 > /dev/null && break
             sleep 1
           done
