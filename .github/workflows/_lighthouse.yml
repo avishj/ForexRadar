@@ -2,6 +2,17 @@ name: Lighthouse Audit
 
 on:
   workflow_call:
+    inputs:
+      url:
+        description: URL to audit
+        type: string
+        required: false
+        default: https://forexradar.avishj.dev
+      local-server:
+        description: Start local test server before auditing
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   lighthouse:
@@ -21,7 +32,7 @@ jobs:
         id: lighthouse
         uses: treosh/lighthouse-ci-action@v12
         with:
-          urls: https://forexradar.avishj.dev
+          urls: ${{ inputs.url }}
           uploadArtifacts: true
           temporaryPublicStorage: true
           configPath: .github/lighthouse/lighthouserc-${{ matrix.profile }}.json
