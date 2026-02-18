@@ -15,7 +15,7 @@ fi
 count=0
 while IFS= read -r f; do
   # Strip conflict markers, keep header + data rows sorted
-  sorted=$(grep -Ev '^<<<<<<< |^=======|^>>>>>>> |^date,to_curr,provider,rate,markup' "$f" \
+  sorted=$(grep -Ev '^<<<<<<< |^=======|^\|\|\|\|\|\|\| |^>>>>>>> |^date,to_curr,provider,rate,markup' "$f" \
     | sort -t, -k1,1 -k2,2 -k3,3)
 
   # Check for duplicate keys (date,to_curr,provider) with differing rate/markup
