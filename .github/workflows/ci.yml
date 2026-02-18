@@ -27,7 +27,7 @@ jobs:
         id: filter
         run: |
           CHANGED=$(git diff --name-only HEAD~1 HEAD)
-          if echo "$CHANGED" | grep -qvE '^db/'; then
+          if echo "$CHANGED" | grep -qvE '^(db/|docs/|scripts/|\.playwright-mcp/|playwright-report/|test-results/|\.imgbotconfig|\.markdownlint|\.repomixignore|repomix|\.DS_Store|LICENSE|CNAME)|\.md$'; then
             echo "code=true" >> "$GITHUB_OUTPUT"
           else
             echo "code=false" >> "$GITHUB_OUTPUT"
