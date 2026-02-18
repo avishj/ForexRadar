@@ -3,5 +3,5 @@
     "extends": "./.markdownlint.jsonc"
   },
   "globs": ["**/*.md"],
-  "ignores": ["node_modules/", ".git/", "PLAN_*.md", "scripts/ralph/"]
+  "ignores": ["node_modules/", ".git/", "PLAN_*.md", "scripts/ralph/", "test-results/", "playwright-report/"]
 }

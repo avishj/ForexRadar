@@ -184,6 +184,17 @@
 .searchable-dropdown {
   position: relative;
   width: 100%;
+  z-index: 1;
+}
+
+/* Elevate dropdown container when active (JS-controlled for reliable timing) */
+.searchable-dropdown.is-active {
+  z-index: 9999;
+}
+
+/* Fallback for :focus-within (still useful for keyboard nav) */
+.searchable-dropdown:focus-within {
+  z-index: 9999;
 }
 
 .searchable-input {
@@ -191,7 +202,24 @@
   cursor: text;
 }
 
-/* Remove transform animations from searchable inputs to keep clear button aligned */
+/* Move transform to .searchable-dropdown so clear button moves with input */
+.searchable-dropdown {
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.searchable-dropdown:hover {
+  transform: translateY(-3px);
+}
+
+.searchable-dropdown:focus-within {
+  transform: translateY(-4px) scale(1.02);
+}
+
+.searchable-dropdown:active {
+  transform: translateY(-1px) scale(0.99);
+}
+
+/* Remove transform from input itself since dropdown wrapper handles it */
 .searchable-input:hover,
 .searchable-input:focus,
 .searchable-input:active {
@@ -209,8 +237,9 @@
   top: calc(100% + 8px);
   left: 0;
   right: 0;
-  max-height: 320px;
+  max-height: min(320px, 50vh);
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   background: var(--bg-secondary);
   border: 2px solid var(--accent-primary);
   border-radius: 16px;
@@ -220,8 +249,14 @@
   z-index: 1000;
   opacity: 0;
   visibility: hidden;
-  transform: translateY(-10px) scale(0.98);
-  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+  transform: translate3d(0, -10px, 0) scale(0.98);
+  will-change: transform, opacity;
+  contain: paint;
+  transition:
+    opacity 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 0.25s;
   scrollbar-width: thin;
   scrollbar-color: var(--accent-primary) transparent;
 }
@@ -229,7 +264,12 @@
 .dropdown-list.open {
   opacity: 1;
   visibility: visible;
-  transform: translateY(0) scale(1);
+  pointer-events: auto;
+  transform: translate3d(0, 0, 0) scale(1);
+  transition:
+    opacity 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s;
 }
 
 .dropdown-list::-webkit-scrollbar {
@@ -449,6 +489,8 @@
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  position: relative;
+  z-index: 0;
 }
 
 .recent-pairs::-webkit-scrollbar {
@@ -779,7 +821,7 @@
    -------------------------------- */
 .odometer {
   display: inline-flex;
-  align-items: baseline;
+  align-items: stretch;
   overflow: hidden;
   line-height: 1.2;
 }
@@ -806,7 +848,9 @@
 
 .odometer-static {
   display: inline-block;
+  height: 1.2em;
   line-height: 1.2;
+  vertical-align: top;
 }
 
 /* Subtle blur during fast motion */

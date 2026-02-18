@@ -30,6 +30,17 @@ export class SearchableDropdown {
     /** @type {HTMLButtonElement|null} */
     this.clearBtn = null;
     
+    /** @type {(e: PointerEvent) => void} */
+    this._boundDocPointerDown = (e) => this.handleDocumentPointerDown(e);
+    /** @type {(e: FocusEvent) => void} */
+    this._boundFocusOut = (e) => this.handleFocusOut(e);
+    /** @type {number} */
+    this._rafFilter = 0;
+    /** @type {string|null} */
+    this._lastQuery = null;
+    /** @type {HTMLElement|null} */
+    this._stackParent = null;
+    
     this.init();
   }
   
@@ -45,20 +56,17 @@ export class SearchableDropdown {
     
     this.renderList('');
     
+    this.input.addEventListener('pointerdown', () => this.open());
     this.input.addEventListener('input', () => this.handleInput());
     this.input.addEventListener('focus', () => this.open());
-    this.input.addEventListener('blur', (e) => this.handleBlur(e));
     this.input.addEventListener('keydown', (e) => this.handleKeydown(e));
     
-    clearBtn.addEventListener('mousedown', (e) => {
+    clearBtn.addEventListener('pointerdown', (e) => {
       e.preventDefault();
       this.clear();
     });
     
-    this.list.addEventListener('mousedown', (e) => {
-      e.preventDefault();
-    });
-    
+    this.list.addEventListener('mousedown', (e) => e.preventDefault());
     this.list.addEventListener('click', (e) => {
       const item = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('.dropdown-item'));
       if (item) {
@@ -71,9 +79,33 @@ export class SearchableDropdown {
       const item = /** @type {HTMLElement | null} */ (/** @type {HTMLElement} */ (e.target).closest('.dropdown-item'));
       if (item) {
         const index = parseInt(item.dataset.index || '-1', 10);
-        if (index >= 0) this.highlight(index);
+        if (index >= 0) this.highlight(index, { scroll: false });
       }
     });
+  }
+  
+  /**
+   * Handle clicks outside the dropdown to close it
+   * @param {PointerEvent} e
+   */
+  handleDocumentPointerDown(e) {
+    if (!this.isOpen) return;
+    const target = e.target;
+    if (target instanceof Node && !this.container.contains(target)) {
+      this.close({ restoreInput: true });
+    }
+  }
+  
+  /**
+   * Handle focus leaving the dropdown container (e.g., programmatic focus() elsewhere)
+   * @param {FocusEvent} e
+   */
+  handleFocusOut(e) {
+    if (!this.isOpen) return;
+    const related = /** @type {Node|null} */ (e.relatedTarget);
+    if (!related || !this.container.contains(related)) {
+      this.close({ restoreInput: true });
+    }
   }
   
   get value() {
@@ -81,7 +113,10 @@ export class SearchableDropdown {
   }
   
   set value(code) {
+    cancelAnimationFrame(this._rafFilter);
+    this._rafFilter = 0;
     this.hiddenInput.value = code;
+    this._lastQuery = null;
     const currency = this.items.find(c => c.code === code);
     if (currency) {
       this.input.value = `${currency.code} – ${currency.name}`;
@@ -197,31 +232,55 @@ export class SearchableDropdown {
   }
   
   handleInput() {
-    const query = this.input.value;
-    this.renderList(query);
-    this.highlightedIndex = -1;
-    if (!this.isOpen) this.open();
+    cancelAnimationFrame(this._rafFilter);
+    this._rafFilter = requestAnimationFrame(() => {
+      this._rafFilter = 0;
+      const query = this.input.value;
+      if (query === this._lastQuery) return;
+      this._lastQuery = query;
+      
+      this.renderList(query);
+      this.highlightedIndex = -1;
+      if (!this.isOpen) this.open();
+    });
   }
   
   /**
-   * @param {FocusEvent} _e 
+   * Flush any pending RAF filter so DOM and filteredItems are current
    */
-  handleBlur(_e) {
-    setTimeout(() => {
-      this.close();
-      if (this.value && !this.input.value.includes(this.value)) {
-        const currency = this.items.find(c => c.code === this.value);
-        if (currency) {
-          this.input.value = `${currency.code} – ${currency.name}`;
-        }
+  flushPendingFilter() {
+    if (!this._rafFilter) return;
+    cancelAnimationFrame(this._rafFilter);
+    this._rafFilter = 0;
+    const query = this.input.value;
+    if (query === this._lastQuery) return;
+    this._lastQuery = query;
+    this.renderList(query);
+    this.highlightedIndex = -1;
+  }
+  
+  /**
+   * Restore input display to match the current value
+   */
+  restoreInputToValue() {
+    cancelAnimationFrame(this._rafFilter);
+    this._rafFilter = 0;
+    this._lastQuery = null;
+    if (this.value) {
+      const currency = this.items.find(c => c.code === this.value);
+      if (currency) {
+        this.input.value = `${currency.code} – ${currency.name}`;
       }
-    }, 150);
+    } else {
+      this.input.value = '';
+    }
   }
   
   /**
    * @param {KeyboardEvent} e 
    */
   handleKeydown(e) {
+    this.flushPendingFilter();
     const items = this.list.querySelectorAll('.dropdown-item');
     
     switch (e.key) {
@@ -250,20 +309,21 @@ export class SearchableDropdown {
         
       case 'Escape':
         e.preventDefault();
-        this.close();
+        this.close({ restoreInput: true });
         this.input.blur();
         break;
         
       case 'Tab':
-        this.close();
+        this.close({ restoreInput: true });
         break;
     }
   }
   
   /**
    * @param {number} index 
+   * @param {{ scroll?: boolean }} [options]
    */
-  highlight(index) {
+  highlight(index, { scroll = true } = {}) {
     const items = this.list.querySelectorAll('.dropdown-item');
     items.forEach((item, i) => {
       item.classList.toggle('highlighted', i === index);
@@ -276,9 +336,31 @@ export class SearchableDropdown {
       this.input.setAttribute('aria-activedescendant', optionId);
     }
     
-    const highlighted = items[index];
-    if (highlighted) {
-      highlighted.scrollIntoView({ block: 'nearest' });
+    const el = /** @type {HTMLElement|undefined} */ (items[index]);
+    if (el && scroll) {
+      this.scrollItemIntoView(el);
+    }
+  }
+  
+  /**
+   * Scroll an item into view within the dropdown list
+   * @param {HTMLElement} el 
+   * @param {{ center?: boolean }} [options]
+   */
+  scrollItemIntoView(el, { center = false } = {}) {
+    const list = this.list;
+    const listRect = list.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+    
+    if (elRect.top >= listRect.top && elRect.bottom <= listRect.bottom) return;
+    
+    const offsetTop = el.offsetTop;
+    if (center) {
+      list.scrollTop = Math.max(0, offsetTop - (list.clientHeight / 2) + (el.clientHeight / 2));
+    } else if (elRect.bottom > listRect.bottom) {
+      list.scrollTop = offsetTop - list.clientHeight + el.clientHeight;
+    } else {
+      list.scrollTop = offsetTop;
     }
   }
   
@@ -390,8 +472,11 @@ export class SearchableDropdown {
   }
   
   clear() {
+    cancelAnimationFrame(this._rafFilter);
+    this._rafFilter = 0;
     this.hiddenInput.value = '';
     this.input.value = '';
+    this._lastQuery = '';
     this.container.classList.remove('has-value');
     this.renderList('');
     this.dispatchChange();
@@ -401,26 +486,61 @@ export class SearchableDropdown {
   open() {
     if (this.isOpen) return;
     this.isOpen = true;
+    
+    this.container.classList.add('is-active');
+    
+    this._stackParent = this.container.closest('.selector-group');
+    if (this._stackParent) {
+      this._stackParent.classList.add('dropdown-active');
+    }
+    
     this.list.classList.add('open');
     this.input.setAttribute('aria-expanded', 'true');
+    
+    document.addEventListener('pointerdown', this._boundDocPointerDown, true);
+    this.container.addEventListener('focusout', this._boundFocusOut);
+    
     const query = this.value ? '' : this.input.value;
-    this.renderList(query);
+    if (query !== this._lastQuery) {
+      this._lastQuery = query;
+      this.renderList(query);
+    }
     
     if (this.value) {
-      setTimeout(() => {
-        const selected = this.list.querySelector('.selected');
+      requestAnimationFrame(() => {
+        const selected = /** @type {HTMLElement|null} */ (this.list.querySelector('.selected'));
         if (selected) {
-          selected.scrollIntoView({ block: 'center' });
+          this.scrollItemIntoView(selected, { center: true });
         }
-      }, 50);
+      });
     }
   }
   
-  close() {
+  /**
+   * @param {{ restoreInput?: boolean }} [options]
+   */
+  close({ restoreInput = false } = {}) {
+    if (!this.isOpen) return;
     this.isOpen = false;
+    
+    cancelAnimationFrame(this._rafFilter);
+    this._rafFilter = 0;
     this.list.classList.remove('open');
+    this.container.classList.remove('is-active');
+    
+    if (this._stackParent) {
+      this._stackParent.classList.remove('dropdown-active');
+    }
+    
     this.input.setAttribute('aria-expanded', 'false');
     this.input.removeAttribute('aria-activedescendant');
     this.highlightedIndex = -1;
+    
+    document.removeEventListener('pointerdown', this._boundDocPointerDown, true);
+    this.container.removeEventListener('focusout', this._boundFocusOut);
+    
+    if (restoreInput) {
+      this.restoreInputToValue();
+    }
   }
 }

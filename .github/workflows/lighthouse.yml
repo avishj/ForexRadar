@@ -2,39 +2,31 @@ name: Lighthouse Audit
 
 on:
   schedule:
-    # Run weekly on Sundays at 01:00 UTC (after perf.yml at 00:00)
-    - cron: '0 1 * * 0'
+    - cron: '0 0 * * 0'
   workflow_dispatch:
 
 jobs:
   lighthouse:
-    name: Lighthouse Performance Audit
+    name: Lighthouse (${{ matrix.profile }})
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [mobile, tablet, desktop]
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.1
 
-      - name: Setup JS environment
-        uses: ./.github/actions/setup-js
-
-      - name: Start test server
-        run: |
-          bun run tests/server.js &
-          for _ in {1..10}; do
-            curl -sf --max-time 5 http://localhost:3000 > /dev/null && break
-            sleep 1
-          done
-          curl -sf --max-time 5 http://localhost:3000 > /dev/null || exit 1
       - name: Run Lighthouse
         id: lighthouse
         uses: treosh/lighthouse-ci-action@v12
         with:
-          urls: http://localhost:3000
+          urls: https://forexradar.avishj.dev
           uploadArtifacts: true
           temporaryPublicStorage: true
-          configPath: .github/lighthouse/lighthouserc.json
+          configPath: .github/lighthouse/lighthouserc-${{ matrix.profile }}.json
 
       - name: Check thresholds
         env:

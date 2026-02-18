@@ -238,9 +238,12 @@ export async function fetchRates(fromCurr, toCurr, range, options = {}) {
       }
     }
 
-    // Fetch live data for Visa if needed
+    // Fetch live data for Visa and Mastercard in parallel
+    /** @type {Promise<number>[]} */
+    const livePromises = [];
+
     if (fetchVisa && (!latestVisaDate || latestVisaDate < yesterdayStr)) {
-      const liveCount = await fetchLiveDataForProvider(
+      livePromises.push(fetchLiveDataForProvider(
         'VISA',
         VisaClient,
         fromCurr,
@@ -251,13 +254,11 @@ export async function fetchRates(fromCurr, toCurr, range, options = {}) {
         mergedData,
         recordSources,
         notify
-      );
-      fromLive += liveCount;
+      ));
     }
 
-    // Fetch live data for Mastercard if needed
     if (fetchMastercard && (!latestMcDate || latestMcDate < yesterdayStr)) {
-      const liveCount = await fetchLiveDataForProvider(
+      livePromises.push(fetchLiveDataForProvider(
         'MASTERCARD',
         MastercardClient,
         fromCurr,
@@ -268,8 +269,16 @@ export async function fetchRates(fromCurr, toCurr, range, options = {}) {
         mergedData,
         recordSources,
         notify
-      );
-      fromLive += liveCount;
+      ));
+    }
+
+    const liveResults = await Promise.allSettled(livePromises);
+    for (const result of liveResults) {
+      if (result.status === 'fulfilled') {
+        fromLive += result.value;
+      } else {
+        console.error('Live fetch failed:', result.reason);
+      }
     }
 
     if (fromLive === 0 && (fetchVisa || fetchMastercard)) {
@@ -348,63 +357,67 @@ async function fetchLiveDataForProvider(
 ) {
   notify('live', `Fetching live ${providerName} data...`);
   
-  let fetchedCount = 0;
   const startDate = parseDate(yesterdayStr);
   // If no historical data exists, only fetch last 7 days
   const stopDateStr = latestDate || addDays(yesterdayStr, -7);
   
+  // Collect all missing dates
+  /** @type {Date[]} */
+  const missingDates = [];
   const currentDate = new Date(startDate.getTime());
-  let consecutiveErrors = 0;
-  const maxErrors = 3;
-
+  
   while (formatDate(currentDate) > stopDateStr) {
     const dateStr = formatDate(currentDate);
     const key = makeRecordKey(dateStr, providerName);
     
-    // Skip if we already have this date for this provider
-    if (mergedData.has(key)) {
-      currentDate.setDate(currentDate.getDate() - 1);
-      continue;
+    if (!mergedData.has(key)) {
+      missingDates.push(new Date(currentDate.getTime()));
     }
-
-    try {
-      notify('live', `Fetching ${providerName} ${dateStr}...`);
-      
-      const record = await client.fetchRate(currentDate, fromCurr, toCurr);
-      
-      if (record === null) {
-        // End of history
-        notify('live', `${providerName}: Reached end of available history`);
-        break;
-      }
-
-      // Save to IndexedDB cache immediately
-      await StorageManager.saveRate(record);
-      
-      // Add to merged data
-      mergedData.set(key, record);
-      recordSources.set(key, 'live');
-      fetchedCount++;
-      consecutiveErrors = 0;
-      
-    } catch (error) {
-      consecutiveErrors++;
-      notify('live', `${providerName} error for ${dateStr}: ${error.message}`);
-      
-      if (consecutiveErrors >= maxErrors) {
-        notify('live', `${providerName}: Too many consecutive errors, stopping`);
-        break;
-      }
-    }
-
-    // Move to previous day
     currentDate.setDate(currentDate.getDate() - 1);
-    
-    // Small delay to be respectful
-    await new Promise(resolve => setTimeout(resolve, 50));
   }
 
-  if (fetchedCount > 0) {
+  if (missingDates.length === 0) {
+    return 0;
+  }
+
+  notify('live', `Fetching live data for ${missingDates.length} ${providerName} dates...`);
+
+  // Fetch with concurrency limit of 3, fail-fast on first error
+  const MAX_CONCURRENCY = 3;
+  let fetchedCount = 0;
+  /** @type {RateRecord[]} */
+  const recordsToSave = [];
+  let failed = false;
+
+  for (let i = 0; i < missingDates.length && !failed; i += MAX_CONCURRENCY) {
+    const batch = missingDates.slice(i, i + MAX_CONCURRENCY);
+    const results = await Promise.allSettled(
+      batch.map(date => client.fetchRate(date, fromCurr, toCurr))
+    );
+
+    for (let j = 0; j < results.length; j++) {
+      const result = results[j];
+      const dateStr = formatDate(batch[j]);
+      const key = makeRecordKey(dateStr, providerName);
+
+      if (result.status === 'rejected') {
+        notify('live', `${providerName} failed on ${dateStr}: ${result.reason?.message ?? result.reason}, stopping`);
+        failed = true;
+        continue;
+      }
+
+      if (result.value !== null) {
+        mergedData.set(key, result.value);
+        recordSources.set(key, 'live');
+        recordsToSave.push(result.value);
+        fetchedCount++;
+      }
+    }
+  }
+
+  // Batch save everything that succeeded
+  if (recordsToSave.length > 0) {
+    await StorageManager.saveRates(recordsToSave);
     notify('live', `Fetched ${fetchedCount} ${providerName} records`);
   }
 

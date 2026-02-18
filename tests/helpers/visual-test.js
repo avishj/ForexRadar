@@ -143,11 +143,14 @@ export async function prepareForVisualTest(page) {
  */
 export async function selectCurrency(page, side, code) {
   const input = page.locator(`#${side}-currency-input`);
-  await input.focus();
-  await input.fill('');
+  // Click to open dropdown, then type currency code to filter
+  await input.click();
+  await input.fill(code);
   const item = page.locator(`#${side}-currency-list .dropdown-item[data-code="${code}"]`);
   await item.waitFor({ state: 'visible', timeout: 10000 });
   await item.click();
+  // Wait for dropdown to close
+  await expect(item).not.toBeVisible({ timeout: 5000 });
 }
 
 /**

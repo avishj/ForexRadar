@@ -8,7 +8,7 @@
  */
 
 import { chromium } from "playwright";
-import { PROVIDER_CONFIG, USER_AGENTS } from "../shared/constants.js";
+import { PROVIDER_CONFIG, USER_AGENTS, BROWSER_CONFIG } from "../shared/constants.js";
 import { store } from "./csv-store.js";
 
 // Select a random user agent at script startup (stays consistent for session)
@@ -71,43 +71,28 @@ async function getBrowser() {
 	}
 
 	browserInitPromise = (async () => {
+		const mcConfig = BROWSER_CONFIG.MASTERCARD;
 		console.log("[MASTERCARD] Launching Chromium browser...");
 		browserInstance = await chromium.launch({
-			headless: false, // Akamai bot detection blocks headless mode
-			args: [
-				"--disable-blink-features=AutomationControlled",
-				// Stability flags to prevent random crashes
-				"--disable-gpu",
-				"--disable-dev-shm-usage",
-				"--disable-background-timer-throttling",
-				"--disable-backgrounding-occluded-windows",
-				"--disable-renderer-backgrounding",
-				"--no-sandbox",
-				"--disable-web-security",
-				"--disable-extensions",
-				"--disable-plugins",
-				"--disable-default-apps",
-				"--disable-sync",
-				"--disable-translate",
-				"--max_old_space_size=2048",
-				"--js-flags=--max-old-space-size=2048"
-			]
+			headless: mcConfig.headless,
+			channel: mcConfig.channel,
+			args: mcConfig.args,
+			timeout: mcConfig.launchTimeout
 		});
 		browserContext = await browserInstance.newContext({
 			userAgent: SESSION_USER_AGENT,
-			viewport: { width: 1280, height: 720 },
-			locale: "en-US",
-			extraHTTPHeaders: {
-				"Accept-Language": "en-GB,en;q=0.9",
-				DNT: "1",
-				"Sec-GPC": "1"
-			}
+			viewport: mcConfig.viewport,
+			locale: mcConfig.locale,
+			extraHTTPHeaders: mcConfig.extraHTTPHeaders
 		});
 
 		// Auto-reset state if browser crashes unexpectedly
-		browserInstance.on("disconnected", () => {
-			console.warn("[MASTERCARD] Browser disconnected event fired, resetting state");
-			resetBrowserState();
+		const currentBrowser = browserInstance;
+		currentBrowser.on("disconnected", () => {
+			if (browserInstance === currentBrowser) {
+				console.warn("[MASTERCARD] Browser disconnected event fired, resetting state");
+				resetBrowserState();
+			}
 		});
 
 		return { browser: browserInstance, context: browserContext };
@@ -127,11 +112,14 @@ async function closeBrowser() {
 		// Reset state immediately so we don't try to reuse a closing browser
 		resetBrowserState();
 		try {
-			// Try graceful close with 3 second timeout
-			await Promise.race([browser.close(), new Promise((_, reject) => setTimeout(() => reject(new Error("Close timeout")), 3000))]);
+			// Try graceful close with timeout
+			await Promise.race([browser.close(), new Promise((_, reject) => setTimeout(() => reject(new Error("Close timeout")), BROWSER_CONFIG.MASTERCARD.closeTimeout))]);
 			console.log("[MASTERCARD] Browser closed");
 		} catch (_error) {
-			console.warn("[MASTERCARD] Browser close timed out, continuing (process may need manual cleanup)");
+			console.warn("[MASTERCARD] Browser close timed out, force-killing process");
+			try {
+				/** @type {any} */ (browser).process()?.kill("SIGKILL");
+			} catch { /* already dead */ }
 		}
 	}
 }
@@ -166,7 +154,7 @@ async function refreshSession() {
 	const page = await getApiPage();
 	try {
 		// Use domcontentloaded - we just need cookies, not full page render
-		await page.goto(MASTERCARD_UI_PAGE, { timeout: 15000, waitUntil: "domcontentloaded" });
+		await page.goto(MASTERCARD_UI_PAGE, { timeout: BROWSER_CONFIG.MASTERCARD.navigationTimeout, waitUntil: "domcontentloaded" });
 		await sleep(config.sessionRefreshDelayMs);
 	} catch (error) {
 		console.warn("[MASTERCARD] Session refresh failed:", error.message);
@@ -194,7 +182,7 @@ export async function fetchRate(from, to, date) {
 	url.searchParams.set("bankFee", "0");
 	url.searchParams.set("transAmt", "1");
 
-	const response = await page.goto(url.toString(), { timeout: 10000, waitUntil: "domcontentloaded" });
+	const response = await page.goto(url.toString(), { timeout: BROWSER_CONFIG.MASTERCARD.apiRequestTimeout, waitUntil: "domcontentloaded" });
 	if (!response) {
 		return { status: 0, data: null };
 	}
@@ -251,7 +239,7 @@ export async function fetchBatch(requests) {
 			if (requestCounter % config.browserRestartInterval === 0 && requestCounter > 0) {
 				console.log(`[MASTERCARD] Restarting browser after ${requestCounter} requests`);
 				await closeBrowser();
-				await sleep(config.sessionRefreshDelayMs);
+				await sleep(BROWSER_CONFIG.MASTERCARD.relaunchDelayMs);
 			}
 			if (requestCounter % config.sessionRefreshInterval === 0) {
 				await refreshSession();
