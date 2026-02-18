@@ -2,7 +2,6 @@ name: Lighthouse Audit
 
 on:
   schedule:
-    # Run weekly on Sundays at 01:00 UTC (after perf.yml at 00:00)
     - cron: '0 0 * * 0'
   workflow_dispatch:
 
