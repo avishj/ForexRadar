@@ -173,7 +173,7 @@ class LighthouseAnalyzer {
       body += `| Audit | Level | Actual | Threshold |\n`;
       body += `|-------|-------|--------|----------|\n`;
       for (const a of matched) {
-        body += `| ${a.auditId} | ${a.level} | ${a.actual} | ${a.operator} ${a.expected} |\n`;
+        body += `| ${a.auditId ?? "unknown"} | ${a.level ?? "—"} | ${a.actual ?? "—"} | ${a.operator ?? ""} ${a.expected ?? "—"} |\n`;
       }
       body += "\n";
     }
