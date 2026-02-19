@@ -234,9 +234,8 @@ async function run() {
     process.exit(0);
   }
 
-  const findProc = Bun.spawn(["find", resultsPath, "-name", "lhr-*.json", "-type", "f"]);
-  const findOutput = await new Response(findProc.stdout).text();
-  const lhrFiles = findOutput.trim().split("\n").filter(Boolean);
+  const glob = new Bun.Glob("**/lhr-*.json");
+  const lhrFiles = Array.from(glob.scanSync({ cwd: resultsPath, absolute: true }));
 
   if (lhrFiles.length === 0) {
     console.log("No Lighthouse results found");
