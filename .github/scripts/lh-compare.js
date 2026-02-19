@@ -139,12 +139,14 @@ class LighthouseAnalyzer {
     );
   }
 
-  buildIssueBody(timestamp, branch, commit) {
+  buildIssueBody(timestamp, branch, commit, reportLink = null) {
     let body = `## Lighthouse Alert\n\n`;
     body += `**Profile:** ${this.profile}\n`;
     body += `**Trigger:** ${timestamp}\n`;
     body += `**Branch:** ${branch}\n`;
-    body += `**Commit:** ${commit}\n\n`;
+    body += `**Commit:** ${commit}\n`;
+    if (reportLink) body += `**Report:** [View full report](${reportLink})\n`;
+    body += "\n";
 
     if (this.assertionFailures.length > 0) {
       const errors = this.assertionFailures.filter((a) => a.level === "error");
@@ -230,6 +232,7 @@ async function run() {
   const resultsPath = process.argv[2];
   const assertionsPath = process.argv[3] || process.env.LHCI_ASSERTION_RESULTS;
   const profile = process.argv[4] || process.env.LHCI_PROFILE || "mobile";
+  const reportLink = process.env.LHCI_REPORT_LINK || null;
   if (!resultsPath) {
     console.error("Usage: bun run lh-compare.js <results-path> [assertion-results.json] [profile]");
     process.exit(0);
@@ -279,7 +282,7 @@ async function run() {
   const existingIssue = await findOpenIssue();
 
   if (analyzer.hasCritical || analyzer.hasPersistent) {
-    const body = analyzer.buildIssueBody(timestamp, branch, commit);
+    const body = analyzer.buildIssueBody(timestamp, branch, commit, reportLink);
 
     if (existingIssue) {
       console.log(`Updating existing issue #${existingIssue.number}`);
