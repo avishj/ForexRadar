@@ -21,7 +21,11 @@ class LighthouseAnalyzer {
   static async loadHistory() {
     const file = Bun.file(HISTORY_PATH);
     if (!await file.exists()) return { runs: [], paths: {} };
-    return await file.json();
+    try {
+      return await file.json();
+    } catch {
+      return { runs: [], paths: {} };
+    }
   }
 
   static async saveHistory(history) {
