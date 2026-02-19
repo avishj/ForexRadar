@@ -2,7 +2,6 @@
   "ci": {
     "collect": {
       "settings": {
-        "preset": "mobile",
         "budgetPath": ".github/lighthouse/budget.json"
       },
       "numberOfRuns": 5
