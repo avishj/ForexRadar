@@ -235,7 +235,7 @@ async function run() {
   const reportLink = process.env.LHCI_REPORT_LINK || null;
   if (!resultsPath) {
     console.error("Usage: bun run lh-compare.js <results-path> [assertion-results.json] [profile]");
-    process.exit(0);
+    process.exit(1);
   }
 
   const glob = new Bun.Glob("**/lhr-*.json");
