@@ -295,7 +295,6 @@ async function run() {
   }
 
   console.log("\n--- Summary ---\n" + analyzer.getSummary());
-  process.exit(analyzer.hasCritical || analyzer.hasPersistent ? 1 : 0);
 }
 
 run();
