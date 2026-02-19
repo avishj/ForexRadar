@@ -8,7 +8,7 @@
       "numberOfRuns": 5
     },
     "assert": {
-      "includePassedAssertions": true,
+      "includePassedAssertions": false,
       "assertMatrix": [
         {
           "matchingUrlPattern": ".*",
@@ -44,7 +44,7 @@
             "speed-index": ["error", { "maxNumericValue": 5000 }],
             "interactive": ["error", { "maxNumericValue": 3500 }],
 
-            "performance-budget": ["error"]
+            "performance-budget": "error"
           }
         }
       ]
