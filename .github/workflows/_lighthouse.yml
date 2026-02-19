@@ -100,7 +100,10 @@ jobs:
               echo ""
             fi
 
-            REPORT=$(echo "$LINKS" | jq -r 'to_entries[0].value // empty')
+            REPORT=""
+            if [ -n "$LINKS" ] && echo "$LINKS" | jq empty 2>/dev/null; then
+              REPORT=$(echo "$LINKS" | jq -r 'to_entries[0].value // empty')
+            fi
             if [ -n "$REPORT" ]; then
               echo "[Full report](${REPORT})"
             fi
