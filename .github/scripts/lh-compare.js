@@ -49,6 +49,7 @@ class LighthouseAnalyzer {
     if (!await file.exists()) return;
     try {
       const assertions = await file.json();
+      if (!Array.isArray(assertions)) return;
       this.assertionFailures = assertions.filter((a) => a.passed === false);
     } catch (err) {
       console.error(`Failed to parse assertion results ${filePath}: ${err.message}`);
