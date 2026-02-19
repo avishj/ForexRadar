@@ -58,6 +58,7 @@ jobs:
         with:
           urls: ${{ inputs.url }}
           uploadArtifacts: true
+          artifactName: lighthouse-results-${{ matrix.profile }}
           temporaryPublicStorage: true
           configPath: .github/lighthouse/lighthouserc-${{ matrix.profile }}.json
 
