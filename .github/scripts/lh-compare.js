@@ -9,8 +9,9 @@ const CONFIG = {
 };
 
 class LighthouseAnalyzer {
-  constructor(history) {
+  constructor(history, profile = "mobile") {
     this.history = history;
+    this.profile = profile;
     this.results = [];
     this.regressions = [];
     this.assertionFailures = [];
@@ -54,13 +55,14 @@ class LighthouseAnalyzer {
 
   addResult(lhr) {
     const path = LighthouseAnalyzer.extractPath(lhr.requestedUrl);
+    const historyKey = `${this.profile}:${path}`;
     const metrics = this.#extractMetrics(lhr);
-    const regressions = this.#detectRegression(metrics, path);
+    const regressions = this.#detectRegression(metrics, historyKey);
 
-    const state = this.history.paths[path] ?? { consecutiveFailures: 0 };
+    const state = this.history.paths[historyKey] ?? { consecutiveFailures: 0 };
     const failed = regressions.length > 0 || this.assertionFailures.length > 0;
     state.consecutiveFailures = failed ? state.consecutiveFailures + 1 : 0;
-    this.history.paths[path] = state;
+    this.history.paths[historyKey] = state;
 
     const result = {
       path,
@@ -88,9 +90,9 @@ class LighthouseAnalyzer {
     };
   }
 
-  #getLastNRuns(path, n) {
+  #getLastNRuns(key, n) {
     return (this.history.runs ?? [])
-      .filter((r) => r.path === path)
+      .filter((r) => r.key === key)
       .slice(-n);
   }
 
@@ -138,6 +140,7 @@ class LighthouseAnalyzer {
 
   buildIssueBody(timestamp, branch, commit) {
     let body = `## Lighthouse Alert\n\n`;
+    body += `**Profile:** ${this.profile}\n`;
     body += `**Trigger:** ${timestamp}\n`;
     body += `**Branch:** ${branch}\n`;
     body += `**Commit:** ${commit}\n\n`;
@@ -225,8 +228,9 @@ async function findOpenIssue() {
 async function run() {
   const resultsPath = process.argv[2];
   const assertionsPath = process.argv[3] || process.env.LHCI_ASSERTION_RESULTS;
+  const profile = process.argv[4] || process.env.LHCI_PROFILE || "mobile";
   if (!resultsPath) {
-    console.error("Usage: bun run lh-compare.js <results-path> [assertion-results.json]");
+    console.error("Usage: bun run lh-compare.js <results-path> [assertion-results.json] [profile]");
     process.exit(0);
   }
 
@@ -240,7 +244,7 @@ async function run() {
   }
 
   const history = await LighthouseAnalyzer.loadHistory();
-  const analyzer = new LighthouseAnalyzer(history);
+  const analyzer = new LighthouseAnalyzer(history, profile);
 
   if (assertionsPath) {
     await analyzer.loadAssertionResults(assertionsPath);
@@ -253,15 +257,19 @@ async function run() {
     if (lhr) analyzer.addResult(lhr);
   }
 
-  const currentRun = {
-    timestamp: new Date().toISOString(),
-    branch: process.env.GITHUB_REF?.replace("refs/heads/", "") || "unknown",
-    commit: process.env.GITHUB_SHA?.substring(0, 7) || "unknown",
-    results: analyzer.results,
-  };
+  const timestamp = new Date().toISOString();
+  const branch = process.env.GITHUB_REF?.replace("refs/heads/", "") || "unknown";
+  const commit = process.env.GITHUB_SHA?.substring(0, 7) || "unknown";
 
-  history.runs.push(currentRun);
-  history.lastUpdated = new Date().toISOString();
+  for (const r of analyzer.results) {
+    history.runs.push({
+      key: `${analyzer.profile}:${r.path}`,
+      metrics: r.metrics,
+      timestamp,
+    });
+  }
+
+  history.lastUpdated = timestamp;
   await LighthouseAnalyzer.saveHistory(history);
 
   console.log("Lighthouse comparison complete");
@@ -269,11 +277,7 @@ async function run() {
 
   if (analyzer.hasCritical || analyzer.hasPersistent) {
     const existingIssue = await findOpenIssue();
-    const body = analyzer.buildIssueBody(
-      currentRun.timestamp,
-      currentRun.branch,
-      currentRun.commit
-    );
+    const body = analyzer.buildIssueBody(timestamp, branch, commit);
 
     if (existingIssue) {
       console.log(`Updating existing issue #${existingIssue.number}`);
