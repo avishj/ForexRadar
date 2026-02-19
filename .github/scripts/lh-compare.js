@@ -65,7 +65,9 @@ class LighthouseAnalyzer {
     const regressions = this.#detectRegression(metrics, historyKey);
 
     const state = this.history.paths[historyKey] ?? { consecutiveFailures: 0 };
-    const failed = regressions.length > 0 || this.assertionFailures.length > 0;
+    const url = lhr.requestedUrl;
+    const pathFailures = this.assertionFailures.filter((a) => !a.url || a.url === url);
+    const failed = regressions.length > 0 || pathFailures.length > 0;
     state.consecutiveFailures = failed ? state.consecutiveFailures + 1 : 0;
     this.history.paths[historyKey] = state;
 
