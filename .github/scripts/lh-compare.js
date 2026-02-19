@@ -1,3 +1,6 @@
+import { mkdirSync } from "node:fs";
+import { dirname } from "node:path";
+
 const HISTORY_PATH = ".lighthouse/history.json";
 const ISSUE_TITLE = "Lighthouse Performance Alert";
 const LABELS = ["lighthouse", "performance"];
@@ -32,6 +35,7 @@ class LighthouseAnalyzer {
   }
 
   static async saveHistory(history) {
+    mkdirSync(dirname(HISTORY_PATH), { recursive: true });
     await Bun.write(HISTORY_PATH, JSON.stringify(history, null, 2));
   }
 
