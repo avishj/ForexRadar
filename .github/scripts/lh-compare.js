@@ -235,7 +235,7 @@ async function ensureLabels() {
 async function findOpenIssue() {
   try {
     const output = await LighthouseAnalyzer.gh([
-      "issue", "list", "--state", "open", "--json", "number,title", "--limit", "10",
+      "issue", "list", "--state", "open", "--label", LABELS[0], "--json", "number,title",
     ]);
     const issues = JSON.parse(output);
     return issues.find((i) => i.title?.includes(ISSUE_TITLE)) ?? null;
