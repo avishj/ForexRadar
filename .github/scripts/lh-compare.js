@@ -13,6 +13,7 @@ class LighthouseAnalyzer {
     this.history = history;
     this.results = [];
     this.regressions = [];
+    this.assertionFailures = [];
   }
 
   static async loadHistory() {
@@ -36,6 +37,13 @@ class LighthouseAnalyzer {
     return out;
   }
 
+  async loadAssertionResults(filePath) {
+    const file = Bun.file(filePath);
+    if (!await file.exists()) return;
+    const assertions = await file.json();
+    this.assertionFailures = assertions.filter((a) => a.passed === false);
+  }
+
   static extractPath(url) {
     try {
       return new URL(url).pathname || "/";
@@ -50,7 +58,7 @@ class LighthouseAnalyzer {
     const regressions = this.#detectRegression(metrics, path);
 
     const state = this.history.paths[path] ?? { consecutiveFailures: 0 };
-    const failed = regressions.length > 0;
+    const failed = regressions.length > 0 || this.assertionFailures.length > 0;
     state.consecutiveFailures = failed ? state.consecutiveFailures + 1 : 0;
     this.history.paths[path] = state;
 
@@ -119,7 +127,7 @@ class LighthouseAnalyzer {
   }
 
   get hasCritical() {
-    return this.regressions.length > 0;
+    return this.regressions.length > 0 || this.assertionFailures.length > 0;
   }
 
   get hasPersistent() {
@@ -133,6 +141,19 @@ class LighthouseAnalyzer {
     body += `**Trigger:** ${timestamp}\n`;
     body += `**Branch:** ${branch}\n`;
     body += `**Commit:** ${commit}\n\n`;
+
+    if (this.assertionFailures.length > 0) {
+      const errors = this.assertionFailures.filter((a) => a.level === "error");
+      const warns = this.assertionFailures.filter((a) => a.level === "warn");
+      body += `### LHCI Assertion Failures\n\n`;
+      body += `${errors.length} error(s), ${warns.length} warning(s)\n\n`;
+      body += `| Audit | Level | Actual | Threshold |\n`;
+      body += `|-------|-------|--------|----------|\n`;
+      for (const a of this.assertionFailures) {
+        body += `| ${a.auditId} | ${a.level} | ${a.actual} | ${a.operator} ${a.expected} |\n`;
+      }
+      body += "\n";
+    }
 
     if (this.regressions.length > 0) {
       body += `### Regressions (>${CONFIG.regressionPercent * 100}% from avg)\n\n`;
@@ -159,13 +180,14 @@ class LighthouseAnalyzer {
   }
 
   getSummary() {
-    return this.results
-      .map((r) => {
-        const status = r.passed ? "✅" : "❌";
-        const regCount = r.regressions.length;
-        return `${status} ${r.path}: ${regCount} regression(s)`;
-      })
-      .join("\n");
+    const errors = this.assertionFailures.filter((a) => a.level === "error").length;
+    const warns = this.assertionFailures.filter((a) => a.level === "warn").length;
+    const lines = [`Assertions: ${errors} error(s), ${warns} warning(s)`];
+    for (const r of this.results) {
+      const status = r.passed ? "✅" : "❌";
+      lines.push(`${status} ${r.path}: ${r.regressions.length} regression(s)`);
+    }
+    return lines.join("\n");
   }
 }
 
@@ -202,8 +224,9 @@ async function findOpenIssue() {
 
 async function run() {
   const resultsPath = process.argv[2];
+  const assertionsPath = process.argv[3] || process.env.LHCI_ASSERTION_RESULTS;
   if (!resultsPath) {
-    console.error("Usage: bun run lh-compare.js <results-path>");
+    console.error("Usage: bun run lh-compare.js <results-path> [assertion-results.json]");
     process.exit(0);
   }
 
@@ -218,6 +241,10 @@ async function run() {
 
   const history = await LighthouseAnalyzer.loadHistory();
   const analyzer = new LighthouseAnalyzer(history);
+
+  if (assertionsPath) {
+    await analyzer.loadAssertionResults(assertionsPath);
+  }
 
   for (const lhrFile of lhrFiles) {
     const file = Bun.file(lhrFile);
