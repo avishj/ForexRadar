@@ -149,8 +149,9 @@ class LighthouseAnalyzer {
   }
 
   get hasPersistent() {
-    return Object.values(this.history.paths).some(
-      (p) => p.consecutiveFailures >= CONFIG.consecutiveFailLimit
+    const prefix = `${this.profile}:`;
+    return Object.entries(this.history.paths).some(
+      ([key, p]) => key.startsWith(prefix) && p.consecutiveFailures >= CONFIG.consecutiveFailLimit
     );
   }
 
