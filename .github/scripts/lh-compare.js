@@ -309,4 +309,7 @@ async function run() {
   console.log("\n--- Summary ---\n" + analyzer.getSummary());
 }
 
-run();
+run().catch((err) => {
+  console.error(err);
+  process.exitCode = 1;
+});
