@@ -183,7 +183,8 @@ class LighthouseAnalyzer {
       for (const { path, regressions } of this.regressions) {
         body += `**${path}**\n`;
         for (const r of regressions) {
-          body += `- ${r.metric}: ${r.avg} → ${r.current} (${r.percentChange})\n`;
+          const fmt = (v) => v < 10 ? v.toFixed(3) : v.toFixed(1);
+          body += `- ${r.metric}: ${fmt(r.avg)} → ${fmt(r.current)} (${r.percentChange})\n`;
         }
       }
       body += "\n";
