@@ -275,8 +275,9 @@ async function run() {
   console.log("Lighthouse comparison complete");
   console.log(`Regressions: ${analyzer.regressions.length} paths`);
 
+  const existingIssue = await findOpenIssue();
+
   if (analyzer.hasCritical || analyzer.hasPersistent) {
-    const existingIssue = await findOpenIssue();
     const body = analyzer.buildIssueBody(timestamp, branch, commit);
 
     if (existingIssue) {
@@ -288,6 +289,10 @@ async function run() {
       const labelArgs = validLabels.length > 0 ? ["--label", validLabels.join(",")] : [];
       await LighthouseAnalyzer.gh(["issue", "create", "--title", ISSUE_TITLE, "--body", body, ...labelArgs]);
     }
+  } else if (existingIssue) {
+    console.log(`Closing issue #${existingIssue.number} — all clear`);
+    await LighthouseAnalyzer.gh(["issue", "comment", String(existingIssue.number), "--body", "✅ All clear — no regressions or assertion failures."]);
+    await LighthouseAnalyzer.gh(["issue", "close", String(existingIssue.number)]);
   }
 
   console.log("\n--- Summary ---\n" + analyzer.getSummary());
