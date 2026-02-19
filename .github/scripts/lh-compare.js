@@ -292,6 +292,14 @@ async function run() {
     });
   }
 
+  const seenKeys = new Set(analyzer.results.map((r) => `${analyzer.profile}:${r.path}`));
+  const profilePrefix = `${analyzer.profile}:`;
+  for (const key of Object.keys(history.paths)) {
+    if (key.startsWith(profilePrefix) && !seenKeys.has(key)) {
+      delete history.paths[key];
+    }
+  }
+
   history.runs = history.runs.slice(-CONFIG.maxHistoryRuns);
   history.lastUpdated = timestamp;
   await LighthouseAnalyzer.saveHistory(history);
