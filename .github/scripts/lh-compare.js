@@ -46,8 +46,12 @@ class LighthouseAnalyzer {
   async loadAssertionResults(filePath) {
     const file = Bun.file(filePath);
     if (!await file.exists()) return;
-    const assertions = await file.json();
-    this.assertionFailures = assertions.filter((a) => a.passed === false);
+    try {
+      const assertions = await file.json();
+      this.assertionFailures = assertions.filter((a) => a.passed === false);
+    } catch (err) {
+      console.error(`Failed to parse assertion results ${filePath}: ${err.message}`);
+    }
   }
 
   static extractPath(url) {
@@ -263,8 +267,12 @@ async function run() {
   for (const lhrFile of lhrFiles) {
     const file = Bun.file(lhrFile);
     if (!await file.exists()) continue;
-    const lhr = await file.json();
-    if (lhr) analyzer.addResult(lhr);
+    try {
+      const lhr = await file.json();
+      if (lhr) analyzer.addResult(lhr);
+    } catch (err) {
+      console.error(`Failed to parse LHR ${lhrFile}: ${err.message}`);
+    }
   }
 
   const timestamp = new Date().toISOString();
