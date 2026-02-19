@@ -67,6 +67,12 @@ jobs:
           PROFILE: ${{ matrix.profile }}
         run: |
           HEADER="${PROFILE^}"
+          if [ -z "$ASSERTIONS" ] || ! echo "$ASSERTIONS" | jq empty 2>/dev/null; then
+            echo "## Lighthouse: ${HEADER}" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "### ⚠️ No assertion results available" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
           ERRORS=$(echo "$ASSERTIONS" | jq '[.[] | select(.level == "error" and .passed == false)] | length')
           WARNS=$(echo "$ASSERTIONS" | jq '[.[] | select(.level == "warn" and .passed == false)] | length')
 
