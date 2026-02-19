@@ -210,8 +210,9 @@ async function ensureLabels() {
     } catch {
       // label may already exist — verify it does
       try {
-        await LighthouseAnalyzer.gh(["label", "list", "--search", label, "--json", "name"]);
-        created.push(label);
+        const output = await LighthouseAnalyzer.gh(["label", "list", "--search", label, "--json", "name"]);
+        const labels = JSON.parse(output);
+        if (labels.some((l) => l.name === label)) created.push(label);
       } catch {
         // skip this label entirely
       }
