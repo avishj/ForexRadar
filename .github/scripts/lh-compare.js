@@ -262,8 +262,8 @@ async function run() {
   const lhrFiles = Array.from(glob.scanSync({ cwd: resultsPath, absolute: true }));
 
   if (lhrFiles.length === 0) {
-    console.log("No Lighthouse results found");
-    process.exit(0);
+    console.error("No Lighthouse results found — aborting");
+    process.exit(1);
   }
 
   const history = await LighthouseAnalyzer.loadHistory();
