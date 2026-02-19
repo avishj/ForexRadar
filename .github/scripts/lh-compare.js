@@ -227,7 +227,7 @@ async function findOpenIssue() {
       "issue", "list", "--state", "open", "--json", "number,title", "--limit", "10",
     ]);
     const issues = JSON.parse(output);
-    return issues.find((i) => i.title.includes(ISSUE_TITLE)) ?? null;
+    return issues.find((i) => i.title?.includes(ISSUE_TITLE)) ?? null;
   } catch {
     return null;
   }
