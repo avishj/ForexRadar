@@ -311,24 +311,28 @@ async function run() {
   console.log("Lighthouse comparison complete");
   console.log(`Regressions: ${analyzer.regressions.length} paths`);
 
-  const existingIssue = await findOpenIssue();
+  try {
+    const existingIssue = await findOpenIssue();
 
-  if (analyzer.hasCritical || analyzer.hasPersistent) {
-    const body = analyzer.buildIssueBody(timestamp, branch, commit, reportLink);
+    if (analyzer.hasCritical || analyzer.hasPersistent) {
+      const body = analyzer.buildIssueBody(timestamp, branch, commit, reportLink);
 
-    if (existingIssue) {
-      console.log(`Updating existing issue #${existingIssue.number}`);
-      await LighthouseAnalyzer.gh(["issue", "comment", String(existingIssue.number), "--body", body]);
-    } else {
-      console.log("Creating new issue");
-      const validLabels = await ensureLabels();
-      const labelArgs = validLabels.length > 0 ? ["--label", validLabels.join(",")] : [];
-      await LighthouseAnalyzer.gh(["issue", "create", "--title", ISSUE_TITLE, "--body", body, ...labelArgs]);
+      if (existingIssue) {
+        console.log(`Updating existing issue #${existingIssue.number}`);
+        await LighthouseAnalyzer.gh(["issue", "comment", String(existingIssue.number), "--body", body]);
+      } else {
+        console.log("Creating new issue");
+        const validLabels = await ensureLabels();
+        const labelArgs = validLabels.length > 0 ? ["--label", validLabels.join(",")] : [];
+        await LighthouseAnalyzer.gh(["issue", "create", "--title", ISSUE_TITLE, "--body", body, ...labelArgs]);
+      }
+    } else if (existingIssue) {
+      console.log(`Closing issue #${existingIssue.number} — all clear`);
+      await LighthouseAnalyzer.gh(["issue", "comment", String(existingIssue.number), "--body", "✅ All clear — no regressions or assertion failures."]);
+      await LighthouseAnalyzer.gh(["issue", "close", String(existingIssue.number)]);
     }
-  } else if (existingIssue) {
-    console.log(`Closing issue #${existingIssue.number} — all clear`);
-    await LighthouseAnalyzer.gh(["issue", "comment", String(existingIssue.number), "--body", "✅ All clear — no regressions or assertion failures."]);
-    await LighthouseAnalyzer.gh(["issue", "close", String(existingIssue.number)]);
+  } catch (err) {
+    console.error(`Issue management failed: ${err.message}`);
   }
 
   console.log("\n--- Summary ---\n" + analyzer.getSummary());
