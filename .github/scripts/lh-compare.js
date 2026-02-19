@@ -16,6 +16,7 @@ class LighthouseAnalyzer {
     this.results = [];
     this.regressions = [];
     this.assertionFailures = [];
+    this.matchedFailures = new Set();
   }
 
   static async loadHistory() {
@@ -71,6 +72,7 @@ class LighthouseAnalyzer {
     const state = this.history.paths[historyKey] ?? { consecutiveFailures: 0 };
     const url = lhr.requestedUrl;
     const pathFailures = this.assertionFailures.filter((a) => !a.url || a.url === url);
+    for (const f of pathFailures) this.matchedFailures.add(f);
     const failed = regressions.length > 0 || pathFailures.length > 0;
     state.consecutiveFailures = failed ? state.consecutiveFailures + 1 : 0;
     this.history.paths[historyKey] = state;
@@ -140,7 +142,7 @@ class LighthouseAnalyzer {
   }
 
   get hasCritical() {
-    return this.regressions.length > 0 || this.assertionFailures.length > 0;
+    return this.regressions.length > 0 || this.matchedFailures.size > 0;
   }
 
   get hasPersistent() {
@@ -158,14 +160,15 @@ class LighthouseAnalyzer {
     if (reportLink) body += `**Report:** [View full report](${reportLink})\n`;
     body += "\n";
 
-    if (this.assertionFailures.length > 0) {
-      const errors = this.assertionFailures.filter((a) => a.level === "error");
-      const warns = this.assertionFailures.filter((a) => a.level === "warn");
+    const matched = [...this.matchedFailures];
+    if (matched.length > 0) {
+      const errors = matched.filter((a) => a.level === "error");
+      const warns = matched.filter((a) => a.level === "warn");
       body += `### LHCI Assertion Failures\n\n`;
       body += `${errors.length} error(s), ${warns.length} warning(s)\n\n`;
       body += `| Audit | Level | Actual | Threshold |\n`;
       body += `|-------|-------|--------|----------|\n`;
-      for (const a of this.assertionFailures) {
+      for (const a of matched) {
         body += `| ${a.auditId} | ${a.level} | ${a.actual} | ${a.operator} ${a.expected} |\n`;
       }
       body += "\n";
@@ -196,8 +199,9 @@ class LighthouseAnalyzer {
   }
 
   getSummary() {
-    const errors = this.assertionFailures.filter((a) => a.level === "error").length;
-    const warns = this.assertionFailures.filter((a) => a.level === "warn").length;
+    const matched = [...this.matchedFailures];
+    const errors = matched.filter((a) => a.level === "error").length;
+    const warns = matched.filter((a) => a.level === "warn").length;
     const lines = [`Assertions: ${errors} error(s), ${warns} warning(s)`];
     for (const r of this.results) {
       const status = r.passed ? "✅" : "❌";
