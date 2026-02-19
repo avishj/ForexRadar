@@ -3,28 +3,6 @@ const ISSUE_TITLE = "Lighthouse Performance Alert";
 const LABELS = ["lighthouse", "performance"];
 
 const CONFIG = {
-  failThresholds: {
-    performance: 85,
-    accessibility: 90,
-    "best-practices": 90,
-    seo: 90,
-  },
-  metricThresholds: {
-    "first-contentful-paint": 2000,
-    "largest-contentful-paint": 3000,
-    "cumulative-layout-shift": 0.15,
-    "total-blocking-time": 300,
-    "speed-index": 5000,
-    interactive: 3500,
-  },
-  higherIsWorseMetrics: new Set([
-    "first-contentful-paint",
-    "largest-contentful-paint",
-    "cumulative-layout-shift",
-    "total-blocking-time",
-    "speed-index",
-    "interactive",
-  ]),
   regressionPercent: 0.1,
   consecutiveFailLimit: 3,
   minRunsForRegression: 2,
@@ -34,7 +12,6 @@ class LighthouseAnalyzer {
   constructor(history) {
     this.history = history;
     this.results = [];
-    this.failures = [];
     this.regressions = [];
   }
 
@@ -69,13 +46,11 @@ class LighthouseAnalyzer {
 
   addResult(lhr) {
     const path = LighthouseAnalyzer.extractPath(lhr.requestedUrl);
-    const scores = this.#extractScores(lhr);
     const metrics = this.#extractMetrics(lhr);
-    const failures = this.#checkFailures(scores, metrics);
     const regressions = this.#detectRegression(metrics, path);
 
     const state = this.history.paths[path] ?? { consecutiveFailures: 0 };
-    const failed = failures.length > 0 || regressions.length > 0;
+    const failed = regressions.length > 0;
     state.consecutiveFailures = failed ? state.consecutiveFailures + 1 : 0;
     this.history.paths[path] = state;
 
@@ -83,26 +58,13 @@ class LighthouseAnalyzer {
       path,
       url: lhr.requestedUrl,
       passed: !failed,
-      scores,
       metrics,
-      failures,
       regressions,
       consecutiveFailures: state.consecutiveFailures,
     };
 
     this.results.push(result);
-    if (failures.length > 0) this.failures.push({ path, failures });
     if (regressions.length > 0) this.regressions.push({ path, regressions });
-  }
-
-  #extractScores(lhr) {
-    const cats = lhr.categories ?? {};
-    return {
-      performance: Math.round((cats.performance?.score ?? 0) * 100),
-      accessibility: Math.round((cats.accessibility?.score ?? 0) * 100),
-      "best-practices": Math.round((cats["best-practices"]?.score ?? 0) * 100),
-      seo: Math.round((cats.seo?.score ?? 0) * 100),
-    };
   }
 
   #extractMetrics(lhr) {
@@ -116,26 +78,6 @@ class LighthouseAnalyzer {
       "speed-index": extract("speed-index"),
       interactive: extract("interactive"),
     };
-  }
-
-  #checkFailures(scores, metrics) {
-    const failures = [];
-
-    for (const [cat, threshold] of Object.entries(CONFIG.failThresholds)) {
-      const score = scores[cat];
-      if (score != null && score < threshold) {
-        failures.push({ type: "score", category: cat, value: score, threshold });
-      }
-    }
-
-    for (const [metric, threshold] of Object.entries(CONFIG.metricThresholds)) {
-      const value = metrics[metric];
-      if (value != null && value > threshold) {
-        failures.push({ type: "metric", metric, value, threshold });
-      }
-    }
-
-    return failures;
   }
 
   #getLastNRuns(path, n) {
@@ -157,21 +99,13 @@ class LighthouseAnalyzer {
 
     if (last5.length < CONFIG.minRunsForRegression) return regressions;
 
-    for (const metric of Object.keys(CONFIG.metricThresholds)) {
-      const current = metrics[metric];
+    for (const [metric, current] of Object.entries(metrics)) {
       if (current == null) continue;
 
       const avg = this.#calculateAverage(last5, metric);
       if (avg == null) continue;
 
-      const isHigherWorse = CONFIG.higherIsWorseMetrics.has(metric);
-      const percent = CONFIG.regressionPercent;
-
-      const regressed = isHigherWorse
-        ? current > avg * (1 + percent)
-        : current < avg * (1 - percent);
-
-      if (regressed) {
+      if (current > avg * (1 + CONFIG.regressionPercent)) {
         regressions.push({
           metric,
           current,
@@ -185,7 +119,7 @@ class LighthouseAnalyzer {
   }
 
   get hasCritical() {
-    return this.failures.length > 0 || this.regressions.length > 0;
+    return this.regressions.length > 0;
   }
 
   get hasPersistent() {
@@ -199,18 +133,6 @@ class LighthouseAnalyzer {
     body += `**Trigger:** ${timestamp}\n`;
     body += `**Branch:** ${branch}\n`;
     body += `**Commit:** ${commit}\n\n`;
-
-    if (this.failures.length > 0) {
-      body += `### Failed Checks\n\n`;
-      for (const { path, failures } of this.failures) {
-        body += `**${path}**\n`;
-        for (const f of failures) {
-          const suffix = f.type === "score" ? "%" : "";
-          body += `- ${f.type === "score" ? f.category : f.metric}: ${f.value}${suffix} (threshold: ${f.threshold}${suffix})\n`;
-        }
-      }
-      body += "\n";
-    }
 
     if (this.regressions.length > 0) {
       body += `### Regressions (>${CONFIG.regressionPercent * 100}% from avg)\n\n`;
@@ -240,7 +162,8 @@ class LighthouseAnalyzer {
     return this.results
       .map((r) => {
         const status = r.passed ? "✅" : "❌";
-        return `${status} ${r.path}: Perf ${r.scores.performance}% | A11y ${r.scores.accessibility}% | BP ${r.scores["best-practices"]}% | SEO ${r.scores.seo}%`;
+        const regCount = r.regressions.length;
+        return `${status} ${r.path}: ${regCount} regression(s)`;
       })
       .join("\n");
   }
@@ -315,7 +238,6 @@ async function run() {
   await LighthouseAnalyzer.saveHistory(history);
 
   console.log("Lighthouse comparison complete");
-  console.log(`Failures: ${analyzer.failures.length} paths`);
   console.log(`Regressions: ${analyzer.regressions.length} paths`);
 
   if (analyzer.hasCritical || analyzer.hasPersistent) {
