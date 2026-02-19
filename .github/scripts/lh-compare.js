@@ -166,7 +166,7 @@ class LighthouseAnalyzer {
       for (const { path, regressions } of this.regressions) {
         body += `**${path}**\n`;
         for (const r of regressions) {
-          body += `- ${r.metric}: ${r.current} → ${r.avg} (${r.percentChange})\n`;
+          body += `- ${r.metric}: ${r.avg} → ${r.current} (${r.percentChange})\n`;
         }
       }
       body += "\n";
