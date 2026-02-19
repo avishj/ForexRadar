@@ -6,6 +6,7 @@ const CONFIG = {
   regressionPercent: 0.1,
   consecutiveFailLimit: 3,
   minRunsForRegression: 2,
+  maxHistoryRuns: 100,
 };
 
 class LighthouseAnalyzer {
@@ -268,6 +269,7 @@ async function run() {
     });
   }
 
+  history.runs = history.runs.slice(-CONFIG.maxHistoryRuns);
   history.lastUpdated = timestamp;
   await LighthouseAnalyzer.saveHistory(history);
 
