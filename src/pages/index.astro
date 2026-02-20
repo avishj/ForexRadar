@@ -1,49 +1,8 @@
 ---
-import { url } from '../utils/url.js';
+import Base from '../layouts/Base.astro';
 ---
 
-<!DOCTYPE html>
-<html lang="en" class="dark">
-
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" 
-        content="default-src 'self';
-                 script-src 'self' https://cdn.jsdelivr.net 'sha256-z4sY036K0MlfAh6ujaBD7GvWaDJ5x5XoDsznq7H4/U0=' 'sha256-Kg3THSfNe2VgwELAQ4K3J4Qr1LUQ4nwM/N08Nv98DVk=' 'wasm-unsafe-eval';
-                 style-src 'self' https://fonts.googleapis.com 'unsafe-inline';
-                 font-src https://fonts.gstatic.com;
-                 connect-src 'self' https://avishj.github.io https://api.allorigins.win;
-                 img-src 'self' data:;">
-  <title>Forex Radar: One stop solution to tracking Visa / Master Card exchange rates.</title>
-  <meta name="description" content="Track historical Visa and Mastercard exchange rates with real markup percentages. See what you're actually paying when you swipe abroad.">
-  
-  <!-- Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
-  
-  <!-- Custom Styles (loaded first so Tailwind utilities can override) -->
-  <link rel="stylesheet" href={url('css/styles.css')}>
-  
-  <!-- Tailwind CSS v4 (CDN for development) -->
-  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.1.18/dist/index.global.js"
-          integrity="sha384-y0axVOJIfo0bJOmTOnyRyUjrqjUotl7L/k6mzSwu2SSrB3r7P+b0cSFkiod+js0X"
-          crossorigin="anonymous"></script>
-  <style type="text/tailwindcss">
-    @theme {
-      --font-display: "Space Grotesk", system-ui, sans-serif;
-      --font-body: "DM Sans", system-ui, sans-serif;
-    }
-  </style>
-  
-  <!-- ApexCharts -->
-  <script src="https://cdn.jsdelivr.net/npm/apexcharts@5.3.6/dist/apexcharts.min.js"
-          integrity="sha384-mrR3K8Jvv+o9bZ6Yu9HWI0M8tuzo5VWNi4fWcmmbFq3NbB+WvjW/tF/wnELivEnc"
-          crossorigin="anonymous"></script>
-</head>
-
-<body>
+<Base>
   <!-- Animated Background -->
   <div class="bg-pattern">
     <div class="bg-grid"></div>
@@ -439,27 +398,4 @@ import { url } from '../utils/url.js';
     const currentYear = new Date().getFullYear();
     document.getElementById('copyright-year').textContent = currentYear > 2024 ? `2024-${currentYear}` : '2024';
   </script>
-
-  <!-- Notification Container -->
-  <div id="notification-container"></div>
-
-  <!-- Theme Script (inline to prevent flash) -->
-  <script>
-    const savedTheme = localStorage.getItem('theme');
-    // Default to dark mode if no saved preference
-    if (savedTheme !== 'light') {
-      document.documentElement.classList.add('dark');
-      document.documentElement.classList.remove('light');
-    } else {
-      document.documentElement.classList.add('light');
-      document.documentElement.classList.remove('dark');
-    }
-  </script>
-
-  <!-- Load Scripts -->
-  <script type="module" src={url('js/theme.js')}></script>
-  <script type="module" src={url('js/animations.js')}></script>
-  <script type="module" src={url('js/app.js')}></script>
-</body>
-
-</html>
+</Base>
