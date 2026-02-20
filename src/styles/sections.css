@@ -1095,7 +1095,7 @@
 /* --------------------------------
    Empty State
    -------------------------------- */
-/* Loader and Empty State styles migrated to Tailwind in index.html */
+/* Loader and Empty State styles are primarily handled with Tailwind in Astro page markup. */
 
 /* --------------------------------
    Notification Toast

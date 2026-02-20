@@ -13,6 +13,7 @@ import {
   sortByDateAsc,
   splitByProvider
 } from '../../shared/csv-utils.js';
+import { url } from '../utils/url.js';
 
 /** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
 /** @typedef {import('../../shared/types.js').CurrencyCode} CurrencyCode */
@@ -196,4 +197,4 @@ export class CSVReader {
  * Default CSVReader instance using standard db/ path
  * @type {CSVReader}
  */
-export const csvReader = new CSVReader();
+export const csvReader = new CSVReader(url('/db'));
