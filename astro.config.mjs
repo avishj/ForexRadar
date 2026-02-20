@@ -36,9 +36,6 @@ export default defineConfig({
   srcDir: 'src',
   vite: {
     plugins: [tailwindcss()],
-    server: {
-      fs: { allow: ['db'] },
-    },
   },
   integrations: [dbIntegration()],
 });
