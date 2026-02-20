@@ -28,7 +28,9 @@ jobs:
         run: |
           BASE="${{ github.event.pull_request.base.sha || 'HEAD~1' }}"
           CHANGED=$(git diff --name-only "$BASE" HEAD)
-          if echo "$CHANGED" | grep -qvE '^(db/|docs/|scripts/|\.playwright-mcp/|playwright-report/|test-results/|\.imgbotconfig|\.markdownlint|\.repomixignore|repomix|\.DS_Store|LICENSE|CNAME)|\.md$'; then
+          if [ -z "$CHANGED" ]; then
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          elif echo "$CHANGED" | grep -qvE '^(db/|docs/|scripts/|\.playwright-mcp/|playwright-report/|test-results/|\.imgbotconfig|\.markdownlint|\.repomixignore|repomix|\.DS_Store|LICENSE|CNAME)|\.md$'; then
             echo "code=true" >> "$GITHUB_OUTPUT"
           else
             echo "code=false" >> "$GITHUB_OUTPUT"
