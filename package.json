@@ -8,6 +8,8 @@
     "ecb-backfill": "cd backend && bun run ecb-backfill.js",
     "daily": "cd backend && bun run daily-update.js",
     "validate": "cd backend && bun run validate-data.js",
+    "dev": "astro dev",
+    "build": "astro build",
     "check": "bunx tsc --noEmit",
     "lint": "eslint js shared backend && stylelint css/**/*.css && htmlhint index.html && markdownlint-cli2",
     "lint:fix": "eslint js shared backend --fix && stylelint css/**/*.css --fix && markdownlint-cli2 --fix",
