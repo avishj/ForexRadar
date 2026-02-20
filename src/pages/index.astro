@@ -4,6 +4,9 @@ import Header from '../components/Header.astro';
 import Hero from '../components/Hero.astro';
 import CurrencySelector from '../components/CurrencySelector.astro';
 import StatsBar from '../components/StatsBar.astro';
+import TimeRange from '../components/TimeRange.astro';
+import SeriesToggle from '../components/SeriesToggle.astro';
+import ChartSection from '../components/ChartSection.astro';
 ---
 
 <Base>
@@ -29,50 +32,9 @@ import StatsBar from '../components/StatsBar.astro';
 
   <StatsBar />
 
-  <!-- Time Range Selector -->
-  <section id="time-range-selector" class="time-range-container hidden">
-    <div class="time-range-buttons">
-      <button class="btn time-range-btn" data-range="1m">1M</button>
-      <button class="btn time-range-btn" data-range="3m">3M</button>
-      <button class="btn time-range-btn" data-range="6m">6M</button>
-      <button class="btn btn--active time-range-btn" data-range="1y">1Y</button>
-      <button class="btn time-range-btn" data-range="5y">5Y</button>
-      <button class="btn time-range-btn" data-range="all">All</button>
-    </div>
-  </section>
-
-  <!-- Series Toggles -->
-  <section id="series-toggles" class="series-toggles-container hidden">
-    <div class="series-toggles">
-      <label class="btn series-toggle">
-        <input type="checkbox" id="toggle-visa-rate" checked>
-        <span class="toggle-indicator visa-rate"></span>
-        <span class="toggle-label">Visa Rate</span>
-      </label>
-      <label class="btn series-toggle">
-        <input type="checkbox" id="toggle-mc-rate" checked>
-        <span class="toggle-indicator mc-rate"></span>
-        <span class="toggle-label">Mastercard Rate</span>
-      </label>
-      <label class="btn series-toggle">
-        <input type="checkbox" id="toggle-ecb-rate" checked>
-        <span class="toggle-indicator ecb-rate"></span>
-        <span class="toggle-label">ECB Rate</span>
-      </label>
-      <label class="btn series-toggle">
-        <input type="checkbox" id="toggle-visa-markup" checked>
-        <span class="toggle-indicator visa-markup"></span>
-        <span class="toggle-label">Visa Markup</span>
-      </label>
-    </div>
-  </section>
-
-  <!-- Chart Container -->
-  <section id="chart-container" class="max-w-[1200px] mx-auto px-8 pb-8 hidden">
-    <div class="card card--hover p-6" data-animate>
-      <div id="chart" class="chart-min-height"></div>
-    </div>
-  </section>
+  <TimeRange />
+  <SeriesToggle />
+  <ChartSection />
 
   <!-- Empty State -->
   <section id="empty-state" class="max-w-[1200px] mx-auto px-8 pb-16">
