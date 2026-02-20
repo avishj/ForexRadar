@@ -5,8 +5,8 @@
   --font-body: "DM Sans", system-ui, sans-serif;
 }
 
-@import "../../public/css/base.css";
-@import "../../public/css/animations.css";
-@import "../../public/css/components.css";
-@import "../../public/css/sections.css";
-@import "../../public/css/utilities.css";
+@import "../../css/base.css";
+@import "../../css/animations.css";
+@import "../../css/components.css";
+@import "../../css/sections.css";
+@import "../../css/utilities.css";
