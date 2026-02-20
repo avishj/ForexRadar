@@ -1,0 +1,113 @@
+name: Lighthouse Audit
+
+on:
+  workflow_call:
+    inputs:
+      url:
+        description: URL to audit
+        type: string
+        required: false
+        default: https://forexradar.avishj.dev
+      local-server:
+        description: Start local test server before auditing
+        type: boolean
+        required: false
+        default: false
+      wait-seconds:
+        description: Seconds to wait before auditing (e.g. deployment propagation)
+        type: number
+        required: false
+        default: 0
+
+jobs:
+  lighthouse:
+    name: Lighthouse (${{ matrix.profile }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [mobile, tablet, desktop]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6.0.1
+
+      - name: Setup JS environment
+        if: inputs.local-server
+        uses: ./.github/actions/setup-js
+
+      - name: Start test server
+        if: inputs.local-server
+        run: |
+          bun run tests/server.js &
+          for _ in $(seq 1 10); do
+            curl -s http://localhost:3000 > /dev/null && exit 0
+            sleep 1
+          done
+          echo "::error::Test server failed to start on localhost:3000"
+          exit 1
+
+      - name: Wait for propagation
+        if: inputs.wait-seconds > 0
+        run: sleep ${{ inputs.wait-seconds }}
+
+      - name: Run Lighthouse
+        id: lighthouse
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          urls: ${{ inputs.url }}
+          uploadArtifacts: true
+          artifactName: lighthouse-results-${{ matrix.profile }}
+          temporaryPublicStorage: true
+          configPath: .github/lighthouse/lighthouserc-${{ matrix.profile }}.json
+
+      - name: Summary
+        if: always()
+        env:
+          ASSERTIONS: ${{ steps.lighthouse.outputs.assertionResults }}
+          LINKS: ${{ steps.lighthouse.outputs.links }}
+          PROFILE: ${{ matrix.profile }}
+        run: |
+          HEADER="${PROFILE^}"
+          if [ -z "$ASSERTIONS" ] || ! echo "$ASSERTIONS" | jq empty 2>/dev/null; then
+            {
+              echo "## Lighthouse: ${HEADER}"
+              echo ""
+              echo "### ⚠️ No assertion results available"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          ERRORS=$(echo "$ASSERTIONS" | jq '[.[] | select(.level == "error" and .passed == false)] | length')
+          WARNS=$(echo "$ASSERTIONS" | jq '[.[] | select(.level == "warn" and .passed == false)] | length')
+
+          if [ "$ERRORS" -gt 0 ]; then
+            STATUS="❌ ${ERRORS} error(s), ${WARNS} warning(s)"
+          elif [ "$WARNS" -gt 0 ]; then
+            STATUS="⚠️ ${WARNS} warning(s)"
+          else
+            STATUS="✅ All assertions passed"
+          fi
+
+          {
+            echo "## Lighthouse: ${HEADER}"
+            echo ""
+            echo "### ${STATUS}"
+            echo ""
+
+            FAILED=$(echo "$ASSERTIONS" | jq '[.[] | select(.passed == false)]')
+            if [ "$(echo "$FAILED" | jq 'length')" -gt 0 ]; then
+              echo "| Audit | Level | Actual | Threshold |"
+              echo "|-------|-------|--------|-----------|"
+              echo "$FAILED" | jq -r '.[] | "| \(.auditId) | \(.level) | \(.actual) | \(.operator) \(.expected) |"'
+              echo ""
+            fi
+
+            REPORT=""
+            if [ -n "$LINKS" ] && echo "$LINKS" | jq empty 2>/dev/null; then
+              REPORT=$(echo "$LINKS" | jq -r 'to_entries[0].value // empty')
+            fi
+            if [ -n "$REPORT" ]; then
+              echo "[Full report](${REPORT})"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

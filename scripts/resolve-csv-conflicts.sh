@@ -15,8 +15,8 @@ fi
 count=0
 while IFS= read -r f; do
   # Strip conflict markers, keep header + data rows sorted
-  sorted=$(grep -Ev '^<<<<<<< |^=======|^\|\|\|\|\|\|\| |^>>>>>>> |^date,to_curr,provider,rate,markup' "$f" \
-    | sort -t, -k1,1 -k2,2 -k3,3)
+  sorted=$(grep -Ev '^<<<<<<< |^=======|^\|\|\|\|\|\|\| |^>>>>>>> |^date,to_curr,provider,rate,markup' "$f" || [[ $? -eq 1 ]])
+  sorted=$(echo "$sorted" | sort -t, -k1,1 -k2,2 -k3,3)
 
   # Check for duplicate keys (date,to_curr,provider) with differing rate/markup
   dupes=$(echo "$sorted" | awk -F, '{key=$1","$2","$3} seen[key] && seen[key]!=$0 {print key" has conflicting values"; err=1} {seen[key]=$0} END {exit err?1:0}') || {
@@ -27,7 +27,7 @@ while IFS= read -r f; do
 
   {
     echo "date,to_curr,provider,rate,markup"
-    echo "$sorted" | sort -t, -k1,1 -k2,2 -k3,3 -u
+    echo "$sorted" | { grep -v '^$' || [[ $? -eq 1 ]]; } | sort -t, -k1,1 -k2,2 -k3,3 -u
   } > "${f}.resolved"
 
   mv "${f}.resolved" "$f"
