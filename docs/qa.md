@@ -322,7 +322,8 @@ After major changes, record baseline metrics here for comparison:
 bun i -g lighthouse
 
 # Run audit against local server
-bun run tests/server.js &
+bun run build
+bun run preview -- --host --port 3000 &
 lighthouse http://localhost:3000 --preset=desktop --output=html --output-path=./lighthouse-report.html
 
 # View report

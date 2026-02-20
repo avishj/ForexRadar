@@ -4,7 +4,7 @@
  * Pure fetcher for server CSV files. No caching - that's StorageManager's job.
  * Fetches sharded yearly CSV files from db/{CURRENCY}/{YEAR}.csv
  * 
- * @module js/csv-reader
+ * @module src/scripts/csv-reader
  */
 
 import {
