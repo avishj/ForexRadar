@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-body: "DM Sans", system-ui, sans-serif;
+}
+
+@import "../../public/css/base.css";
+@import "../../public/css/animations.css";
+@import "../../public/css/components.css";
+@import "../../public/css/sections.css";
+@import "../../public/css/utilities.css";

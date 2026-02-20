@@ -1,4 +1,5 @@
 import { defineConfig } from 'astro/config';
+import tailwindcss from '@tailwindcss/vite';
 import { existsSync, cpSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -34,6 +35,7 @@ export default defineConfig({
   outDir: 'dist',
   srcDir: 'src',
   vite: {
+    plugins: [tailwindcss()],
     server: {
       fs: { allow: ['db'] },
     },
