@@ -13,7 +13,7 @@
  * @module chart-manager
  */
 
-/* global ApexCharts */
+import ApexCharts from 'apexcharts';
 
 /** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
 /** @typedef {import('../../shared/types.js').SeriesVisibility} SeriesVisibility */
