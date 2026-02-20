@@ -18,16 +18,16 @@
     "test:all": "bun run test:unit && bun run test:integration && bun run test:contract:action && bun run test:smoke && bun run test:e2e && bun run test:perf",
     "test:unit": "bun test tests/unit/",
     "test:integration": "bun test tests/integration/",
-    "test:smoke": "bunx playwright test --config=tests/playwright.smoke.config.js",
-    "test:e2e": "bunx playwright test --config=tests/playwright.e2e.config.js",
+    "test:smoke": "bun run build && bunx playwright test --config=tests/playwright.smoke.config.js",
+    "test:e2e": "bun run build && bunx playwright test --config=tests/playwright.e2e.config.js",
     "test:contract": "bun run test:contract:visa && bun run test:contract:ecb && bun run test:contract:mc",
     "test:contract:action": "bun run test:contract:visa && bun run test:contract:ecb",
     "test:contract:visa": "bun test tests/contract/visa-response.test.js",
     "test:contract:ecb": "bun test tests/contract/ecb-response.test.js",
     "test:contract:mc": "bun test tests/contract/mastercard-response.test.js",
-    "test:perf": "bun test tests/perf/*.test.js && bunx playwright test --config=tests/playwright.perf.config.js",
-    "test:visual": "bunx playwright test --config=tests/playwright.visual.config.js",
-    "test:visual:update": "bunx playwright test --config=tests/playwright.visual.config.js --update-snapshots"
+    "test:perf": "bun test tests/perf/*.test.js && bun run build && bunx playwright test --config=tests/playwright.perf.config.js",
+    "test:visual": "bun run build && bunx playwright test --config=tests/playwright.visual.config.js",
+    "test:visual:update": "bun run build && bunx playwright test --config=tests/playwright.visual.config.js --update-snapshots"
   },
   "dependencies": {
     "playwright": "1.58.2"

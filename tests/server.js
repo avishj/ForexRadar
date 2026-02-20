@@ -1,13 +1,14 @@
 /**
  * Simple static file server for Playwright tests.
- * Serves the ForexRadar frontend on localhost:3000.
+ * Serves built Astro output from dist/ on localhost:3000.
  */
 
 import { existsSync } from 'fs';
 import { join, extname } from 'path';
 
 const PORT = 3000;
-const ROOT_DIR = join(import.meta.dir, '..');
+const ROOT_DIR = join(import.meta.dir, '..', 'dist');
+const INDEX_FILE = join(ROOT_DIR, 'index.html');
 
 const MIME_TYPES = {
   '.html': 'text/html',
@@ -22,6 +23,11 @@ const MIME_TYPES = {
   '.woff': 'font/woff',
   '.woff2': 'font/woff2',
 };
+
+if (!existsSync(INDEX_FILE)) {
+  console.error('Missing dist/index.html. Run "bun run build" before starting tests.');
+  process.exit(1);
+}
 
 Bun.serve({
   port: PORT,
@@ -58,4 +64,4 @@ Bun.serve({
   },
 });
 
-console.log(`📡 Test server running at http://localhost:${PORT}`);
+console.log(`📡 Test server running from dist/ at http://localhost:${PORT}`);

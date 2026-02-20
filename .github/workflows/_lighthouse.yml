@@ -40,6 +40,7 @@ jobs:
       - name: Start test server
         if: inputs.local-server
         run: |
+          bun run build
           bun run tests/server.js &
           for _ in $(seq 1 10); do
             curl -s http://localhost:3000 > /dev/null && exit 0
