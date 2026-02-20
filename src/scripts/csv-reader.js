@@ -26,12 +26,28 @@ export class CSVReader {
   /** @type {string} */
   #basePath;
 
+  /** @type {Promise<Record<string, number[]>|null>|null} */
+  #manifestPromise = null;
+
   /**
    * Create a new CSVReader instance
    * @param {string} [basePath] - URL path to db/ directory. Defaults to './db'
    */
   constructor(basePath = './db') {
     this.#basePath = basePath;
+  }
+
+  /**
+   * Fetch the db manifest (cached). Returns null if unavailable.
+   * @returns {Promise<Record<string, number[]>|null>}
+   */
+  #fetchManifest() {
+    if (!this.#manifestPromise) {
+      this.#manifestPromise = fetch(`${this.#basePath}/manifest.json`)
+        .then(r => r.ok ? r.json() : null)
+        .catch(() => /** @type {null} */ (null));
+    }
+    return this.#manifestPromise;
   }
 
   /**
@@ -63,23 +79,27 @@ export class CSVReader {
   }
 
   /**
-   * Discover which years exist for a currency by checking common years
+   * Discover which years exist for a currency.
+   * Uses manifest.json when available, falls back to HEAD probing.
    * @param {CurrencyCode} fromCurr
    * @returns {Promise<number[]>}
    */
   async #discoverYears(fromCurr) {
+    // Fast path: use manifest if available
+    const manifest = await this.#fetchManifest();
+    if (manifest?.[fromCurr]) {
+      return manifest[fromCurr];
+    }
+
+    // Fallback: HEAD-probe year files (generates 404s in console)
     const currentYear = new Date().getFullYear();
     const yearsToTry = [];
 
-    // Try current year and 30 years back (covers ECB data from 1999)
     for (let y = currentYear; y >= 1990; y--) {
       yearsToTry.push(y);
     }
 
-    // Check which years have files (in parallel, batched)
     const existingYears = [];
-
-    // Check in batches to avoid too many parallel requests
     const batchSize = 5;
     for (let i = 0; i < yearsToTry.length; i += batchSize) {
       const batch = yearsToTry.slice(i, i + batchSize);
@@ -101,7 +121,6 @@ export class CSVReader {
         }
       }
 
-      // If we found a gap of 3+ years with no data, stop looking further back
       if (existingYears.length > 0) {
         const latestFound = Math.max(...existingYears);
         const oldestTried = Math.min(...batch);
@@ -162,15 +181,18 @@ export class CSVReader {
 
   /**
    * Check if server has data for a source currency.
-   * Does a HEAD request to check if any year files exist.
+   * Uses manifest when available, falls back to HEAD requests.
    * 
    * @param {CurrencyCode} fromCurr
    * @returns {Promise<boolean>}
    */
   async hasDataForCurrency(fromCurr) {
+    const manifest = await this.#fetchManifest();
+    if (manifest) {
+      return fromCurr in manifest;
+    }
+
     const currentYear = new Date().getFullYear();
-    
-    // Check current year and last 2 years
     for (const year of [currentYear, currentYear - 1, currentYear - 2]) {
       const url = `${this.#basePath}/${fromCurr}/${year}.csv`;
       try {
@@ -180,7 +202,6 @@ export class CSVReader {
         continue;
       }
     }
-    
     return false;
   }
 
