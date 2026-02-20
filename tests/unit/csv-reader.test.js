@@ -1,6 +1,6 @@
 // @ts-check
 import { describe, test, expect, mock, beforeEach, afterEach } from 'bun:test';
-import { CSVReader } from '../../js/csv-reader.js';
+import { CSVReader } from '../../src/scripts/csv-reader.js';
 
 /** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
 
