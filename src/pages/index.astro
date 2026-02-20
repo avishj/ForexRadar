@@ -2,6 +2,7 @@
 import Base from '../layouts/Base.astro';
 import Header from '../components/Header.astro';
 import Hero from '../components/Hero.astro';
+import CurrencySelector from '../components/CurrencySelector.astro';
 ---
 
 <Base>
@@ -15,63 +16,7 @@ import Hero from '../components/Hero.astro';
 
   <Header />
   <Hero />
-
-  <!-- Currency Selector -->
-  <section class="selector-container" data-animate>
-    <div class="card selector-card">
-      <div class="selector-grid">
-        <div class="selector-group">
-          <label for="from-currency-input" class="selector-label">From Currency</label>
-          <div class="searchable-dropdown" id="from-currency-dropdown">
-            <input 
-              type="text" 
-              id="from-currency-input" 
-              class="selector-input searchable-input"
-              placeholder="Search currency..."
-              autocomplete="off"
-              role="combobox"
-              aria-expanded="false"
-              aria-controls="from-currency-list"
-              aria-autocomplete="list"
-            >
-            <input type="hidden" id="from-currency" name="from-currency">
-            <div class="dropdown-list" id="from-currency-list" role="listbox"></div>
-          </div>
-        </div>
-        
-        <button id="swap-currencies" class="btn btn--icon selector-arrow" type="button" aria-label="Swap currencies" title="Swap currencies">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <path d="M7 16l-4-4m0 0l4-4m-4 4h18M17 8l4 4m0 0l-4 4m4-4H3"/>
-          </svg>
-        </button>
-        
-        <div class="selector-group">
-          <label for="to-currency-input" class="selector-label">To Currency</label>
-          <div class="searchable-dropdown" id="to-currency-dropdown">
-            <input 
-              type="text" 
-              id="to-currency-input" 
-              class="selector-input searchable-input"
-              placeholder="Search currency..."
-              autocomplete="off"
-              role="combobox"
-              aria-expanded="false"
-              aria-controls="to-currency-list"
-              aria-autocomplete="list"
-            >
-            <input type="hidden" id="to-currency" name="to-currency">
-            <div class="dropdown-list" id="to-currency-list" role="listbox"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Recent Pairs -->
-    <div id="recent-pairs" class="recent-pairs hidden">
-      <span class="recent-pairs-label">Recent:</span>
-      <div id="recent-pairs-list" class="recent-pairs-list"></div>
-    </div>
-  </section>
+  <CurrencySelector />
 
   <!-- Loader -->
   <section id="loader" class="hidden">
