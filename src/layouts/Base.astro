@@ -2,6 +2,7 @@
 import "../styles/global.css";
 import dmSansFont from "../fonts/dm-sans-latin.woff2";
 import spaceGroteskFont from "../fonts/space-grotesk-latin.woff2";
+import { url } from '../utils/url.js';
 ---
 
 <!doctype html>
@@ -15,6 +16,7 @@ import spaceGroteskFont from "../fonts/space-grotesk-latin.woff2";
                  font-src 'self';
                  connect-src 'self' https://avishj.github.io https://api.allorigins.win;
                  img-src 'self' data:;" />
+		<link rel="icon" type="image/svg+xml" href={url('/favicon.svg')} />
 		<link rel="preload" href={dmSansFont} as="font" type="font/woff2" crossorigin />
 		<link rel="preload" href={spaceGroteskFont} as="font" type="font/woff2" crossorigin />
 		<title>Forex Radar: One stop solution to tracking Visa / Master Card exchange rates.</title>
