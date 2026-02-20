@@ -1,5 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
+import Header from '../components/Header.astro';
+import Hero from '../components/Hero.astro';
 ---
 
 <Base>
@@ -11,103 +13,8 @@ import Base from '../layouts/Base.astro';
     <div class="bg-blob bg-blob-3"></div>
   </div>
 
-  <!-- Header -->
-  <header class="header">
-    <div class="header-inner">
-      <!-- Logo -->
-      <a href="/" class="logo">
-        <div class="logo-icon">
-          <!-- Radar rings animation -->
-          <div class="radar-ring radar-ring-1"></div>
-          <div class="radar-ring radar-ring-2"></div>
-          <div class="radar-ring radar-ring-3"></div>
-          <div class="radar-sweep"></div>
-          <!-- Center dot -->
-          <div class="radar-center"></div>
-        </div>
-        <div class="logo-text-wrapper">
-          <span class="logo-text">Forex Radar</span>
-        </div>
-      </a>
-      
-      <!-- Theme Toggle -->
-      <button id="theme-toggle" class="theme-toggle" aria-label="Toggle dark mode">
-        <div class="theme-toggle-track">
-          <div class="theme-toggle-stars">
-            <span></span><span></span><span></span>
-          </div>
-          <div class="theme-toggle-clouds">
-            <span></span><span></span>
-          </div>
-        </div>
-        <div class="theme-toggle-thumb">
-          <svg class="theme-icon sun-icon" viewBox="0 0 24 24" fill="currentColor">
-            <circle cx="12" cy="12" r="5"/>
-            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" stroke="currentColor" stroke-width="2" fill="none"/>
-          </svg>
-          <svg class="theme-icon moon-icon" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-          </svg>
-        </div>
-      </button>
-    </div>
-  </header>
-
-  <!-- Hero Section - Unique Radar-Inspired Design -->
-  <section class="hero">
-    <div class="hero-content">
-      <!-- Radar visualization background -->
-      <div class="hero-radar-visual">
-        <div class="radar-grid">
-          <div class="radar-circle radar-circle-1"></div>
-          <div class="radar-circle radar-circle-2"></div>
-          <div class="radar-circle radar-circle-3"></div>
-          <div class="radar-beam"></div>
-        </div>
-        <!-- Currency blips that appear on the radar -->
-        <div class="radar-blips">
-          <span class="radar-blip" style="--angle: 45deg; --distance: 80px;" data-currency="EUR">€</span>
-          <span class="radar-blip" style="--angle: 120deg; --distance: 130px;" data-currency="GBP">£</span>
-          <span class="radar-blip" style="--angle: 200deg; --distance: 180px;" data-currency="JPY">¥</span>
-          <span class="radar-blip" style="--angle: 280deg; --distance: 110px;" data-currency="INR">₹</span>
-          <span class="radar-blip" style="--angle: 340deg; --distance: 160px;" data-currency="KRW">₩</span>
-        </div>
-      </div>
-      
-      <!-- Main content - asymmetric layout -->
-      <div class="hero-main">
-        <h1 class="hero-title">
-          <span class="hero-title-line">Decode the</span>
-          <span class="hero-title-line">
-            <span class="gradient-text">hidden costs</span>
-          </span>
-          <span class="hero-title-line hero-title-small">of swiping abroad.</span>
-        </h1>
-        
-        <p class="hero-description">
-          Real Visa & Mastercard rates. Real markup data.<br>
-          <strong>365+ days of history</strong> to help you time your transactions.
-        </p>
-        
-        <!-- Stats inline -->
-        <div class="hero-stats">
-          <div class="hero-stat">
-            <span class="hero-stat-number">150+</span>
-            <span class="hero-stat-label">Currencies</span>
-          </div>
-          <div class="hero-stat">
-            <span class="hero-stat-number">365+</span>
-            <span class="hero-stat-label">
-              Days History
-              <span class="info-tooltip" data-tooltip="Data cached locally in your browser. Request server archiving for persistent 365+ day history.">
-                <svg viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><text x="10" y="14" text-anchor="middle" font-size="11" font-weight="600">?</text></svg>
-              </span>
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+  <Header />
+  <Hero />
 
   <!-- Currency Selector -->
   <section class="selector-container" data-animate>
