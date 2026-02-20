@@ -182,20 +182,22 @@ class LighthouseAnalyzer {
       body += "\n";
     }
 
+    const fmt = (v) => v < 10 ? v.toFixed(3) : v.toFixed(1);
+
     if (this.regressions.length > 0) {
       body += `### Regressions (>${CONFIG.regressionPercent * 100}% from avg)\n\n`;
       for (const { path, regressions } of this.regressions) {
         body += `**${path}**\n`;
         for (const r of regressions) {
-          const fmt = (v) => v < 10 ? v.toFixed(3) : v.toFixed(1);
           body += `- ${r.metric}: ${fmt(r.avg)} → ${fmt(r.current)} (${r.percentChange})\n`;
         }
       }
       body += "\n";
     }
 
+    const profilePrefix = `${this.profile}:`;
     const consecutivePaths = Object.entries(this.history.paths)
-      .filter(([, data]) => data.consecutiveFailures >= CONFIG.consecutiveFailLimit)
+      .filter(([key, data]) => key.startsWith(profilePrefix) && data.consecutiveFailures >= CONFIG.consecutiveFailLimit)
       .map(([path, data]) => `${path} (${data.consecutiveFailures} failures)`);
 
     if (consecutivePaths.length > 0) {
