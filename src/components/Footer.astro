@@ -1,3 +1,8 @@
+---
+const currentYear = new Date().getFullYear();
+const copyrightText = currentYear > 2024 ? `2024-${currentYear}` : '2024';
+---
+
 <footer class="max-w-[1200px] mx-auto p-8 border-t border-[--border-subtle]">
   <div class="flex flex-col gap-4 items-center">
     <!-- Data source -->
@@ -38,11 +43,6 @@
     </div>
     
     <!-- Copyright -->
-    <p class="m-0 text-xs text-color-tertiary">© <span id="copyright-year"></span></p>
+    <p class="m-0 text-xs text-color-tertiary">© {copyrightText}</p>
   </div>
 </footer>
-
-<script>
-  const currentYear = new Date().getFullYear();
-  document.getElementById('copyright-year')!.textContent = currentYear > 2024 ? `2024-${currentYear}` : '2024';
-</script>
