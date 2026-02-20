@@ -36,6 +36,9 @@ export default defineConfig({
   srcDir: 'src',
   vite: {
     plugins: [tailwindcss()],
+    build: {
+      sourcemap: true,
+    },
   },
   integrations: [dbIntegration()],
 });
