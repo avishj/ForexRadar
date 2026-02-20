@@ -7,6 +7,7 @@ import StatsBar from '../components/StatsBar.astro';
 import TimeRange from '../components/TimeRange.astro';
 import SeriesToggle from '../components/SeriesToggle.astro';
 import ChartSection from '../components/ChartSection.astro';
+import Footer from '../components/Footer.astro';
 ---
 
 <Base>
@@ -62,54 +63,5 @@ import ChartSection from '../components/ChartSection.astro';
     </a>
   </div>
 
-  <!-- Footer -->
-  <footer class="max-w-[1200px] mx-auto p-8 border-t border-[--border-subtle]">
-    <div class="flex flex-col gap-4 items-center">
-      <!-- Data source -->
-      <p class="text-sm text-color-tertiary m-0">Data sourced from Visa, Mastercard, and the European Central Bank. Historical data available from date of addition - 365 days.</p>
-      
-      <!-- Attribution -->
-      <p class="m-0 text-sm flex items-center gap-1.5 text-color-secondary">
-        Made with 
-        <svg class="w-4 h-4 text-red-500 animate-pulse" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-        </svg>
-        by 
-        <a href="https://github.com/avishj" target="_blank" rel="noopener noreferrer" class="font-medium no-underline transition-colors duration-200 hover:opacity-80 text-color-primary">Avish J</a>
-      </p>
-      
-      <div class="flex gap-3 items-center text-sm flex-wrap justify-center">
-        <a href="https://github.com/avishj/ForexRadar" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 text-sm text-[--text-tertiary] no-underline transition-colors duration-150 hover:text-[--text-primary]">
-          <svg viewBox="0 0 24 24" fill="currentColor" class="size-4.5">
-            <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd"/>
-          </svg>
-          View Repository
-        </a>
-        <span class="text-[--text-tertiary]">·</span>
-        <a href="https://github.com/avishj/ForexRadar/stargazers" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 text-sm text-[--text-tertiary] no-underline transition-colors duration-150 hover:text-[--text-primary]">
-          <svg viewBox="0 0 24 24" fill="currentColor" class="size-4">
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-          </svg>
-          Star
-        </a>
-        <span class="text-[--text-tertiary]">·</span>
-        <button id="show-shortcuts-btn" class="inline-flex items-center gap-1.5 text-sm text-[--text-tertiary] no-underline transition-colors duration-150 hover:text-[--text-primary] bg-transparent border-none cursor-pointer p-0">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" class="size-4">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
-          </svg>
-          Keyboard shortcuts
-          <kbd class="rounded px-1.5 py-0.5 text-xs font-display bg-[--bg-tertiary] border border-[--border-color]">?</kbd>
-        </button>
-      </div>
-      
-      <!-- Copyright -->
-      <p class="m-0 text-xs text-color-tertiary">© <span id="copyright-year"></span></p>
-    </div>
-  </footer>
-
-  <script>
-    // Update copyright year
-    const currentYear = new Date().getFullYear();
-    document.getElementById('copyright-year').textContent = currentYear > 2024 ? `2024-${currentYear}` : '2024';
-  </script>
+  <Footer />
 </Base>
