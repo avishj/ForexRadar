@@ -1,5 +1,4 @@
 ---
-import { url } from '../utils/url.js';
 import '../styles/global.css';
 ---
 
@@ -37,7 +36,7 @@ import '../styles/global.css';
   <div id="notification-container"></div>
 
   <!-- Theme Script (inline to prevent flash) -->
-  <script>
+  <script is:inline>
     const savedTheme = localStorage.getItem('theme');
     // Default to dark mode if no saved preference
     if (savedTheme !== 'light') {
@@ -50,9 +49,11 @@ import '../styles/global.css';
   </script>
 
   <!-- Load Scripts -->
-  <script type="module" src={url('js/theme.js')}></script>
-  <script type="module" src={url('js/animations.js')}></script>
-  <script type="module" src={url('js/app.js')}></script>
+  <script>
+    import '../scripts/theme.js';
+    import '../scripts/animations.js';
+    import '../scripts/app.js';
+  </script>
 </body>
 
 </html>

@@ -15,8 +15,8 @@
 
 /* global ApexCharts */
 
-/** @typedef {import('../shared/types.js').RateRecord} RateRecord */
-/** @typedef {import('../shared/types.js').SeriesVisibility} SeriesVisibility */
+/** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
+/** @typedef {import('../../shared/types.js').SeriesVisibility} SeriesVisibility */
 
 /** @type {ApexCharts|null} */
 let chartInstance = null;

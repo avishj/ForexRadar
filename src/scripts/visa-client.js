@@ -7,11 +7,11 @@
  * @module visa-client
  */
 
-import { formatDate, formatDateForApi } from '../shared/utils.js';
-import { LIVE_FETCH_TIMEOUT_MS } from '../shared/constants.js';
+import { formatDate, formatDateForApi } from '../../shared/utils.js';
+import { LIVE_FETCH_TIMEOUT_MS } from '../../shared/constants.js';
 
-/** @typedef {import('../shared/types.js').RateRecord} RateRecord */
-/** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
+/** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
+/** @typedef {import('../../shared/types.js').CurrencyCode} CurrencyCode */
 
 const VISA_API_BASE = 'https://www.visa.co.in/cmsapi/fx/rates';
 const CORS_PROXY = 'https://api.allorigins.win/raw?url=';

@@ -20,9 +20,9 @@ import { initSeriestoggles, updateToggleVisibility, getVisibilityFromData } from
 import { initActions, triggerCopyRate, triggerShareUrl, triggerDownloadChart } from './ui/actions.js';
 import { setOdometerValue } from './ui/odometer.js';
 
-/** @typedef {import('../shared/types.js').RateRecord} RateRecord */
-/** @typedef {import('../shared/types.js').MultiProviderStats} MultiProviderStats */
-/** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
+/** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
+/** @typedef {import('../../shared/types.js').MultiProviderStats} MultiProviderStats */
+/** @typedef {import('../../shared/types.js').CurrencyCode} CurrencyCode */
 /** @typedef {import('./ui/time-range.js').TimeRangeKey} TimeRangeKey */
 
 // ============================================================================

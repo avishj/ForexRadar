@@ -8,7 +8,7 @@
 
 /** @typedef {'1m'|'3m'|'6m'|'1y'|'5y'|'all'} TimeRangeKey */
 
-/** @typedef {import('../../shared/types.js').DateRange} DateRange */
+/** @typedef {import('../../../shared/types.js').DateRange} DateRange */
 
 /**
  * @typedef {Object} TimeRangeCallbacks

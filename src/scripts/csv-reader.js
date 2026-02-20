@@ -12,11 +12,11 @@ import {
   filterByTargetCurrency,
   sortByDateAsc,
   splitByProvider
-} from '../shared/csv-utils.js';
+} from '../../shared/csv-utils.js';
 
-/** @typedef {import('../shared/types.js').RateRecord} RateRecord */
-/** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
-/** @typedef {import('../shared/types.js').Provider} Provider */
+/** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
+/** @typedef {import('../../shared/types.js').CurrencyCode} CurrencyCode */
+/** @typedef {import('../../shared/types.js').Provider} Provider */
 
 /**
  * CSVReader class for fetching exchange rate data from server

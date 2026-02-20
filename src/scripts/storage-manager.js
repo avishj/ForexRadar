@@ -16,9 +16,9 @@
  * @module storage-manager
  */
 
-/** @typedef {import('../shared/types.js').RateRecord} RateRecord */
-/** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
-/** @typedef {import('../shared/types.js').Provider} Provider */
+/** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
+/** @typedef {import('../../shared/types.js').CurrencyCode} CurrencyCode */
+/** @typedef {import('../../shared/types.js').Provider} Provider */
 
 const DB_NAME = 'ForexRadarDB';
 const DB_VERSION = 2;

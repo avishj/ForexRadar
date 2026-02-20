@@ -88,7 +88,7 @@ export function initSeriestoggles(callback) {
   }
 }
 
-/** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
+/** @typedef {import('../../../shared/types.js').RateRecord} RateRecord */
 
 /**
  * Updates toggle visibility based on available data

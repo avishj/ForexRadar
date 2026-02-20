@@ -27,14 +27,14 @@ import { csvReader } from './csv-reader.js';
 import * as StorageManager from './storage-manager.js';
 import * as VisaClient from './visa-client.js';
 import * as MastercardClient from './mastercard-client.js';
-import { formatDate, getYesterday, addDays, parseDate } from '../shared/utils.js';
+import { formatDate, getYesterday, addDays, parseDate } from '../../shared/utils.js';
 
-/** @typedef {import('../shared/types.js').RateRecord} RateRecord */
-/** @typedef {import('../shared/types.js').RateStats} RateStats */
-/** @typedef {import('../shared/types.js').Provider} Provider */
-/** @typedef {import('../shared/types.js').MultiProviderStats} MultiProviderStats */
-/** @typedef {import('../shared/types.js').DateRange} DateRange */
-/** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
+/** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
+/** @typedef {import('../../shared/types.js').RateStats} RateStats */
+/** @typedef {import('../../shared/types.js').Provider} Provider */
+/** @typedef {import('../../shared/types.js').MultiProviderStats} MultiProviderStats */
+/** @typedef {import('../../shared/types.js').DateRange} DateRange */
+/** @typedef {import('../../shared/types.js').CurrencyCode} CurrencyCode */
 
 /**
  * @typedef {Object} FetchResult

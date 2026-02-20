@@ -11,11 +11,11 @@
  * @module mastercard-client
  */
 
-import { formatDate } from '../shared/utils.js';
-import { LIVE_FETCH_TIMEOUT_MS } from '../shared/constants.js';
+import { formatDate } from '../../shared/utils.js';
+import { LIVE_FETCH_TIMEOUT_MS } from '../../shared/constants.js';
 
-/** @typedef {import('../shared/types.js').RateRecord} RateRecord */
-/** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
+/** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
+/** @typedef {import('../../shared/types.js').CurrencyCode} CurrencyCode */
 
 const MASTERCARD_API_BASE = 'https://www.mastercard.co.in/settlement/currencyrate/conversion-rate';
 const CORS_PROXY = 'https://api.allorigins.win/raw?url=';

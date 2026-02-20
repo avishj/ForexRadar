@@ -7,7 +7,7 @@
  * @module ui/odometer
  */
 
-/** @typedef {import('../../shared/types.js').OdometerInstance} OdometerInstance */
+/** @typedef {import('../../../shared/types.js').OdometerInstance} OdometerInstance */
 
 /**
  * Manages odometer instances for stat elements
