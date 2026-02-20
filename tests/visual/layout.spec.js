@@ -16,9 +16,6 @@ test.describe('Desktop Layout Visual Tests', () => {
 
   test('selector section matches baseline', async ({ page }) => {
     await page.goto('/');
-    // Wait for dropdown lists to be populated
-    await expect(page.locator('#from-currency-list .dropdown-item').first()).toBeAttached({ timeout: 10000 });
-    await page.waitForTimeout(100);
     await expect(page.locator('.selector-container')).toHaveScreenshot('selector-desktop.png');
   });
 

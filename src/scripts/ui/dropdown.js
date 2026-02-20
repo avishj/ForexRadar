@@ -54,8 +54,6 @@ export class SearchableDropdown {
     this.container.appendChild(clearBtn);
     this.clearBtn = clearBtn;
     
-    this.renderList('');
-    
     this.input.addEventListener('pointerdown', () => this.open());
     this.input.addEventListener('input', () => this.handleInput());
     this.input.addEventListener('focus', () => this.open());
@@ -476,9 +474,14 @@ export class SearchableDropdown {
     this._rafFilter = 0;
     this.hiddenInput.value = '';
     this.input.value = '';
-    this._lastQuery = '';
+    this._lastQuery = null;
     this.container.classList.remove('has-value');
-    this.renderList('');
+    if (this.isOpen) {
+      this.renderList('');
+    } else {
+      this.filteredItems = [];
+      this.list.innerHTML = '';
+    }
     this.dispatchChange();
     this.input.focus();
   }
