@@ -41,7 +41,7 @@ jobs:
         if: inputs.local-server
         run: |
           bun run build
-          bun run tests/server.js &
+          bun run preview -- --host 0.0.0.0 --port 3000 &
           for _ in $(seq 1 10); do
             curl -s http://localhost:3000 > /dev/null && exit 0
             sleep 1
