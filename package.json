@@ -13,6 +13,7 @@
     "preview": "astro preview",
     "check": "bunx tsc --noEmit",
     "lint": "eslint src shared backend && stylelint src/styles/{base,animations,components,sections,utilities}.css && markdownlint-cli2",
+    "lint:html": "htmlhint dist/index.html",
     "lint:fix": "eslint src shared backend --fix && stylelint src/styles/{base,animations,components,sections,utilities}.css --fix && markdownlint-cli2 --fix",
     "postinstall": "cd backend && bunx playwright install firefox chromium",
     "test": "bun run test:all",

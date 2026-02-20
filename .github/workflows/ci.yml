@@ -35,7 +35,7 @@ jobs:
           else
             echo "code=false" >> "$GITHUB_OUTPUT"
           fi
-          if echo "$CHANGED" | grep -qE '^(index\.html|src/|js/|css/|shared/|astro\.config\.mjs|\.github/lighthouse/)'; then
+          if echo "$CHANGED" | grep -qE '^(src/|shared/|public/|astro\.config\.mjs|\.github/lighthouse/)'; then
             echo "frontend=true" >> "$GITHUB_OUTPUT"
           else
             echo "frontend=false" >> "$GITHUB_OUTPUT"
