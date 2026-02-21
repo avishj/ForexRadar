@@ -55,8 +55,9 @@ class ThemeManager {
     const isDark = this.html.classList.contains('dark');
     const newTheme = isDark ? 'light' : 'dark';
     
-    // Add transition class for smooth animation
-    this.html.style.transition = 'background-color 0.5s ease, color 0.5s ease';
+    // Temporarily enable transition for smooth theme switch
+    const body = document.body;
+    body.style.transition = 'background-color 0.5s ease, color 0.5s ease';
     
     this.setTheme(newTheme);
     localStorage.setItem('theme', newTheme);
@@ -68,6 +69,9 @@ class ThemeManager {
         this.toggle.classList.remove('transitioning');
       }, 500);
     }
+    
+    // Remove transition after it completes to avoid permanent main-thread cost
+    setTimeout(() => { body.style.transition = ''; }, 550);
   }
   
   get currentTheme() {
