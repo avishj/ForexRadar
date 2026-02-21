@@ -13,6 +13,7 @@
   z-index: -1;
   overflow: hidden;
   pointer-events: none;
+  contain: strict;
 }
 
 .bg-grid {
@@ -33,6 +34,8 @@
   filter: blur(80px);
   opacity: 0.4;
   animation: blob-float 20s ease-in-out infinite;
+  will-change: transform;
+  contain: layout style;
 }
 
 .bg-blob-1 {
@@ -132,6 +135,7 @@
   border-radius: 50%;
   animation: radar-pulse 3s ease-out infinite;
   pointer-events: none;
+  will-change: transform, opacity;
 }
 
 .radar-ring-1 {
@@ -161,6 +165,7 @@
   left: 50%;
   bottom: 50%;
   animation: radar-sweep 2s linear infinite;
+  will-change: transform;
 }
 
 .radar-center {
@@ -382,6 +387,7 @@
   align-items: center;
   padding: 8rem 2rem 3rem;
   overflow: hidden;
+  contain: content;
 }
 
 .hero-content {
@@ -425,6 +431,7 @@
   border: 1px solid var(--accent-primary);
   border-radius: 50%;
   opacity: 0.2;
+  will-change: transform, opacity;
 }
 
 .radar-circle-1 {
@@ -455,6 +462,7 @@
   transform-origin: left center;
   animation: radar-sweep-beam 4s linear infinite;
   box-shadow: 0 0 20px var(--accent-primary), 0 0 40px var(--accent-glow);
+  will-change: transform;
 }
 
 .radar-beam::before {
@@ -491,6 +499,7 @@
     rotate(calc(-1 * var(--angle)));
   animation: blip-pulse 2s ease-in-out infinite;
   animation-delay: calc(var(--angle) / 360deg * 2s);
+  will-change: transform, opacity;
 }
 
 .radar-blip::after {
@@ -1090,6 +1099,7 @@
    -------------------------------- */
 #chart {
   width: 100%;
+  contain: layout style;
 }
 
 /* --------------------------------
