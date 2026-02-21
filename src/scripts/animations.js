@@ -246,41 +246,6 @@ class AnimationsManager {
   }
 }
 
-// Add ripple animation keyframes
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes ripple {
-    to {
-      transform: scale(4);
-      opacity: 0;
-    }
-  }
-  
-  [data-animate] {
-    opacity: 0;
-    transform: translateY(30px);
-    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
-  }
-  
-  [data-animate].animate-in {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  
-  [data-animate="fade"] {
-    transform: none;
-  }
-  
-  [data-animate="scale"] {
-    transform: scale(0.9);
-  }
-  
-  [data-animate="scale"].animate-in {
-    transform: scale(1);
-  }
-`;
-document.head.appendChild(style);
-
 // Initialize on DOM ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', () => new AnimationsManager());
