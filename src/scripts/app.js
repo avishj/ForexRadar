@@ -16,7 +16,7 @@ import { initNotifications, showNotification } from "./ui/notifications.js";
 import { initRecentPairs, saveRecentPair, renderRecentPairs } from "./ui/recent-pairs.js";
 import { initTimeRange, updateActiveButton, deactivateAllButtons, parseTimeRange, isValidTimeRange, triggerRangeByKey, refreshIndicatorPosition } from "./ui/time-range.js";
 import { initSeriestoggles, updateToggleVisibility, getVisibilityFromData } from "./ui/series-toggles.js";
-import { initActions, triggerCopyRate, triggerShareUrl, triggerDownloadChart } from "./ui/actions.js";
+import { initActions } from "./ui/actions.js";
 import { setOdometerValue } from "./ui/odometer.js";
 
 /** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
@@ -494,17 +494,17 @@ function setupKeyboardShortcuts() {
 
 			case "c":
 				e.preventDefault();
-				triggerCopyRate();
+				import("./ui/actions.js").then((m) => m.triggerCopyRate());
 				break;
 
 			case "l":
 				e.preventDefault();
-				triggerShareUrl();
+				import("./ui/actions.js").then((m) => m.triggerShareUrl());
 				break;
 
 			case "d":
 				e.preventDefault();
-				triggerDownloadChart();
+				import("./ui/actions.js").then((m) => m.triggerDownloadChart());
 				break;
 
 			case "?":
