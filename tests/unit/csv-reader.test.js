@@ -308,7 +308,7 @@ describe('CSVReader', () => {
       const hasData = await reader.hasDataForCurrency(/** @type {any} */ ('USD'));
 
       expect(hasData).toBe(true);
-      expect(checkedUrls.length).toBe(3);
+      expect(checkedUrls.some(u => u.includes('manifest.json'))).toBe(true);
       expect(checkedUrls.some(u => u.includes(`/${currentYear}.csv`))).toBe(true);
       expect(checkedUrls.some(u => u.includes(`/${currentYear - 1}.csv`))).toBe(true);
       expect(checkedUrls.some(u => u.includes(`/${currentYear - 2}.csv`))).toBe(true);
