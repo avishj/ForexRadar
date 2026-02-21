@@ -123,23 +123,25 @@ class AnimationsManager {
     if (!header) return;
     
     let lastScroll = 0;
+    let lastHidden = false;
     let ticking = false;
     
     const updateHeader = () => {
       const scrollY = window.scrollY;
+      const shouldHide = scrollY > lastScroll && scrollY > 200;
       
-      if (scrollY > 50) {
-        header.classList.add('scrolled');
-      } else {
-        header.classList.remove('scrolled');
-      }
-      
-      // Hide on scroll down, show on scroll up
-      if (scrollY > lastScroll && scrollY > 200) {
-        header.style.transform = 'translateY(-100%)';
-      } else {
-        header.style.transform = 'translateY(0)';
-      }
+      requestAnimationFrame(() => {
+        if (scrollY > 50) {
+          header.classList.add('scrolled');
+        } else {
+          header.classList.remove('scrolled');
+        }
+        
+        if (shouldHide !== lastHidden) {
+          header.style.transform = shouldHide ? 'translateY(-100%)' : 'translateY(0)';
+          lastHidden = shouldHide;
+        }
+      });
       
       lastScroll = scrollY;
       ticking = false;
@@ -158,16 +160,28 @@ class AnimationsManager {
    */
   initHoverEffects() {
     document.querySelectorAll('.magnetic').forEach(el => {
+      /** @type {DOMRect|null} */
+      let cachedRect = null;
+      
+      el.addEventListener('mouseenter', () => {
+        cachedRect = el.getBoundingClientRect();
+      });
+      
       el.addEventListener('mousemove', (/** @type {MouseEvent} */ e) => {
-        const rect = el.getBoundingClientRect();
-        const x = e.clientX - rect.left - rect.width / 2;
-        const y = e.clientY - rect.top - rect.height / 2;
+        if (!cachedRect) return;
+        const x = e.clientX - cachedRect.left - cachedRect.width / 2;
+        const y = e.clientY - cachedRect.top - cachedRect.height / 2;
         
-        /** @type {HTMLElement} */ (el).style.transform = `translate(${x * 0.1}px, ${y * 0.1}px)`;
+        requestAnimationFrame(() => {
+          /** @type {HTMLElement} */ (el).style.transform = `translate(${x * 0.1}px, ${y * 0.1}px)`;
+        });
       });
       
       el.addEventListener('mouseleave', () => {
-        /** @type {HTMLElement} */ (el).style.transform = 'translate(0, 0)';
+        cachedRect = null;
+        requestAnimationFrame(() => {
+          /** @type {HTMLElement} */ (el).style.transform = 'translate(0, 0)';
+        });
       });
     });
   }
@@ -184,9 +198,11 @@ class AnimationsManager {
     const updateParallax = () => {
       const scrollY = window.scrollY;
       
-      blobs.forEach(( /** @type {HTMLElement} */ blob, index) => {
-        const speed = 0.1 + (index * 0.05);
-        blob.style.transform = `translateY(${scrollY * speed}px)`;
+      requestAnimationFrame(() => {
+        blobs.forEach(( /** @type {HTMLElement} */ blob, index) => {
+          const speed = 0.1 + (index * 0.05);
+          blob.style.transform = `translateY(${scrollY * speed}px)`;
+        });
       });
       
       ticking = false;
