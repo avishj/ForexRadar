@@ -15,7 +15,6 @@ class AnimationsManager {
     this.initScrollAnimations();
     this.initHeaderScroll();
     this.initHoverEffects();
-    this.initParallax();
     this.initSpotlightCards();
     this.initTooltips();
   }
@@ -184,36 +183,6 @@ class AnimationsManager {
         });
       });
     });
-  }
-  
-  /**
-   * Subtle parallax effect for background elements
-   */
-  initParallax() {
-    const blobs = document.querySelectorAll('.bg-blob');
-    if (!blobs.length) return;
-    
-    let ticking = false;
-    
-    const updateParallax = () => {
-      const scrollY = window.scrollY;
-      
-      requestAnimationFrame(() => {
-        blobs.forEach(( /** @type {HTMLElement} */ blob, index) => {
-          const speed = 0.1 + (index * 0.05);
-          blob.style.transform = `translateY(${scrollY * speed}px)`;
-        });
-      });
-      
-      ticking = false;
-    };
-    
-    window.addEventListener('scroll', () => {
-      if (!ticking) {
-        requestAnimationFrame(updateParallax);
-        ticking = true;
-      }
-    }, { passive: true });
   }
   
   /**
