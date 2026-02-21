@@ -743,6 +743,17 @@ export async function initChart(containerId, visaRecords, mastercardRecords, ecb
 		}
 	};
 
+	// Defer import until chart is visible (below the fold on initial load)
+	await new Promise((resolve) => {
+		const observer = new IntersectionObserver((entries) => {
+			if (entries[0].isIntersecting) {
+				observer.disconnect();
+				resolve();
+			}
+		}, { rootMargin: "200px" });
+		observer.observe(container);
+	});
+
 	const ApexCharts = (await import("apexcharts")).default;
 	chartInstance = new ApexCharts(container, options);
 	chartInstance.render();
