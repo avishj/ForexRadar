@@ -649,8 +649,6 @@
   perspective: 1000px;
   position: relative;
   z-index: 100;
-  content-visibility: auto;
-  contain-intrinsic-size: auto 200px;
   /* Entrance animation via unified system */
   --enter-anim: selector-entrance;
   --enter-duration: 800ms;
@@ -901,8 +899,6 @@
 .stats-container {
   perspective: 800px;
   overflow: visible;
-  content-visibility: auto;
-  contain-intrinsic-size: auto 150px;
 }
 
 .stats-grid {
