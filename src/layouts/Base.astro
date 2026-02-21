@@ -3,6 +3,7 @@ import "../styles/global.css";
 import dmSansFont from "../fonts/dm-sans-latin.woff2";
 import spaceGroteskFont from "../fonts/space-grotesk-latin.woff2";
 import { url } from '../utils/url.js';
+const isProd = import.meta.env.PROD;
 ---
 
 <!doctype html>
@@ -10,12 +11,12 @@ import { url } from '../utils/url.js';
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<meta http-equiv="Content-Security-Policy" content="default-src 'self';
+		{isProd && <meta http-equiv="Content-Security-Policy" content="default-src 'self';
                  script-src 'self' 'sha256-hqqc1jsXeb0Z1tv3XwkzxzjoJ4h8dAW9+5mmtWNaNEw=';
                  style-src 'self' 'unsafe-inline';
                  font-src 'self';
                  connect-src 'self' https://avishj.github.io https://api.allorigins.win;
-                 img-src 'self' data:;" />
+                 img-src 'self' data:;" />}
 		<link rel="icon" type="image/svg+xml" href={url('/favicon.svg')} />
 		<link rel="preload" href={dmSansFont} as="font" type="font/woff2" crossorigin />
 		<link rel="preload" href={spaceGroteskFont} as="font" type="font/woff2" crossorigin />
