@@ -135,6 +135,8 @@ ForexRadar/
 │   │   ├── visa-client.js     # Browser-side Visa client
 │   │   ├── mastercard-client.js # Browser-side Mastercard client
 │   │   └── globals.d.ts       # Global type declarations
+│   ├── utils/                 # Utility helpers
+│   │   └── url.js             # BASE_URL helper for path prefixing
 │   └── styles/                # Stylesheets
 │
 ├── shared/                    # Isomorphic utilities
