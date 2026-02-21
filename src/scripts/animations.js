@@ -24,12 +24,6 @@ class AnimationsManager {
    * Initialize fixed-position tooltips that escape overflow contexts
    */
   initTooltips() {
-    // Create single tooltip element
-    this.tooltipElement = document.createElement('div');
-    this.tooltipElement.className = 'tooltip-popup';
-    document.body.appendChild(this.tooltipElement);
-    
-    // Attach listeners to all info-tooltips
     document.querySelectorAll('.info-tooltip').forEach(trigger => {
       trigger.addEventListener('mouseenter', (e) => this.showTooltip(e, trigger));
       trigger.addEventListener('mouseleave', () => this.hideTooltip());
@@ -43,6 +37,12 @@ class AnimationsManager {
   showTooltip(e, trigger) {
     const text = trigger.getAttribute('data-tooltip');
     if (!text) return;
+    
+    if (!this.tooltipElement) {
+      this.tooltipElement = document.createElement('div');
+      this.tooltipElement.className = 'tooltip-popup';
+      document.body.appendChild(this.tooltipElement);
+    }
     
     this.tooltipElement.textContent = text;
     this.tooltipElement.classList.add('visible');
