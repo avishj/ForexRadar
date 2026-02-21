@@ -13,7 +13,6 @@ import * as ChartManager from "./chart-manager.js";
 
 import { SearchableDropdown } from "./ui/dropdown.js";
 import { initNotifications, showNotification } from "./ui/notifications.js";
-import { showShortcutsModal, hideShortcutsModal, isShortcutsModalOpen } from "./ui/shortcuts-modal.js";
 import { initRecentPairs, saveRecentPair, renderRecentPairs } from "./ui/recent-pairs.js";
 import { initTimeRange, updateActiveButton, deactivateAllButtons, parseTimeRange, isValidTimeRange, triggerRangeByKey, refreshIndicatorPosition } from "./ui/time-range.js";
 import { initSeriestoggles, updateToggleVisibility, getVisibilityFromData } from "./ui/series-toggles.js";
@@ -85,6 +84,11 @@ let currentEcbRecords = [];
 
 /** @type {TimeRangeKey} */
 let currentTimeRange = "1y";
+
+function isShortcutsModalOpen() {
+  const modal = document.querySelector('.shortcuts-modal');
+  return modal?.classList.contains('open') ?? false;
+}
 
 // ============================================================================
 // URL Deep-Linking
@@ -452,7 +456,7 @@ function setupKeyboardShortcuts() {
 
 		if (e.key === "Escape") {
 			if (isShortcutsModalOpen()) {
-				hideShortcutsModal();
+				import("./ui/shortcuts-modal.js").then((m) => m.hideShortcutsModal());
 				e.preventDefault();
 				return;
 			}
@@ -476,7 +480,7 @@ function setupKeyboardShortcuts() {
 			case "/": {
 				if (e.shiftKey) {
 					e.preventDefault();
-					showShortcutsModal();
+					import("./ui/shortcuts-modal.js").then((m) => m.showShortcutsModal());
 					break;
 				}
 				e.preventDefault();
@@ -505,7 +509,7 @@ function setupKeyboardShortcuts() {
 
 			case "?":
 				e.preventDefault();
-				showShortcutsModal();
+				import("./ui/shortcuts-modal.js").then((m) => m.showShortcutsModal());
 				break;
 
 			case "1":
@@ -741,7 +745,9 @@ function init() {
 
 	const shortcutsBtn = document.getElementById("show-shortcuts-btn");
 	if (shortcutsBtn) {
-		shortcutsBtn.addEventListener("click", () => showShortcutsModal());
+		shortcutsBtn.addEventListener("click", () => {
+			import("./ui/shortcuts-modal.js").then((m) => m.showShortcutsModal());
+		});
 	}
 
 	updateActiveButton(currentTimeRange);
