@@ -235,8 +235,6 @@ function updatePercentileBadge(percentile) {
 	}
 }
 
-/** @type {RateRecord[]} */
-let _cachedRecordsForPercentile = [];
 
 /**
  * Updates the stats display for multi-provider data
@@ -328,7 +326,6 @@ function handleChartZoom(minDate, maxDate) {
 		updateStats(stats);
 
 		const allRecords = [...visaRecords, ...mastercardRecords];
-		_cachedRecordsForPercentile = allRecords;
 		const currentRate = stats.visa.current ?? stats.mastercard.current;
 		const percentile = calculateRatePercentile(currentRate, allRecords);
 		updatePercentileBadge(percentile);
