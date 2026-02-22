@@ -509,7 +509,7 @@ export function calculateMultiProviderStats(visaRecords, mastercardRecords, ecbR
   }
 
   // Combined date range
-  const allRecords = [...visaRecords, ...mastercardRecords];
+  const allRecords = [...visaRecords, ...mastercardRecords, ...ecbRecords];
   const dates = allRecords.map(r => r.date).sort();
   const dateRange = {
     start: dates.length > 0 ? dates[0] : null,
