@@ -699,7 +699,10 @@ function init() {
 				const leftAnim = fromGroup.animate(leftKeyframes, options);
 				const rightAnim = toGroup.animate(rightKeyframes, options);
 
+				let cleanupDone = false;
 				const cleanup = () => {
+					if (cleanupDone) return;
+					cleanupDone = true;
 					leftAnim.cancel();
 					rightAnim.cancel();
 					fromGroup.style.zIndex = "";
