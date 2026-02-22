@@ -763,7 +763,7 @@ export async function initChart(containerId, visaRecords, mastercardRecords, ecb
 
 	const ApexCharts = (await import("apexcharts")).default;
 	chartInstance = new ApexCharts(container, options);
-	chartInstance.render();
+	await chartInstance.render();
 }
 
 /**
