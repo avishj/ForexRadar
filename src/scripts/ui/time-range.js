@@ -154,14 +154,15 @@ function animateIndicatorTo(targetButton, instant = false) {
     }
   ];
   
-  slidingIndicator.animate(keyframes, {
+  const anim = slidingIndicator.animate(keyframes, {
     duration: 750,
     easing: 'cubic-bezier(0.22, 1, 0.36, 1)', // Smooth ease-out
     fill: 'forwards'
-  }).onfinish = () => {
-    // Commit final values to style
+  });
+  anim.onfinish = () => {
     slidingIndicator.style.left = `${left}px`;
     slidingIndicator.style.width = `${width}px`;
+    anim.cancel();
   };
 }
 
