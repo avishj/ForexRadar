@@ -113,13 +113,16 @@ async function handleDownloadChart() {
 
 	const btn = document.getElementById('download-chart-btn');
 
-	const success = await callbacks.exportChart(filename);
-
-	if (success) {
-		btn?.classList.add('btn--success');
-		showNotification('Chart downloaded!', 'success', 2000);
-		setTimeout(() => btn?.classList.remove('btn--success'), 1500);
-	} else {
+	try {
+		const success = await callbacks.exportChart(filename);
+		if (success) {
+			btn?.classList.add('btn--success');
+			showNotification('Chart downloaded!', 'success', 2000);
+			setTimeout(() => btn?.classList.remove('btn--success'), 1500);
+		} else {
+			showNotification('Failed to download chart', 'error');
+		}
+	} catch (_err) {
 		showNotification('Failed to download chart', 'error');
 	}
 }
