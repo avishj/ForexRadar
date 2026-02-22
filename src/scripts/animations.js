@@ -130,18 +130,16 @@ class AnimationsManager {
       const scrollY = window.scrollY;
       const shouldHide = scrollY > lastScroll && scrollY > 200;
       
-      requestAnimationFrame(() => {
-        if (scrollY > 50) {
-          header.classList.add('scrolled');
-        } else {
-          header.classList.remove('scrolled');
-        }
-        
-        if (shouldHide !== lastHidden) {
-          header.style.transform = shouldHide ? 'translateY(-100%)' : 'translateY(0)';
-          lastHidden = shouldHide;
-        }
-      });
+      if (scrollY > 50) {
+        header.classList.add('scrolled');
+      } else {
+        header.classList.remove('scrolled');
+      }
+      
+      if (shouldHide !== lastHidden) {
+        header.style.transform = shouldHide ? 'translateY(-100%)' : 'translateY(0)';
+        lastHidden = shouldHide;
+      }
       
       lastScroll = scrollY;
       ticking = false;
