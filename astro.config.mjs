@@ -2,6 +2,7 @@ import { defineConfig } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
 import { existsSync, cpSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join, resolve, normalize } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 /** @param {string} dbPath */
 function generateManifest(dbPath) {
@@ -22,7 +23,7 @@ function generateManifest(dbPath) {
 }
 
 function dbIntegration() {
-  const dbDir = new URL('./db', import.meta.url).pathname;
+  const dbDir = fileURLToPath(new URL('./db', import.meta.url));
 
   return {
     name: 'db-integration',
@@ -48,7 +49,7 @@ function dbIntegration() {
         });
       },
       'astro:build:done': ({ dir }) => {
-        const outDb = join(dir.pathname, 'db');
+        const outDb = join(fileURLToPath(dir), 'db');
         if (existsSync(dbDir)) {
           cpSync(dbDir, outDb, { recursive: true });
           const manifest = generateManifest(outDb);
