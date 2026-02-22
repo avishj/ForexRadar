@@ -1,6 +1,6 @@
 import { defineConfig } from 'astro/config';
 import tailwindcss from '@tailwindcss/vite';
-import { existsSync, cpSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, cpSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 /** @param {string} dbPath */
@@ -36,7 +36,7 @@ function dbIntegration() {
             return;
           }
           const filePath = join(dbDir, req.url ?? '');
-          if (existsSync(filePath)) {
+          if (existsSync(filePath) && !statSync(filePath).isDirectory()) {
             res.setHeader('Content-Type', 'text/csv');
             res.end(readFileSync(filePath));
             return;
