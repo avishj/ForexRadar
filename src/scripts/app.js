@@ -475,11 +475,6 @@ function setupKeyboardShortcuts() {
 				break;
 
 			case "/": {
-				if (e.shiftKey) {
-					e.preventDefault();
-					import("./ui/shortcuts-modal.js").then((m) => m.showShortcutsModal());
-					break;
-				}
 				e.preventDefault();
 				const fromInput = document.getElementById("from-currency-input");
 				if (fromInput) {
