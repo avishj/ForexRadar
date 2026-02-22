@@ -29,6 +29,7 @@ function dbIntegration() {
     hooks: {
       'astro:server:setup': ({ server }) => {
         server.middlewares.use('/db', (req, res, next) => {
+          if (!existsSync(dbDir)) { next(); return; }
           if (req.url === '/manifest.json') {
             const manifest = generateManifest(dbDir);
             res.setHeader('Content-Type', 'application/json');
