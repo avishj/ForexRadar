@@ -21,8 +21,8 @@ class ThemeManager {
     if (savedTheme === 'dark' || savedTheme === 'light') {
       this.setTheme(savedTheme);
     } else {
-      // Default to dark mode if no saved preference
-      this.setTheme('dark');
+      // Respect OS color scheme preference
+      this.setTheme(this.prefersDark.matches ? 'dark' : 'light');
     }
     
     // Listen for toggle clicks

@@ -12,7 +12,7 @@ const isProd = import.meta.env.PROD;
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		{isProd && <meta http-equiv="Content-Security-Policy" content="default-src 'self';
-                 script-src 'self' 'sha256-hqqc1jsXeb0Z1tv3XwkzxzjoJ4h8dAW9+5mmtWNaNEw=';
+                 script-src 'self' 'sha256-pR93glMhrUz1ycmFHY/xAijLBUu/DfnrAm/pIB1z2Z4=';
                  style-src 'self' 'unsafe-inline';
                  font-src 'self';
                  connect-src 'self' https://avishj.github.io https://api.allorigins.win;
@@ -26,14 +26,11 @@ const isProd = import.meta.env.PROD;
 		<!-- Theme Script (inline to prevent flash) -->
 		<script is:inline>
 			const savedTheme = localStorage.getItem("theme");
-			// Default to dark mode if no saved preference
-			if (savedTheme !== "light") {
-				document.documentElement.classList.add("dark");
-				document.documentElement.classList.remove("light");
-			} else {
-				document.documentElement.classList.add("light");
-				document.documentElement.classList.remove("dark");
-			}
+			const theme = savedTheme === "dark" || savedTheme === "light"
+				? savedTheme
+				: window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+			document.documentElement.classList.add(theme);
+			document.documentElement.classList.remove(theme === "dark" ? "light" : "dark");
 		</script>
 	</head>
 
