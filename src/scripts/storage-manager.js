@@ -172,14 +172,14 @@ export async function saveRate(record) {
     const transaction = db.transaction(STORE_NAME, 'readwrite');
     const store = transaction.objectStore(STORE_NAME);
     
-    const request = store.put(record);
+    store.put(record);
     
-    request.onerror = () => {
-      reject(new Error(`Failed to save rate: ${request.error?.message}`));
+    transaction.oncomplete = () => {
+      resolve();
     };
     
-    request.onsuccess = () => {
-      resolve();
+    transaction.onerror = () => {
+      reject(new Error(`Failed to save rate: ${transaction.error?.message}`));
     };
   });
 }
