@@ -530,10 +530,13 @@ function init() {
 	const fromDropdownContainer = document.getElementById("from-currency-dropdown");
 	const toDropdownContainer = document.getElementById("to-currency-dropdown");
 
-	if (fromDropdownContainer && toDropdownContainer) {
-		fromSelect = new SearchableDropdown(fromDropdownContainer, currencies);
-		toSelect = new SearchableDropdown(toDropdownContainer, currencies);
+	if (!fromDropdownContainer || !toDropdownContainer) {
+		console.error("Missing currency dropdown container: from-currency-dropdown or to-currency-dropdown");
+		return;
 	}
+
+	fromSelect = new SearchableDropdown(fromDropdownContainer, currencies);
+	toSelect = new SearchableDropdown(toDropdownContainer, currencies);
 
 	const notificationContainer = document.getElementById("notification-container");
 	if (notificationContainer) {
