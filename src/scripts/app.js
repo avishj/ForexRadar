@@ -197,12 +197,12 @@ function showEmptyState() {
  * @returns {number|null}
  */
 function calculateRatePercentile(currentRate, allRecords) {
-	if (currentRate == null || allRecords.length < 2) return null;
+	if (currentRate == null || isNaN(currentRate) || allRecords.length < 2) return null;
 
 	const rates = allRecords.map((r) => r.rate).filter((r) => r !== null && r !== undefined);
 	if (rates.length < 2) return null;
 
-	const betterCount = rates.filter((r) => r > currentRate).length;
+	const betterCount = rates.filter((r) => r < currentRate).length;
 	const percentile = (betterCount / rates.length) * 100;
 
 	return Math.round(percentile);
