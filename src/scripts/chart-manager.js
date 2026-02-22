@@ -551,10 +551,10 @@ function updateYAxisLimits(minTimestamp, maxTimestamp) {
 	const visibleEcb = getVisibleRecords(currentEcbRecords, minDate, maxDate);
 
 	// Calculate rate range (left Y-axis)
-	const allRates = [...visibleVisa.map((r) => r.rate), ...visibleMc.map((r) => r.rate), ...visibleEcb.map((r) => r.rate)].filter((r) => r !== null && r !== undefined);
+	const allRates = [...visibleVisa.map((r) => r.rate), ...visibleMc.map((r) => r.rate), ...visibleEcb.map((r) => r.rate)].filter((r) => r != null && !Number.isNaN(r));
 
 	// Calculate markup range (right Y-axis)
-	const allMarkups = visibleVisa.map((r) => r.markup).filter((m) => m !== null && m !== undefined);
+	const allMarkups = visibleVisa.map((r) => r.markup).filter((m) => m != null && !Number.isNaN(m));
 
 	if (allRates.length === 0) return;
 
