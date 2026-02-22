@@ -1028,6 +1028,10 @@
 }
 
 .stat-value.high {
+  color: #047857;
+}
+
+.dark .stat-value.high {
   color: #10b981;
 }
 
@@ -1041,10 +1045,18 @@
 
 /* Percentile stat card color coding */
 #stat-percentile.excellent {
+  color: #047857;
+}
+
+.dark #stat-percentile.excellent {
   color: #10b981;
 }
 
 #stat-percentile.good {
+  color: #15803d;
+}
+
+.dark #stat-percentile.good {
   color: #22c55e;
 }
 
