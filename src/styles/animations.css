@@ -272,3 +272,7 @@
 [data-animate="scale"].animate-in {
   transform: scale(1);
 }
+
+@media (scripting: none) {
+  [data-animate] { opacity: 1; transform: none; }
+}
