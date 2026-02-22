@@ -82,7 +82,7 @@ export async function fetchRate(date, fromCurr, toCurr) {
       to_curr: toCurr,
       provider: PROVIDER_NAME,
       rate: rate,
-      markup: markup ?? 0
+      markup: markup || 0
     };
   } catch (error) {
     clearTimeout(timeoutId);
