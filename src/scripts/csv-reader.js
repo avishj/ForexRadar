@@ -57,10 +57,10 @@ export class CSVReader {
    * @returns {Promise<RateRecord[]>}
    */
   async #fetchYearFile(fromCurr, year) {
-    const url = `${this.#basePath}/${fromCurr}/${year}.csv`;
+    const fileUrl = `${this.#basePath}/${fromCurr}/${year}.csv`;
 
     try {
-      const response = await fetch(url);
+      const response = await fetch(fileUrl);
 
       if (!response.ok) {
         if (response.status === 404) {
@@ -73,7 +73,7 @@ export class CSVReader {
       return parseCSV(text, fromCurr);
     } catch (error) {
       // Network error or other issues - return empty
-      console.warn(`Failed to fetch ${url}:`, error);
+      console.warn(`Failed to fetch ${fileUrl}:`, error);
       return [];
     }
   }
@@ -105,9 +105,9 @@ export class CSVReader {
       const batch = yearsToTry.slice(i, i + batchSize);
       const results = await Promise.all(
         batch.map(async (year) => {
-          const url = `${this.#basePath}/${fromCurr}/${year}.csv`;
+          const fileUrl = `${this.#basePath}/${fromCurr}/${year}.csv`;
           try {
-            const response = await fetch(url, { method: 'HEAD' });
+            const response = await fetch(fileUrl, { method: 'HEAD' });
             return response.ok ? year : null;
           } catch {
             return null;
@@ -194,9 +194,9 @@ export class CSVReader {
 
     const currentYear = new Date().getFullYear();
     for (const year of [currentYear, currentYear - 1, currentYear - 2]) {
-      const url = `${this.#basePath}/${fromCurr}/${year}.csv`;
+      const fileUrl = `${this.#basePath}/${fromCurr}/${year}.csv`;
       try {
-        const response = await fetch(url, { method: 'HEAD' });
+        const response = await fetch(fileUrl, { method: 'HEAD' });
         if (response.ok) return true;
       } catch {
         continue;
