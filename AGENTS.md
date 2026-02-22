@@ -11,7 +11,7 @@
 - **Avoid duplicate CI runs** - CI is the single source of truth for tests. Deploy triggers via `workflow_run` after CI/daily succeed—do not add test jobs to deploy.yml.
 - **db-only changes skip tests** - CI detects when only `db/**` files changed and skips test jobs to save runner minutes.
 
-When I report a bug, don't start by trying to fix it. Instead, start by writing a test that reproduces the bug. Then, have subagents try to fix the bug and prove it with a passing test.
+When I report a major bug, don't start by trying to fix it. Instead, start by writing a test that reproduces the bug if and only if that is something that should have a test case. Then, try to fix the bug and prove it with a passing test.
 
 ## Overview
 
