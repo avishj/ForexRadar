@@ -47,6 +47,12 @@ class ThemeManager {
       this.html.classList.remove('dark');
     }
     
+    if (this.toggle) {
+      const isDark = theme === 'dark';
+      this.toggle.setAttribute('aria-pressed', String(isDark));
+      this.toggle.setAttribute('aria-label', `Switch to ${isDark ? 'light' : 'dark'} mode`);
+    }
+
     // Dispatch event for chart updates
     window.dispatchEvent(new CustomEvent('themechange', { detail: { theme } }));
   }
