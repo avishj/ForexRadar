@@ -307,8 +307,9 @@ function getChartOptions(fromCurr, toCurr) {
 				format: "MMM dd, yyyy"
 			},
 			custom: function (/** @type {{ series: number[][], seriesIndex: number, dataPointIndex: number, w: { globals: { seriesX: number[][] } } }} */ { series, seriesIndex: _seriesIndex, dataPointIndex, w }) {
-				// Custom tooltip to ensure all series are displayed even when some have null values
-				const date = new Date(w.globals.seriesX[0][dataPointIndex]);
+				const timestamp = w.globals.seriesX.find((sx) => sx?.[dataPointIndex] !== undefined)?.[dataPointIndex];
+				if (timestamp === undefined) return "";
+				const date = new Date(timestamp);
 				const dateStr = date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
 				let tooltipHTML = `<div class="apexcharts-tooltip-title" style="font-family: DM Sans, sans-serif; font-size: 12px;">${dateStr}</div>`;
