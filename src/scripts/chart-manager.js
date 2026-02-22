@@ -831,11 +831,10 @@ export function updateChart(visaRecords, mastercardRecords, ecbRecords, fromCurr
 	const textColor = dark ? "#a1a1aa" : "#52525b";
 	const gridColor = dark ? "#27272a" : "#e4e4e7";
 
-	// Update options including xaxis bounds
+	const hasData = minTimestamp !== undefined && maxTimestamp !== undefined;
 	const updateOptions = {
 		xaxis: {
-			min: minTimestamp,
-			max: maxTimestamp,
+			...(hasData && { min: minTimestamp, max: maxTimestamp }),
 			tickAmount: tickCount
 		},
 		yaxis: [
