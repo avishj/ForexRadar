@@ -50,6 +50,8 @@ function dbIntegration() {
           cpSync(dbDir, outDb, { recursive: true });
           const manifest = generateManifest(outDb);
           writeFileSync(join(outDb, 'manifest.json'), JSON.stringify(manifest));
+        } else {
+          console.warn(`[astro:build] db/ not found at ${dbDir} — DB files and manifest.json will not be included in the build.`);
         }
       },
     },
