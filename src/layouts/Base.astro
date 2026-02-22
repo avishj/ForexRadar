@@ -22,13 +22,6 @@ const isProd = import.meta.env.PROD;
 		<link rel="preload" href={spaceGroteskFont} as="font" type="font/woff2" crossorigin />
 		<title>Forex Radar: One stop solution to tracking Visa / Master Card exchange rates.</title>
 		<meta name="description" content="Track historical Visa and Mastercard exchange rates with real markup percentages. See what you're actually paying when you swipe abroad." />
-	</head>
-
-	<body>
-		<slot />
-
-		<!-- Notification Container -->
-		<div id="notification-container"></div>
 
 		<!-- Theme Script (inline to prevent flash) -->
 		<script is:inline>
@@ -42,6 +35,13 @@ const isProd = import.meta.env.PROD;
 				document.documentElement.classList.remove("dark");
 			}
 		</script>
+	</head>
+
+	<body>
+		<slot />
+
+		<!-- Notification Container -->
+		<div id="notification-container"></div>
 
 		<!-- Load Scripts -->
 		<script>
