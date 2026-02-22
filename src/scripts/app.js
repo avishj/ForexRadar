@@ -433,7 +433,7 @@ function handleSelectionChange() {
 	debounceTimer = setTimeout(() => {
 		const fromCurr = fromSelect.value;
 		const toCurr = toSelect.value;
-		if (fromCurr && toCurr) {
+		if (fromCurr && toCurr && fromCurr !== toCurr) {
 			localStorage.setItem("forexRadar_lastPair", JSON.stringify({ from: fromCurr, to: toCurr }));
 			saveRecentPair(fromCurr, toCurr);
 			updateURL();
