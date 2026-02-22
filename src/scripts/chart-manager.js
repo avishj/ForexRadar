@@ -878,6 +878,9 @@ export function destroyChart() {
 		chartInstance.destroy();
 		chartInstance = null;
 	}
+	currentVisaRecords = [];
+	currentMcRecords = [];
+	currentEcbRecords = [];
 }
 
 /**
