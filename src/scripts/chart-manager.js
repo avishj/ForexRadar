@@ -745,12 +745,18 @@ export async function initChart(containerId, visaRecords, mastercardRecords, ecb
 
 	// Defer import until chart is visible (below the fold on initial load)
 	await new Promise((resolve) => {
+		let settled = false;
+		const cleanup = () => {
+			if (settled) return;
+			settled = true;
+			observer.disconnect();
+			clearTimeout(timeout);
+			resolve();
+		};
 		const observer = new IntersectionObserver((entries) => {
-			if (entries[0].isIntersecting) {
-				observer.disconnect();
-				resolve();
-			}
+			if (entries[0].isIntersecting) cleanup();
 		}, { rootMargin: "200px" });
+		const timeout = setTimeout(cleanup, 5_000);
 		observer.observe(container);
 	});
 
