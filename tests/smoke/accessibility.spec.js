@@ -25,7 +25,7 @@ test.describe('Accessibility', () => {
     await page.goto('/');
     
     const toggle = page.locator('#theme-toggle');
-    await expect(toggle).toHaveAttribute('aria-label', 'Toggle dark mode');
+    await expect(toggle).toHaveAttribute('aria-label', 'Switch to light mode');
   });
 
   test('swap button has aria-label', async ({ page }) => {

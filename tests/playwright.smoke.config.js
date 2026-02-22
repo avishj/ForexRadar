@@ -17,6 +17,7 @@ export default defineConfig({
   
   use: {
     baseURL: 'http://localhost:3000',
+    colorScheme: 'dark',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
