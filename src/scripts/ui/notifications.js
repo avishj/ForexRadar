@@ -43,13 +43,16 @@ export function showNotification(message, type = 'info', duration = 4000) {
 
   const notification = document.createElement('div');
   notification.className = `notification notification-${type}`;
-  notification.innerHTML = `
-    ${icons[type]}
-    <span class="notif-message">${finalMessage}</span>
-    <button class="notif-close" aria-label="Dismiss">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-    </button>
-  `;
+  notification.insertAdjacentHTML('beforeend', icons[type]);
+  const msgSpan = document.createElement('span');
+  msgSpan.className = 'notif-message';
+  msgSpan.textContent = finalMessage;
+  notification.appendChild(msgSpan);
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'notif-close';
+  closeBtn.setAttribute('aria-label', 'Dismiss');
+  closeBtn.innerHTML = '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+  notification.appendChild(closeBtn);
 
   notificationContainer.appendChild(notification);
 
@@ -117,10 +120,7 @@ export function showNotification(message, type = 'info', duration = 4000) {
     exitAnim.onfinish = () => notification.remove();
   };
 
-  const closeBtn = notification.querySelector('.notif-close');
-  if (closeBtn) {
-    closeBtn.addEventListener('click', dismissNotification);
-  }
+  closeBtn.addEventListener('click', dismissNotification);
 
   if (duration > 0) {
     setTimeout(dismissNotification, duration + staggerDelay);
