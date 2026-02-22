@@ -134,7 +134,16 @@ ForexRadar/
 │   │   ├── animations.js      # UI transitions
 │   │   ├── visa-client.js     # Browser-side Visa client
 │   │   ├── mastercard-client.js # Browser-side Mastercard client
-│   │   └── globals.d.ts       # Global type declarations
+│   │   ├── globals.d.ts       # Global type declarations
+│   │   └── ui/                # UI component modules
+│   │       ├── actions.js     # User action handlers
+│   │       ├── dropdown.js    # Custom dropdown component
+│   │       ├── notifications.js # Toast notifications
+│   │       ├── odometer.js    # Animated rate display
+│   │       ├── recent-pairs.js # Recent currency pairs list
+│   │       ├── series-toggles.js # Chart series toggle controls
+│   │       ├── shortcuts-modal.js # Keyboard shortcuts modal
+│   │       └── time-range.js  # Time range selector
 │   ├── utils/                 # Utility helpers
 │   │   └── url.js             # BASE_URL helper for path prefixing
 │   └── styles/                # Stylesheets
