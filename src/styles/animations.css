@@ -38,17 +38,6 @@
 }
 
 /* --------------------------------
-   Unified Entrance System
-   -------------------------------- */
-[data-animate] {
-  opacity: 0;
-}
-
-.animate-in {
-  animation: var(--enter-anim, fade-in) var(--enter-duration, 600ms) var(--enter-easing, ease-out) var(--enter-delay, 0ms) forwards;
-}
-
-/* --------------------------------
    Background Animations
    -------------------------------- */
 @keyframes blob-float {
