@@ -20,6 +20,8 @@
 /** @typedef {import('../../shared/types.js').CurrencyCode} CurrencyCode */
 /** @typedef {import('../../shared/types.js').Provider} Provider */
 
+import { getLastUTC12pm } from '../../shared/utils.js';
+
 const DB_NAME = 'ForexRadarDB';
 const DB_VERSION = 2;
 const STORE_NAME = 'rates';
@@ -36,27 +38,6 @@ let dbOpenPromise = null;
 // ============================================================================
 
 /**
- * Get the most recent UTC 12:00 that has passed.
- * @returns {Date}
- */
-function getLastUTC12pm() {
-  const now = new Date();
-  const utc12Today = new Date(Date.UTC(
-    now.getUTCFullYear(),
-    now.getUTCMonth(),
-    now.getUTCDate(),
-    12, 0, 0, 0
-  ));
-
-  // If UTC 12:00 today hasn't happened yet, use yesterday's
-  if (now < utc12Today) {
-    utc12Today.setUTCDate(utc12Today.getUTCDate() - 1);
-  }
-
-  return utc12Today;
-}
-
-/**
  * Check if server data needs refresh for a source currency.
  * Data is stale if the last refresh was before the most recent UTC 12:00.
  * 
@@ -71,11 +52,10 @@ export function needsServerRefresh(fromCurr) {
     return true; // Never fetched, needs refresh
   }
 
-  const lastRefreshDate = new Date(lastRefresh);
-  const lastUTC12pm = getLastUTC12pm();
+  const lastRefreshTimestamp = new Date(lastRefresh).getTime();
 
   // Stale if last refresh was before the most recent UTC 12:00
-  return lastRefreshDate < lastUTC12pm;
+  return lastRefreshTimestamp < getLastUTC12pm();
 }
 
 /**
