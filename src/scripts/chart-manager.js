@@ -641,7 +641,7 @@ export async function initChart(containerId, visaRecords, mastercardRecords, ecb
 	// Get all unique dates from data
 	const allDates = [...visaRateSeries.map((p) => p.x), ...mcRateSeries.map((p) => p.x), ...ecbRateSeries.map((p) => p.x)].filter((d) => d !== null && d !== undefined);
 
-	const uniqueDates = [...new Set(allDates)].sort();
+	const uniqueDates = [...new Set(allDates)].sort((a, b) => a - b);
 	const minDate = uniqueDates.length > 0 ? uniqueDates[0] : undefined;
 	const maxDate = uniqueDates.length > 0 ? uniqueDates[uniqueDates.length - 1] : undefined;
 
