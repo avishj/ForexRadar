@@ -67,6 +67,7 @@ class AnimationsManager {
   }
   
   hideTooltip() {
+    if (!this.tooltipElement) return;
     this.tooltipElement.classList.remove('visible');
   }
   
