@@ -188,8 +188,8 @@ export class CSVReader {
    */
   async hasDataForCurrency(fromCurr) {
     const manifest = await this.#fetchManifest();
-    if (manifest) {
-      return fromCurr in manifest;
+    if (manifest && typeof manifest === 'object') {
+      return manifest[fromCurr] !== undefined;
     }
 
     const currentYear = new Date().getFullYear();
