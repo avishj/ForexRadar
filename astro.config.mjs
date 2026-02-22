@@ -38,7 +38,7 @@ function dbIntegration() {
             return;
           }
           const pathname = decodeURIComponent(new URL(req.url ?? '', 'http://localhost').pathname);
-          const filePath = resolve(dbDir, normalize(pathname).replace(/^\/+/, ''));
+          const filePath = resolve(dbDir, normalize(pathname).replace(/^[/\\]+/, ''));
           if (!filePath.startsWith(dbDir)) { next(); return; }
           if (existsSync(filePath) && !statSync(filePath).isDirectory()) {
             res.setHeader('Content-Type', 'text/csv');
