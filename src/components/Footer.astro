@@ -1,6 +1,5 @@
 ---
-const currentYear = new Date().getFullYear();
-const copyrightText = currentYear > 2024 ? `2024-${currentYear}` : '2024';
+const START_YEAR = 2024;
 ---
 
 <footer class="max-w-[1200px] mx-auto p-8 border-t border-(--border-subtle)">
@@ -43,6 +42,14 @@ const copyrightText = currentYear > 2024 ? `2024-${currentYear}` : '2024';
     </div>
     
     <!-- Copyright -->
-    <p class="m-0 text-xs text-color-tertiary">© {copyrightText}</p>
+    <p class="m-0 text-xs text-color-tertiary">© <span data-copyright data-start={START_YEAR}>{START_YEAR}</span></p>
+    <script>
+      const el = document.querySelector('[data-copyright]');
+      if (el) {
+        const start = Number(el.dataset.start);
+        const now = new Date().getFullYear();
+        el.textContent = now > start ? `${start}–${now}` : String(start);
+      }
+    </script>
   </div>
 </footer>
