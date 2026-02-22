@@ -701,47 +701,25 @@ export async function initChart(containerId, visaRecords, mastercardRecords, ecb
 	}
 
 	// Add zoom/pan event listeners
-	options.chart.events = {
-		zoomed: (/** @type {unknown} */ chartContext, /** @type {{ xaxis: { min: number, max: number } }} */ { xaxis }) => {
-			// For datetime axis, min/max are timestamps
-			const minTs = xaxis.min;
-			const maxTs = xaxis.max;
+	/** @param {{ xaxis: { min: number, max: number } }} axes */
+	function handleRangeChange({ xaxis }) {
+		const minTs = xaxis.min;
+		const maxTs = xaxis.max;
 
-			if (!minTs || !maxTs) return;
+		if (!minTs || !maxTs) return;
 
-			// Update stored timestamps for label formatter
-			minDataTimestamp = minTs;
-			maxDataTimestamp = maxTs;
+		minDataTimestamp = minTs;
+		maxDataTimestamp = maxTs;
 
-			// Update Y-axis limits for visible range
-			updateYAxisLimits(minTs, maxTs);
-			// Call external callback for stats update (convert to date strings)
-			if (onZoomCallback) {
-				const minDate = timestampToDateStr(minTs);
-				const maxDate = timestampToDateStr(maxTs);
-				onZoomCallback(minDate, maxDate);
-			}
-		},
-		scrolled: (/** @type {unknown} */ chartContext, /** @type {{ xaxis: { min: number, max: number } }} */ { xaxis }) => {
-			// For datetime axis, min/max are timestamps
-			const minTs = xaxis.min;
-			const maxTs = xaxis.max;
-
-			if (!minTs || !maxTs) return;
-
-			// Update stored timestamps for label formatter
-			minDataTimestamp = minTs;
-			maxDataTimestamp = maxTs;
-
-			// Update Y-axis limits for visible range
-			updateYAxisLimits(minTs, maxTs);
-			// Call external callback for stats update (convert to date strings)
-			if (onZoomCallback) {
-				const minDate = timestampToDateStr(minTs);
-				const maxDate = timestampToDateStr(maxTs);
-				onZoomCallback(minDate, maxDate);
-			}
+		updateYAxisLimits(minTs, maxTs);
+		if (onZoomCallback) {
+			onZoomCallback(timestampToDateStr(minTs), timestampToDateStr(maxTs));
 		}
+	}
+
+	options.chart.events = {
+		zoomed: (/** @type {unknown} */ _ctx, /** @type {{ xaxis: { min: number, max: number } }} */ axes) => handleRangeChange(axes),
+		scrolled: (/** @type {unknown} */ _ctx, /** @type {{ xaxis: { min: number, max: number } }} */ axes) => handleRangeChange(axes)
 	};
 
 	// Defer import until chart is visible (below the fold on initial load)
