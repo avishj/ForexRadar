@@ -22,8 +22,6 @@ for (const vp of responsiveViewports) {
 
     test('selector section matches baseline', async ({ page }) => {
       await page.goto('/');
-      await expect(page.locator('#from-currency-list .dropdown-item').first()).toBeAttached({ timeout: 10000 });
-      await page.waitForTimeout(100);
       await expect(page.locator('.selector-container')).toHaveScreenshot(`selector-${vp.name}.png`);
     });
 

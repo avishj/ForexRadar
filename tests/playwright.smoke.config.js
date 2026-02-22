@@ -1,9 +1,5 @@
 // @ts-check
 import { defineConfig, devices } from '@playwright/test';
-import { dirname, join } from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
 
 /**
  * Playwright configuration for ForexRadar smoke UI tests.
@@ -37,7 +33,7 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: `bun ${join(__dirname, 'server.js')}`,
+    command: 'bun run preview -- --host --port 3000',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 10000,

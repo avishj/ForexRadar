@@ -1,0 +1,67 @@
+---
+import Base from '../layouts/Base.astro';
+import Header from '../components/Header.astro';
+import Hero from '../components/Hero.astro';
+import CurrencySelector from '../components/CurrencySelector.astro';
+import StatsBar from '../components/StatsBar.astro';
+import TimeRange from '../components/TimeRange.astro';
+import SeriesToggle from '../components/SeriesToggle.astro';
+import ChartSection from '../components/ChartSection.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<Base>
+  <!-- Animated Background -->
+  <div class="bg-pattern">
+    <div class="bg-grid"></div>
+    <div class="bg-blob bg-blob-1"></div>
+    <div class="bg-blob bg-blob-2"></div>
+    <div class="bg-blob bg-blob-3"></div>
+  </div>
+
+  <Header />
+  <Hero />
+  <CurrencySelector />
+
+  <!-- Loader -->
+  <section id="loader" class="hidden">
+    <div class="flex flex-col items-center justify-center py-20 px-8">
+      <div class="size-12 rounded-full animate-spin mb-4" style="border: 3px solid var(--border-color); border-top-color: var(--accent-primary);"></div>
+      <span id="loader-text" class="text-sm text-[--text-secondary]">Loading exchange rates...</span>
+    </div>
+  </section>
+
+  <StatsBar />
+
+  <TimeRange />
+  <SeriesToggle />
+  <ChartSection />
+
+  <!-- Empty State -->
+  <section id="empty-state" class="max-w-[1200px] mx-auto px-8 pb-16">
+    <div class="card card--dashed overflow-hidden text-center py-20 px-8" data-animate>
+      <div class="relative inline-flex items-center justify-center size-20 bg-[image:var(--gradient-card)] rounded-3xl mb-6 animate-[empty-float_4s_ease-in-out_infinite]">
+        <svg class="size-10 text-[--accent-primary]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+        </svg>
+      </div>
+      <h3 class="font-display text-2xl font-bold text-[--text-primary] mb-3">Select a currency pair</h3>
+      <p class="text-base text-[--text-secondary] max-w-sm mx-auto">Choose your source and target currencies above to view historical exchange rates and markup percentages.</p>
+    </div>
+  </section>
+
+  <!-- Request Archiving Link (only visible for non-archived pairs) -->
+  <div id="archiving-section" class="text-center py-4 px-8 hidden">
+    <p class="text-sm mb-2 text-color-secondary">
+      ⚠️ This pair is not archived on server. Only showing ~7 days of live data.
+    </p>
+    <a id="request-archiving" href="#" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 text-xs text-[--text-tertiary] no-underline transition-colors duration-150 hover:text-[--text-primary]">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+      </svg>
+      Request server-side archiving for 365 days of history
+    </a>
+  </div>
+
+  <Footer />
+</Base>

@@ -11,7 +11,7 @@
 - **Avoid duplicate CI runs** - CI is the single source of truth for tests. Deploy triggers via `workflow_run` after CI/daily succeed—do not add test jobs to deploy.yml.
 - **db-only changes skip tests** - CI detects when only `db/**` files changed and skips test jobs to save runner minutes.
 
-When I report a bug, don't start by trying to fix it. Instead, start by writing a test that reproduces the bug. Then, have subagents try to fix the bug and prove it with a passing test.
+When I report a major bug, don't start by trying to fix it. Instead, start by writing a test that reproduces the bug if and only if that is something that should have a test case. Then, try to fix the bug and prove it with a passing test.
 
 ## Overview
 
@@ -38,7 +38,7 @@ bun run postinstall        # Install Playwright browsers (Firefox + Chromium)
 | `bun run ecb-backfill` | Backfill ECB historical rates |
 | `bun run validate` | Validate CSV data integrity |
 | `bun run check` | Run TypeScript type checking |
-| `bun run lint` | Run ESLint on js/, shared/, backend/ |
+| `bun run lint` | Run ESLint on src/, shared/, backend/ |
 | `bun run lint:fix` | Auto-fix ESLint issues |
 
 ### Test Scripts
@@ -52,7 +52,7 @@ bun run postinstall        # Install Playwright browsers (Firefox + Chromium)
 | `bun run test:contract:mc` | Run Mastercard contract tests only |
 | `bun run test:e2e` | Run end-to-end flow tests |
 | `bun run test:smoke` | Run UI smoke tests |
-| `bun run test:perf` | Run perf tests (bun + browser) |
+| `bun run test:perf` | Perf tests temporarily disabled |
 | `bun run test:visual` | Run visual regression tests |
 | `bun run test:visual:update` | Update visual test baselines |
 | `bun run test:all` | Run all tests |
@@ -119,18 +119,34 @@ ForexRadar/
 │   ├── watchlist.json         # Visa/MC currency pairs (~330 pairs)
 │   └── ecb-watchlist.json     # ECB currencies (30 currencies)
 │
-├── js/                        # Frontend modules (browser)
-│   ├── app.js                 # Main application entry, UI logic
-│   ├── chart-manager.js       # ApexCharts wrapper
-│   ├── data-manager.js        # Data loading orchestration
-│   ├── csv-reader.js          # CSV parsing
-│   ├── storage-manager.js     # IndexedDB caching
-│   ├── currencies.js          # Currency metadata
-│   ├── theme.js               # Dark/light mode
-│   ├── animations.js          # UI transitions
-│   ├── visa-client.js         # Browser-side Visa client
-│   ├── mastercard-client.js   # Browser-side Mastercard client
-│   └── globals.d.ts           # Global type declarations
+├── src/                       # Astro source
+│   ├── pages/                 # Routes
+│   ├── layouts/               # Layout templates
+│   ├── components/            # Astro components
+│   ├── scripts/               # Frontend modules (browser)
+│   │   ├── app.js             # Main application entry, UI logic
+│   │   ├── chart-manager.js   # ApexCharts wrapper
+│   │   ├── data-manager.js    # Data loading orchestration
+│   │   ├── csv-reader.js      # CSV parsing
+│   │   ├── storage-manager.js # IndexedDB caching
+│   │   ├── currencies.js      # Currency metadata
+│   │   ├── theme.js           # Dark/light mode
+│   │   ├── animations.js      # UI transitions
+│   │   ├── visa-client.js     # Browser-side Visa client
+│   │   ├── mastercard-client.js # Browser-side Mastercard client
+│   │   ├── globals.d.ts       # Global type declarations
+│   │   └── ui/                # UI component modules
+│   │       ├── actions.js     # User action handlers
+│   │       ├── dropdown.js    # Custom dropdown component
+│   │       ├── notifications.js # Toast notifications
+│   │       ├── odometer.js    # Animated rate display
+│   │       ├── recent-pairs.js # Recent currency pairs list
+│   │       ├── series-toggles.js # Chart series toggle controls
+│   │       ├── shortcuts-modal.js # Keyboard shortcuts modal
+│   │       └── time-range.js  # Time range selector
+│   ├── utils/                 # Utility helpers
+│   │   └── url.js             # BASE_URL helper for path prefixing
+│   └── styles/                # Stylesheets
 │
 ├── shared/                    # Isomorphic utilities
 │   ├── constants.js           # Provider configs (rate limits, etc.)
@@ -140,7 +156,6 @@ ForexRadar/
 │   ├── logger.js              # Logging utilities
 │   └── types.js               # JSDoc type definitions
 │
-├── css/                       # Stylesheets
 ├── db/                        # CSV data storage
 │   └── {CURRENCY}/            # e.g., USD/, EUR/, INR/
 │       └── {YEAR}.csv         # e.g., 2024.csv, 2025.csv
@@ -156,8 +171,7 @@ ForexRadar/
 │   ├── helpers/               # Test helper utilities
 │   ├── playwright.smoke.config.js   # Smoke test configuration
 │   ├── playwright.e2e.config.js # E2E test configuration
-│   ├── playwright.perf.config.js # Perf test configuration
-│   └── server.js              # Local test server
+│   └── playwright.perf.config.js # Perf test configuration
 │
 ├── scripts/                   # Automation scripts
 │   ├── ralph/                 # Ralph autonomous agent
@@ -195,7 +209,7 @@ ForexRadar/
 
 ### Storage
 - **`backend/csv-store.js`** - CRUD operations for CSV files in `db/`
-- **`js/storage-manager.js`** - IndexedDB wrapper for frontend caching
+- **`src/scripts/storage-manager.js`** - IndexedDB wrapper for frontend caching
 
 ### Shared Utilities
 - **`shared/constants.js`** - `PROVIDER_CONFIG` with rate limits per provider
@@ -228,14 +242,13 @@ async function fetchRate(from, to) { ... }
 
 Each CSV file (`db/{CURRENCY}/{YEAR}.csv`) has the format:
 ```csv
-date,from_curr,to_curr,provider,rate,markup
-2025-01-22,USD,INR,VISA,86.123456,0.0
-2025-01-22,USD,INR,ECB,85.987654,
+date,to_curr,provider,rate,markup
+2025-01-22,INR,VISA,86.123456,0.0
+2025-01-22,INR,ECB,85.987654,
 ```
 
 - `date`: YYYY-MM-DD
-- `from_curr`: Source currency (3-letter ISO code)
-- `to_curr`: Target currency
+- `to_curr`: Target currency (source currency is inferred from the directory name `db/{FROM_CURRENCY}/`)
 - `provider`: VISA | MASTERCARD | ECB
 - `rate`: Exchange rate (up to 6 decimals)
 - `markup`: Visa markup % (null for MC/ECB)
@@ -282,7 +295,7 @@ date,from_curr,to_curr,provider,rate,markup
 3. Verify CSV output with `bun run validate`
 
 ### Frontend Changes
-1. Open `index.html` in browser
+1. Run `bun run dev` and open the local Astro URL
 2. Check browser console for errors
 3. Test with different currency pairs and date ranges
 

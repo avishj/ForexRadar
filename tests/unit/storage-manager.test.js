@@ -5,7 +5,7 @@ import {
   markServerRefreshed,
   getLastServerRefresh,
   clearAllRefreshTimestamps
-} from '../../js/storage-manager.js';
+} from '../../src/scripts/storage-manager.js';
 
 /**
  * Mock localStorage for Node/Bun environment

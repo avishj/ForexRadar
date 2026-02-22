@@ -15,6 +15,6 @@
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true
   },
-  "include": ["js/**/*", "shared/**/*", "backend/**/*"],
+  "include": ["src/**/*", "shared/**/*", "backend/**/*"],
   "exclude": ["node_modules", "db"]
 }

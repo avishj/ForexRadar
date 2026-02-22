@@ -152,9 +152,7 @@ bun run backfill --provider=mastercard --days=30
 ```yaml
 on:
   schedule:
-    - cron: '0 17 * * *'  # UTC times (retry schedule)
-    - cron: '0 19 * * *'
-    - cron: '0 21 * * *'
+    - cron: '0 17 * * *'
     - cron: '0 23 * * *'
   workflow_dispatch:
 
@@ -172,7 +170,7 @@ jobs:
 
 **`.github/workflows/deploy.yml`:**
 *   Triggers on push to `main` or after daily update workflow completes
-*   Deploys entire repo to GitHub Pages
+*   Builds Astro and deploys `dist/` to GitHub Pages
 
 ---
 
@@ -180,20 +178,21 @@ jobs:
 
 ### 4.1 File Structure
 ```text
-js/
-  app.js              # Main application, UI event handlers
-  data-manager.js     # Data orchestration (cache/server/live)
-  storage-manager.js  # IndexedDB operations + staleness tracking
-  csv-reader.js       # Server CSV fetching
-  chart-manager.js    # ApexCharts configuration + rendering
-  visa-client.js      # Browser-side Visa API client (via CORS proxy)
-  mastercard-client.js# Browser-side Mastercard API client (via CORS proxy)
-  currencies.js       # Currency metadata (code, name, symbol)
-  theme.js            # Dark/light mode toggle
-  animations.js       # UI animations
+src/scripts/
+  app.js               # Main application, UI event handlers
+  data-manager.js      # Data orchestration (cache/server/live)
+  storage-manager.js   # IndexedDB operations + staleness tracking
+  csv-reader.js        # Server CSV fetching
+  chart-manager.js     # ApexCharts configuration + rendering
+  visa-client.js       # Browser-side Visa API client (via CORS proxy)
+  mastercard-client.js # Browser-side Mastercard API client (via CORS proxy)
+  currencies.js        # Currency metadata (code, name, symbol)
+  theme.js             # Dark/light mode toggle
+  animations.js        # UI animations
+  ui/                  # UI helpers and widgets
 ```
 
-### 4.2 Data Manager (`js/data-manager.js`)
+### 4.2 Data Manager (`src/scripts/data-manager.js`)
 
 **Progressive Enhancement Flow:**
 ```text
@@ -215,12 +214,12 @@ js/
 6. Return merged records sorted by date ASC
 ```
 
-**Cache Staleness (`js/storage-manager.js`):**
+**Cache Staleness (`src/scripts/storage-manager.js`):**
 *   Each source currency has its own refresh timestamp (localStorage)
 *   Data is stale if last refresh was before most recent UTC 12:00
 *   Staleness check: `lastRefreshDate < getLastUTC12pm()`
 
-### 4.3 CSV Reader (`js/csv-reader.js`)
+### 4.3 CSV Reader (`src/scripts/csv-reader.js`)
 
 *   Discovers available years by probing `db/{FROM_CURR}/{YEAR}.csv`
 *   Fetches only year files that overlap with requested date range
@@ -228,7 +227,7 @@ js/
 
 ### 4.4 Browser API Clients
 
-Both `js/visa-client.js` and `js/mastercard-client.js` use a CORS proxy (`https://api.allorigins.win/raw?url=`) to bypass browser restrictions.
+Both `src/scripts/visa-client.js` and `src/scripts/mastercard-client.js` use a CORS proxy (`https://api.allorigins.win/raw?url=`) to bypass browser restrictions.
 
 ---
 
