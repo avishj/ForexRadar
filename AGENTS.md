@@ -1,4 +1,4 @@
-## Rules
+# Rules
 
 1. Skip `bun run check && bun run lint` after changes unless asked for.
 2. NEVER downgrade GitHub Actions versions. Versions are intentionally pinned. If using a new workflow, find its latest version and use it.
