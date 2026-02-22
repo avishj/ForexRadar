@@ -242,14 +242,13 @@ async function fetchRate(from, to) { ... }
 
 Each CSV file (`db/{CURRENCY}/{YEAR}.csv`) has the format:
 ```csv
-date,from_curr,to_curr,provider,rate,markup
-2025-01-22,USD,INR,VISA,86.123456,0.0
-2025-01-22,USD,INR,ECB,85.987654,
+date,to_curr,provider,rate,markup
+2025-01-22,INR,VISA,86.123456,0.0
+2025-01-22,INR,ECB,85.987654,
 ```
 
 - `date`: YYYY-MM-DD
-- `from_curr`: Source currency (3-letter ISO code)
-- `to_curr`: Target currency
+- `to_curr`: Target currency (source currency is inferred from the directory name `db/{FROM_CURRENCY}/`)
 - `provider`: VISA | MASTERCARD | ECB
 - `rate`: Exchange rate (up to 6 decimals)
 - `markup`: Visa markup % (null for MC/ECB)
