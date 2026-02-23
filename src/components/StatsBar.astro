@@ -1,0 +1,101 @@
+<section id="stats-bar" class="stats-container max-w-[1200px] mx-auto px-4 py-6 hidden">
+  <div class="stats-grid">
+    <div class="card stat-card" data-animate>
+      <div class="stat-label">
+        Current Rate
+        <span class="info-tooltip" data-tooltip="Most recent exchange rate available. Rates update daily after 12pm ET.">
+          <svg viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><text x="10" y="14" text-anchor="middle" font-size="11" font-weight="600">?</text></svg>
+        </span>
+      </div>
+      <div id="stat-current" class="stat-value accent">-</div>
+    </div>
+    
+    <div class="card stat-card" data-animate id="stat-percentile-card">
+      <div class="stat-label">
+        Rate Quality
+        <span class="info-tooltip" data-tooltip="How the current rate compares to historical rates. Higher = better deal.">
+          <svg viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><text x="10" y="14" text-anchor="middle" font-size="11" font-weight="600">?</text></svg>
+        </span>
+      </div>
+      <div id="stat-percentile" class="stat-value">-</div>
+    </div>
+    
+    <div class="card stat-card" data-animate>
+      <div class="stat-label">
+        Highest
+        <span class="info-tooltip" data-tooltip="Highest rate across both Visa and Mastercard in the displayed time period.">
+          <svg viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><text x="10" y="14" text-anchor="middle" font-size="11" font-weight="600">?</text></svg>
+        </span>
+      </div>
+      <div id="stat-high" class="stat-value high">-</div>
+    </div>
+    
+    <div class="card stat-card" data-animate>
+      <div class="stat-label">
+        Lowest
+        <span class="info-tooltip" data-tooltip="Lowest rate across both Visa and Mastercard in the displayed time period.">
+          <svg viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><text x="10" y="14" text-anchor="middle" font-size="11" font-weight="600">?</text></svg>
+        </span>
+      </div>
+      <div id="stat-low" class="stat-value low">-</div>
+    </div>
+    
+    <div class="card stat-card" data-animate>
+      <div class="stat-label">
+        Avg Visa Markup
+        <span class="info-tooltip" data-tooltip="Visa's average markup over ECB mid-market rate. Mastercard does not provide markup data.">
+          <svg viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><text x="10" y="14" text-anchor="middle" font-size="11" font-weight="600">?</text></svg>
+        </span>
+      </div>
+      <div id="stat-markup" class="stat-value markup">-</div>
+    </div>
+    
+    <div class="card stat-card" data-animate>
+      <div class="stat-label">
+        MC vs Visa
+        <span class="info-tooltip" data-tooltip="Current rate difference (Mastercard - Visa). Negative means MC is cheaper.">
+          <svg viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><text x="10" y="14" text-anchor="middle" font-size="11" font-weight="600">?</text></svg>
+        </span>
+      </div>
+      <div id="stat-spread" class="stat-value">-</div>
+    </div>
+    
+    <div class="card stat-card" data-animate>
+      <div class="stat-label">
+        Better Rate
+        <span class="info-tooltip" data-tooltip="Which provider currently offers the lower (better) rate for buyers.">
+          <svg viewBox="0 0 20 20" fill="currentColor"><circle cx="10" cy="10" r="9" fill="none" stroke="currentColor" stroke-width="1.5"/><text x="10" y="14" text-anchor="middle" font-size="11" font-weight="600">?</text></svg>
+        </span>
+      </div>
+      <div id="stat-better-provider" class="stat-value">-</div>
+    </div>
+  </div>
+  <div class="stats-actions">
+    <button id="copy-rate-btn" class="btn action-btn" type="button" title="Copy current rate">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+      </svg>
+      <span>Copy Rate</span>
+    </button>
+    <button id="share-url-btn" class="btn action-btn" type="button" title="Copy shareable link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="18" cy="5" r="3"></circle>
+        <circle cx="6" cy="12" r="3"></circle>
+        <circle cx="18" cy="19" r="3"></circle>
+        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+      </svg>
+      <span>Share</span>
+    </button>
+    <button id="download-chart-btn" class="btn action-btn" type="button" title="Download chart as PNG">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="7 10 12 15 17 10"></polyline>
+        <line x1="12" y1="15" x2="12" y2="3"></line>
+      </svg>
+      <span>Download</span>
+    </button>
+  </div>
+  <div id="last-updated" class="text-center mt-4 text-xs text-color-tertiary"></div>
+</section>

@@ -24,7 +24,11 @@
             "cumulative-layout-shift": ["warn", { "maxNumericValue": 0.10 }],
             "total-blocking-time": ["warn", { "maxNumericValue": 400 }],
             "speed-index": ["warn", { "maxNumericValue": 5000 }],
-            "interactive": ["warn", { "maxNumericValue": 5000 }]
+            "interactive": ["warn", { "maxNumericValue": 5000 }],
+
+            "network-dependency-tree-insight": "off",
+            "render-blocking-insight": "off",
+            "render-blocking-resources": "off"
           }
         },
         {

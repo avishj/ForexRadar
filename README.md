@@ -47,7 +47,11 @@ Fetch the latest exchange rates:
 bun run daily
 ```
 
-Then open `index.html` in your browser.
+Then run and open the Astro dev server:
+
+```bash
+bun run dev
+```
 
 ### Backfilling Historical Data
 
@@ -69,7 +73,7 @@ bun run ecb-backfill    # ECB rates
 | `bun run validate`    | Validate CSV data integrity              |
 | `bun run check`       | TypeScript type checking                 |
 | `bun run lint`        | Run ESLint                               |
-| `bun run test`        | Run smoke tests                          |
+| `bun run test`        | Run all tests                            |
 | `bun run test:unit`   | Run unit tests                           |
 | `bun run test:e2e`    | Run end-to-end tests                     |
 | `bun run test:all`    | Run all tests                            |
@@ -79,11 +83,10 @@ bun run ecb-backfill    # ECB rates
 ```text
 ForexRadar/
 ├── backend/          # Data fetching scripts
-├── js/               # Frontend modules
+├── src/              # Astro pages, scripts, styles
 ├── shared/           # Shared utilities
 ├── tests/            # Test suites
-├── db/               # CSV data storage
-└── css/              # Stylesheets
+└── db/               # CSV data storage
 ```
 
 ## Data Sources

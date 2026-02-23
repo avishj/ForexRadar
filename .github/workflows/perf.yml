@@ -1,9 +1,10 @@
 name: Performance Benchmarks
 
 on:
-  schedule:
-    # Run weekly on Sundays at 00:00 UTC
-    - cron: '0 0 * * 0'
+  # Temporarily disabled while Astro migration stabilizes perf harness.
+  # schedule:
+  #   # Run weekly on Sundays at 00:00 UTC
+  #   - cron: '0 0 * * 0'
   workflow_dispatch:
 
 jobs:

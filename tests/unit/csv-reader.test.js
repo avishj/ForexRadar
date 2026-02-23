@@ -1,6 +1,6 @@
 // @ts-check
 import { describe, test, expect, mock, beforeEach, afterEach } from 'bun:test';
-import { CSVReader } from '../../js/csv-reader.js';
+import { CSVReader } from '../../src/scripts/csv-reader.js';
 
 /** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
 
@@ -308,7 +308,7 @@ describe('CSVReader', () => {
       const hasData = await reader.hasDataForCurrency(/** @type {any} */ ('USD'));
 
       expect(hasData).toBe(true);
-      expect(checkedUrls.length).toBe(3);
+      expect(checkedUrls.some(u => u.includes('manifest.json'))).toBe(true);
       expect(checkedUrls.some(u => u.includes(`/${currentYear}.csv`))).toBe(true);
       expect(checkedUrls.some(u => u.includes(`/${currentYear - 1}.csv`))).toBe(true);
       expect(checkedUrls.some(u => u.includes(`/${currentYear - 2}.csv`))).toBe(true);

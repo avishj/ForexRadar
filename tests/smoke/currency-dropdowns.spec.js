@@ -5,6 +5,12 @@ import { test, expect, selectCurrencyPair } from '../helpers/forex-app.js';
 // ============================================================================
 
 test.describe('Currency Dropdowns', () => {
+  test('dropdown does not pre-render options before interaction', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('#from-currency-list .dropdown-item')).toHaveCount(0);
+    await expect(page.locator('#to-currency-list .dropdown-item')).toHaveCount(0);
+  });
+
   test('dropdown opens on input focus', async ({ page }) => {
     await page.goto('/');
     const fromInput = page.locator('#from-currency-input');

@@ -1,0 +1,5 @@
+/**
+ * Global type declarations
+ */
+
+export {};

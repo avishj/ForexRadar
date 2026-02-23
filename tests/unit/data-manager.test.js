@@ -1,6 +1,6 @@
 // @ts-check
 import { describe, test, expect } from 'bun:test';
-import { calculateStats, calculateMultiProviderStats } from '../../js/data-manager.js';
+import { calculateStats, calculateMultiProviderStats } from '../../src/scripts/data-manager.js';
 
 /** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
 
