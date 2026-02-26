@@ -30,8 +30,53 @@ const log = createLogger('DAILY');
 /** @typedef {import('../shared/types.js').DailyUpdateFailure} DailyUpdateFailure */
 /** @typedef {import('../shared/types.js').BatchRequest} BatchRequest */
 
+const ISSUE_TITLE = 'Daily Update Failures';
+const ISSUE_LABEL = 'daily-update-failure';
+
 /**
- * Creates a GitHub issue for daily update failures
+ * Run a gh CLI command and return stdout
+ * @param {string[]} args
+ * @returns {Promise<string>}
+ */
+async function gh(args) {
+  const proc = Bun.spawn(['gh', ...args], {
+    stdout: 'pipe',
+    stderr: 'inherit'
+  });
+  const text = await new Response(proc.stdout).text();
+  const exitCode = await proc.exited;
+  if (exitCode !== 0) throw new Error(`gh exited with ${exitCode}`);
+  return text.trim();
+}
+
+/**
+ * Find an existing open daily-update-failure issue
+ * @returns {Promise<{number: number} | null>}
+ */
+async function findOpenIssue() {
+  try {
+    const output = await gh([
+      'issue', 'list', '--state', 'open', '--label', ISSUE_LABEL, '--json', 'number,title'
+    ]);
+    const issues = JSON.parse(output);
+    return issues.find(i => i.title?.includes(ISSUE_TITLE)) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Ensure the daily-update-failure label exists
+ * @returns {Promise<void>}
+ */
+async function ensureLabel() {
+  try {
+    await gh(['label', 'create', ISSUE_LABEL, '--color', 'D93F0B', '--description', 'Automated daily update failure alerts', '--force']);
+  } catch { /* label may already exist */ }
+}
+
+/**
+ * Reports daily update failures by commenting on an existing issue or creating one
  * Uses GitHub CLI (gh) which is available in GitHub Actions
  * @param {DailyUpdateFailure[]} failures
  * @param {string} dateStr
@@ -39,9 +84,8 @@ const log = createLogger('DAILY');
 async function createGitHubIssue(failures, dateStr) {
   if (failures.length === 0) return;
   
-  const title = `Daily Update Failures: ${dateStr}`;
   const body = [
-    `## Daily Update Failed for ${failures.length} pair(s)`,
+    `## Daily Update Failed for ${failures.length} pair(s) — ${dateStr}`,
     '',
     '| Pair | Provider | Error |',
     '|------|----------|-------|',
@@ -51,18 +95,18 @@ async function createGitHubIssue(failures, dateStr) {
   ].join('\n');
   
   try {
-    const proc = Bun.spawn(['gh', 'issue', 'create', '--title', title, '--body', body], {
-      stdio: ['inherit', 'inherit', 'inherit']
-    });
-    
-    const exitCode = await proc.exited;
-    if (exitCode === 0) {
-      log.success(`Created GitHub issue for ${failures.length} failure(s)`);
+    const existingIssue = await findOpenIssue();
+
+    if (existingIssue) {
+      await gh(['issue', 'comment', String(existingIssue.number), '--body', body]);
+      log.success(`Commented on issue #${existingIssue.number} with ${failures.length} failure(s)`);
     } else {
-      log.warn(`Failed to create GitHub issue (exit code: ${exitCode})`);
+      await ensureLabel();
+      await gh(['issue', 'create', '--title', ISSUE_TITLE, '--body', body, '--label', ISSUE_LABEL]);
+      log.success(`Created GitHub issue for ${failures.length} failure(s)`);
     }
   } catch (error) {
-    log.warn(`Could not create GitHub issue: ${error.message}`);
+    log.warn(`Could not create/update GitHub issue: ${error.message}`);
   }
 }
 
