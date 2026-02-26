@@ -65,6 +65,9 @@ jobs:
     needs: changes
     if: needs.changes.outputs.frontend == 'true'
     uses: ./.github/workflows/_lighthouse.yml
+    permissions:
+      contents: write
+      issues: write
     with:
       url: http://localhost:3000
       local-server: true
