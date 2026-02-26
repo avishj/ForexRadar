@@ -13,7 +13,6 @@ import { store } from "./csv-store.js";
 
 // Select a random user agent at script startup (stays consistent for session)
 const SESSION_USER_AGENT = USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
-console.log(`[MASTERCARD] Using User-Agent: ${SESSION_USER_AGENT}.`);
 
 /** @typedef {import('../shared/types.js').RateRecord} RateRecord */
 /** @typedef {import('../shared/types.js').Provider} Provider */
@@ -226,6 +225,7 @@ export async function fetchBatch(requests) {
 		return;
 	}
 
+	console.log(`[MASTERCARD] Using User-Agent: ${SESSION_USER_AGENT}`);
 	console.log(`\n[MASTERCARD] Starting: ${requests.length} requests (sequential)`);
 	console.log(`[MASTERCARD] Session refresh: every ${config.sessionRefreshInterval}, Browser restart: every ${config.browserRestartInterval}`);
 
