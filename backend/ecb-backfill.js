@@ -28,7 +28,7 @@ const SEPARATOR = '='.repeat(60);
 
 /**
  * Parses CLI arguments for ECB backfill
- * @returns {{ currency: CurrencyCode} | null }
+ * @returns {{ currency: CurrencyCode | null }}
  */
 function parseEcbBackfillArgs() {
   const { values } = parseArgs({
