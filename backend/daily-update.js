@@ -58,11 +58,12 @@ async function findOpenIssue() {
     const output = await gh([
       'issue', 'list', '--state', 'open', '--label', ISSUE_LABEL, '--json', 'number,title'
     ]);
+    if (!output) return null;
     const issues = /** @type {{number: number, title: string}[]} */ (JSON.parse(output));
     return issues.find(i => i.title !== undefined && i.title === ISSUE_TITLE) ?? null;
   } catch (error) {
     log.warn(`Failed to find open issue: ${error.message}`);
-    throw error;
+    return null;
   }
 }
 
