@@ -62,7 +62,7 @@ async function findOpenIssue() {
     return issues.find(i => i.title !== undefined && i.title === ISSUE_TITLE) ?? null;
   } catch (error) {
     log.warn(`Failed to find open issue: ${error.message}`);
-    return null;
+    throw error;
   }
 }
 
