@@ -134,15 +134,8 @@ export async function fetchBatch(requests) {
 					url.searchParams.set("toCurr", from);
 
 					const page = await context.newPage();
-					let apiStatus = null;
-
-					page.on("response", async (response) => {
-						if (response.url().includes("/cmsapi/fx/rates")) {
-							apiStatus = response.status();
-						}
-					});
-
-					await page.goto(url.toString(), { waitUntil: "networkidle", timeout: 30000 });
+					const navResponse = await page.goto(url.toString(), { waitUntil: "networkidle", timeout: 30000 });
+					const apiStatus = navResponse?.status() ?? null;
 
 					if (apiStatus === 500 || apiStatus === 400) {
 						await page.close();
