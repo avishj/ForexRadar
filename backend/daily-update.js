@@ -54,17 +54,12 @@ async function gh(args) {
  * @returns {Promise<{number: number} | null>}
  */
 async function findOpenIssue() {
-  try {
-    const output = await gh([
-      'issue', 'list', '--state', 'open', '--label', ISSUE_LABEL, '--json', 'number,title'
-    ]);
-    if (!output) return null;
-    const issues = /** @type {{number: number, title: string}[]} */ (JSON.parse(output));
-    return issues.find(i => i.title !== undefined && i.title === ISSUE_TITLE) ?? null;
-  } catch (error) {
-    log.warn(`Failed to find open issue: ${error.message}`);
-    return null;
-  }
+  const output = await gh([
+    'issue', 'list', '--state', 'open', '--label', ISSUE_LABEL, '--json', 'number,title'
+  ]);
+  if (!output) return null;
+  const issues = /** @type {{number: number, title: string}[]} */ (JSON.parse(output));
+  return issues.find(i => i.title !== undefined && i.title === ISSUE_TITLE) ?? null;
 }
 
 /**
@@ -98,9 +93,14 @@ async function createGitHubIssue(failures, dateStr) {
     `*Auto-generated on ${new Date().toISOString()}*`
   ].join('\n');
   
+  let existingIssue = null;
   try {
-    const existingIssue = await findOpenIssue();
+    existingIssue = await findOpenIssue();
+  } catch (error) {
+    log.warn(`Failed to find open issue: ${error.message}`);
+  }
 
+  try {
     if (existingIssue) {
       await gh(['issue', 'comment', String(existingIssue.number), '--body', body]);
       log.success(`Commented on issue #${existingIssue.number} with ${failures.length} failure(s)`);
