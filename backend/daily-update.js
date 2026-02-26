@@ -75,9 +75,6 @@ async function ensureLabel() {
   try {
     await gh(['label', 'create', ISSUE_LABEL, '--color', 'D93F0B', '--description', 'Automated daily update failure alerts', '--force']);
   } catch (error) {
-    if (error.message.includes('already exists')) {
-      return;
-    }
     log.warn(`Failed to create label: ${error.message}`);
   }
 }
