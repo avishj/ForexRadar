@@ -54,7 +54,7 @@ jobs:
         run: sleep ${{ inputs.wait-seconds }}
 
       - name: Run AutoLighthouse
-        uses: avishj/AutoLighthouse@main
+        uses: avishj/AutoLighthouse@91d352bc92e654f7ce18fd51ef1afb3488612b58
         with:
           mode: audit
           urls: ${{ inputs.url }}
