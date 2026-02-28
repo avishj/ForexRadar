@@ -172,9 +172,10 @@ export function clearLastFetchedStartYear(fromCurr) {
 }
 
 /**
- * Clear all server refresh timestamps.
+ * Clear all cached metadata (server refresh timestamps, live refresh
+ * timestamps, and start-year tracking keys).
  */
-export function clearAllRefreshTimestamps() {
+export function clearAllCachedMetadata() {
   const keysToRemove = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
@@ -428,8 +429,8 @@ export async function clearCache() {
     };
   });
   
-  // Also clear refresh timestamps
-  clearAllRefreshTimestamps();
+  // Also clear cached metadata
+  clearAllCachedMetadata();
 }
 
 /**

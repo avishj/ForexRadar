@@ -9,7 +9,7 @@ import {
   getLastFetchedStartYear,
   setLastFetchedStartYear,
   clearLastFetchedStartYear,
-  clearAllRefreshTimestamps
+  clearAllCachedMetadata
 } from '../../src/scripts/storage-manager.js';
 
 /**
@@ -161,13 +161,13 @@ describe('storage-manager cache staleness', () => {
     });
   });
 
-  describe('clearAllRefreshTimestamps', () => {
+  describe('clearAllCachedMetadata', () => {
     test('clears all refresh timestamps', () => {
       mockStorage.setItem('forexRadar_serverRefresh_USD', new Date().toISOString());
       mockStorage.setItem('forexRadar_serverRefresh_EUR', new Date().toISOString());
       mockStorage.setItem('forexRadar_serverRefresh_GBP', new Date().toISOString());
 
-      clearAllRefreshTimestamps();
+      clearAllCachedMetadata();
 
       expect(getLastServerRefresh('USD')).toBeNull();
       expect(getLastServerRefresh('EUR')).toBeNull();
@@ -178,14 +178,14 @@ describe('storage-manager cache staleness', () => {
       mockStorage.setItem('forexRadar_serverRefresh_USD', new Date().toISOString());
       mockStorage.setItem('otherApp_setting', 'value');
 
-      clearAllRefreshTimestamps();
+      clearAllCachedMetadata();
 
       expect(mockStorage.getItem('otherApp_setting')).toBe('value');
     });
 
     test('handles empty localStorage', () => {
       // Should not throw
-      expect(() => clearAllRefreshTimestamps()).not.toThrow();
+      expect(() => clearAllCachedMetadata()).not.toThrow();
     });
 
     test('clears server, live, and start year keys', () => {
@@ -194,7 +194,7 @@ describe('storage-manager cache staleness', () => {
       mockStorage.setItem('forexRadar_lastStartYear_USD', '2024');
       mockStorage.setItem('otherApp_key', 'keep');
 
-      clearAllRefreshTimestamps();
+      clearAllCachedMetadata();
 
       expect(mockStorage.getItem('forexRadar_serverRefresh_USD')).toBeNull();
       expect(mockStorage.getItem('forexRadar_liveRefresh_USD_INR')).toBeNull();
