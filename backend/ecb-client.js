@@ -63,7 +63,10 @@ export async function fetchAllRates(currency) {
       const response = await fetch(url);
       if (!response.ok) {
         lastError = new Error(`HTTP ${response.status}`);
-        if (response.status >= 500) continue; // retry server errors
+        if (response.status >= 500) {
+          log.warn(`HTTP ${response.status} for ${currency} (attempt ${attempt + 1}/${MAX_RETRIES + 1})`);
+          continue; // retry server errors
+        }
         log.error(`HTTP ${response.status} for ${currency}`);
         return null; // don't retry client errors
       }
