@@ -306,7 +306,7 @@ async function fillBankFee(page, fee) {
  * @param {string} date - Date in YYYY-MM-DD format
  * @returns {{ day: number, month: string, monthValue: string, year: number }}
  */
-function parseDate(date) {
+function parseDateForPicker(date) {
 	const [year, month, day] = date.split("-").map(Number);
 	const months = [
 		"January", "February", "March", "April", "May", "June",
@@ -332,7 +332,7 @@ function parseDate(date) {
  * @param {string} date - Date in YYYY-MM-DD format
  */
 async function selectDate(page, date) {
-	const { day, monthValue, year } = parseDate(date);
+	const { day, monthValue, year } = parseDateForPicker(date);
 
 	// Click the date input to open picker, with retry logic
 	// Sometimes the datepicker needs multiple clicks to open after a previous selection
