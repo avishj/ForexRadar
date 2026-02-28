@@ -187,6 +187,20 @@ describe('storage-manager cache staleness', () => {
       // Should not throw
       expect(() => clearAllRefreshTimestamps()).not.toThrow();
     });
+
+    test('clears server, live, and start year keys', () => {
+      mockStorage.setItem('forexRadar_serverRefresh_USD', new Date().toISOString());
+      mockStorage.setItem('forexRadar_liveRefresh_USD_INR', new Date().toISOString());
+      mockStorage.setItem('forexRadar_lastStartYear_USD', '2024');
+      mockStorage.setItem('otherApp_key', 'keep');
+
+      clearAllRefreshTimestamps();
+
+      expect(mockStorage.getItem('forexRadar_serverRefresh_USD')).toBeNull();
+      expect(mockStorage.getItem('forexRadar_liveRefresh_USD_INR')).toBeNull();
+      expect(mockStorage.getItem('forexRadar_lastStartYear_USD')).toBeNull();
+      expect(mockStorage.getItem('otherApp_key')).toBe('keep');
+    });
   });
 
   describe('UTC 12pm boundary edge cases', () => {
@@ -267,22 +281,6 @@ describe('storage-manager cache staleness', () => {
       mockStorage.setItem('forexRadar_liveRefresh_USD_INR', beforeBoundary.toISOString());
 
       expect(needsLiveRefresh('USD', 'INR')).toBe(true);
-    });
-  });
-
-  describe('clearAllRefreshTimestamps', () => {
-    test('clears server, live, and start year keys', () => {
-      mockStorage.setItem('forexRadar_serverRefresh_USD', new Date().toISOString());
-      mockStorage.setItem('forexRadar_liveRefresh_USD_INR', new Date().toISOString());
-      mockStorage.setItem('forexRadar_lastStartYear_USD', '2024');
-      mockStorage.setItem('otherApp_key', 'keep');
-
-      clearAllRefreshTimestamps();
-
-      expect(mockStorage.getItem('forexRadar_serverRefresh_USD')).toBeNull();
-      expect(mockStorage.getItem('forexRadar_liveRefresh_USD_INR')).toBeNull();
-      expect(mockStorage.getItem('forexRadar_lastStartYear_USD')).toBeNull();
-      expect(mockStorage.getItem('otherApp_key')).toBe('keep');
     });
   });
 
