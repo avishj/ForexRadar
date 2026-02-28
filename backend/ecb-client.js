@@ -18,7 +18,7 @@ const log = createLogger('ECB');
 
 const ECB_BASE_URL = 'https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html';
 const MAX_RETRIES = 2;
-const RETRY_DELAY_MS = 2000;
+const RETRY_DELAY_MS = 1000;
 
 /**
  * @param {string} html
