@@ -189,13 +189,14 @@ export async function fetchRates(fromCurr, toCurr, range, options = {}) {
 
   // Step 2: Check if we need to refresh from server
   const needsRefresh = StorageManager.needsServerRefresh(fromCurr);
+  const startYear = getStartYearFromRange(range);
   
   if (needsRefresh) {
     notify('server', 'Fetching server data...');
     
     try {
-      // Fetch all data for this currency pair from server
-      const { visa, mastercard, ecb } = await csvReader.fetchRatesByProvider(fromCurr, toCurr);
+      // Fetch data for this currency pair from server, limited to needed years
+      const { visa, mastercard, ecb } = await csvReader.fetchRatesByProviderInRange(fromCurr, toCurr, startYear);
       
       const serverRecords = [...visa, ...mastercard, ...ecb];
       hasServerData = serverRecords.length > 0;
