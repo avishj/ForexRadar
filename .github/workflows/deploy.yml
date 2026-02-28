@@ -72,6 +72,9 @@ jobs:
     needs: deploy
     if: needs.deploy.result == 'success'
     uses: ./.github/workflows/_lighthouse.yml
+    permissions:
+      contents: write
+      issues: write
     with:
       url: ${{ needs.deploy.outputs.page_url }}
       wait-seconds: 30
