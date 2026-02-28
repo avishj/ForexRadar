@@ -26,13 +26,19 @@ runs:
       shell: bash
       run: bun install --frozen-lockfile --ignore-scripts
 
+    - name: Get Playwright version
+      if: inputs.playwright == 'true'
+      id: pw-version
+      shell: bash
+      run: echo "version=$(bun pm ls | grep '@playwright/test' | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')" >> "$GITHUB_OUTPUT"
+
     - name: Cache Playwright browsers
       if: inputs.playwright == 'true'
       uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
       with:
         path: ~/.cache/ms-playwright
-        key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
-        restore-keys: playwright-${{ runner.os }}-
+        key: playwright-${{ runner.os }}-${{ steps.pw-version.outputs.version }}-${{ hashFiles('bun.lock') }}
+        restore-keys: playwright-${{ runner.os }}-${{ steps.pw-version.outputs.version }}-
 
     - name: Install Playwright browsers
       if: inputs.playwright == 'true'
