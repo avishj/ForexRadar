@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "lastUpdated": "2026-02-28T23:07:30.482Z",
+  "paths": {
+    "desktop:/": {
+      "consecutiveFailures": 0,
+      "lastSeen": "2026-02-28T23:07:30.415Z",
+      "runs": [
+        {
+          "metrics": {
+            "first-contentful-paint": 409.373,
+            "largest-contentful-paint": 577.869,
+            "cumulative-layout-shift": 0,
+            "total-blocking-time": 0,
+            "speed-index": 474.16699282977635,
+            "interactive": 580.219
+          },
+          "timestamp": "2026-02-28T23:07:30.415Z"
+        }
+      ]
+    },
+    "mobile:/": {
+      "consecutiveFailures": 0,
+      "lastSeen": "2026-02-28T23:07:30.481Z",
+      "runs": [
+        {
+          "metrics": {
+            "first-contentful-paint": 1383.818,
+            "largest-contentful-paint": 2528.006,
+            "cumulative-layout-shift": 0,
+            "total-blocking-time": 0,
+            "speed-index": 1493.4575667349325,
+            "interactive": 2537.006
+          },
+          "timestamp": "2026-02-28T23:07:30.481Z"
+        }
+      ]
+    },
+    "tablet:/": {
+      "consecutiveFailures": 0,
+      "lastSeen": "2026-02-28T23:07:30.481Z",
+      "runs": [
+        {
+          "metrics": {
+            "first-contentful-paint": 415.687,
+            "largest-contentful-paint": 585.384,
+            "cumulative-layout-shift": 0,
+            "total-blocking-time": 21.5,
+            "speed-index": 560.4361834820071,
+            "interactive": 600.7112
+          },
+          "timestamp": "2026-02-28T23:07:30.481Z"
+        }
+      ]
+    }
+  }
+}
