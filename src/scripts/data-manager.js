@@ -99,6 +99,18 @@ function getStartDateFromRange(range) {
 }
 
 /**
+ * Calculates the earliest year needed for CSV fetching based on a date range.
+ * Returns null for "all" (fetch every year).
+ * @param {DateRange} range - Date range specification
+ * @returns {number|null} Start year or null for "all"
+ */
+export function getStartYearFromRange(range) {
+  const startDate = getStartDateFromRange(range);
+  if (!startDate) return null;
+  return parseInt(startDate.slice(0, 4), 10);
+}
+
+/**
  * Filters records by date range
  * @param {RateRecord[]} records - Records to filter
  * @param {DateRange} range - Date range specification
