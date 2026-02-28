@@ -1,0 +1,12 @@
+name: ForexRadar CodeQL Config
+
+paths-ignore:
+  - db
+  - dist
+  - docs
+  - node_modules
+  - playwright-report
+  - test-results
+
+threat-models:
+  - local
