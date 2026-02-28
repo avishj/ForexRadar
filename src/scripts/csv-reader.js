@@ -198,8 +198,8 @@ export class CSVReader {
     if (years.length === 0) return [];
 
     const results = await Promise.all(years.map(year => this.#fetchYearFile(fromCurr, year)));
-    const allRecords = sortByDateAsc(results.flat());
-    return filterByTargetCurrency(allRecords, toCurr);
+    const pairRecords = filterByTargetCurrency(results.flat(), toCurr);
+    return sortByDateAsc(pairRecords);
   }
 
   /**
