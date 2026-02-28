@@ -53,7 +53,7 @@ export async function loadEcbWatchlist() {
     const data = await Bun.file(path).json();
     return data.currencies ?? [];
   } catch (error) {
-    throw new Error(`Failed to load ECB watchlist: ${error.message}`);
+    throw new Error(`Failed to load ECB watchlist: ${error.message}`, { cause: error });
   }
 }
 
