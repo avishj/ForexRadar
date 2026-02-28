@@ -233,9 +233,8 @@ export class CSVReader {
     if (years.length === 0) return { visa: [], mastercard: [], ecb: [] };
 
     const results = await Promise.all(years.map(year => this.#fetchYearFile(fromCurr, year)));
-    const allRecords = sortByDateAsc(results.flat());
-    const pairRecords = filterByTargetCurrency(allRecords, toCurr);
-    return splitByProvider(pairRecords);
+    const pairRecords = filterByTargetCurrency(results.flat(), toCurr);
+    return splitByProvider(sortByDateAsc(pairRecords));
   }
 
   /**
