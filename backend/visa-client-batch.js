@@ -171,9 +171,9 @@ export async function fetchBatch(requests) {
 							markup: parseFloat(markup)
 						}
 					};
-				} finally {
-					await page.close();
-				}
+					} finally {
+						await page.close();
+					}
 				})
 			);
 
