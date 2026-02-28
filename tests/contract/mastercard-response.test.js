@@ -90,13 +90,6 @@ describe("Mastercard API Response Contract", () => {
 		await sleep(config.batchDelayMs);
 	}, 30 * 60 * 1000);
 
-	test("Handles 403 response structure correctly", async () => {
-		// This test documents the expected behavior on 403
-		// The client checks for 403 status and handles it specially
-		// Response on 403 has data: null
-		expect(true).toBe(true);
-	});
-
 	test("Response has expected top-level structure", async () => {
 		await refreshSession();
 		await sleep(config.sessionRefreshDelayMs);
