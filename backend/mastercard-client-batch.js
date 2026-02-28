@@ -9,6 +9,7 @@
 
 import { chromium } from "playwright";
 import { PROVIDER_CONFIG, USER_AGENTS, BROWSER_CONFIG } from "../shared/constants.js";
+import { sleep } from "../shared/browser-utils.js";
 import { createLogger } from "../shared/logger.js";
 import { store } from "./csv-store.js";
 
@@ -129,14 +130,6 @@ async function closeBrowser() {
 			} catch { /* already dead */ }
 		}
 	}
-}
-
-/**
- * Sleep utility for rate limiting
- * @param {number} ms
- */
-function sleep(ms) {
-	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
