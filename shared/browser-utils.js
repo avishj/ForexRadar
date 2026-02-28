@@ -33,14 +33,17 @@ export function randomDelay(min, max) {
  */
 export async function closeBrowserWithTimeout(browser, timeoutMs = 3000) {
 	if (!browser) return true;
+	let timer;
 	try {
 		await Promise.race([
 			browser.close(),
-			new Promise((_, reject) => setTimeout(() => reject(new Error("Close timeout")), timeoutMs))
+			new Promise((_, reject) => { timer = setTimeout(() => reject(new Error("Close timeout")), timeoutMs); })
 		]);
 		return true;
 	} catch {
 		return false;
+	} finally {
+		clearTimeout(timer);
 	}
 }
 
