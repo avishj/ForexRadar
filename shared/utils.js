@@ -163,15 +163,6 @@ export function getLatestAvailableDate() {
   }
 }
 
-/**
- * @deprecated Use getLatestAvailableDate() instead
- * Gets yesterday's date at midnight in ET timezone
- * @returns {Date} Yesterday's date in ET
- */
-export function getYesterday() {
-  return getLatestAvailableDate();
-}
-
 // ============================================================================
 // CACHE STALENESS (UTC 12:00 boundary)
 // ============================================================================

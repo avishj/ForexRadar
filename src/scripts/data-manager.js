@@ -27,7 +27,7 @@ import { csvReader } from './csv-reader.js';
 import * as StorageManager from './storage-manager.js';
 import * as VisaClient from './visa-client.js';
 import * as MastercardClient from './mastercard-client.js';
-import { formatDate, getYesterday, addDays, parseDate } from '../../shared/utils.js';
+import { formatDate, getLatestAvailableDate, addDays, parseDate } from '../../shared/utils.js';
 
 /** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
 /** @typedef {import('../../shared/types.js').RateStats} RateStats */
@@ -288,7 +288,7 @@ export async function fetchRates(fromCurr, toCurr, range, options = {}) {
     && StorageManager.needsLiveRefresh(fromCurr, toCurr);
 
   if (needsLive) {
-    const yesterday = getYesterday();
+    const yesterday = getLatestAvailableDate();
     const yesterdayStr = formatDate(yesterday);
     
     // Find the latest date we have for each provider (from merged data)
