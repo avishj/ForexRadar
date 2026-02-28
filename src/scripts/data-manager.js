@@ -225,13 +225,15 @@ export async function fetchRates(fromCurr, toCurr, range, options = {}) {
       if (serverRecords.length > 0) {
         await saveAndMergeServerRecords(serverRecords, mergedData, recordSources);
         notify('server', `Fetched ${serverRecords.length} records from server`);
+
+        // Only mark as refreshed when records were actually retrieved.
+        // Transient network errors return [] instead of throwing, so an empty
+        // result may indicate a silent failure — don't suppress retries.
+        StorageManager.setLastFetchedStartYear(fromCurr, startYear);
+        StorageManager.markServerRefreshed(fromCurr);
       } else if (!hasServerData) {
         notify('server', 'No server data available for this pair');
       }
-
-      // Track the fetched range and mark as refreshed
-      StorageManager.setLastFetchedStartYear(fromCurr, startYear);
-      StorageManager.markServerRefreshed(fromCurr);
     } catch (error) {
       notify('server', `Server error: ${error.message}`);
     }
