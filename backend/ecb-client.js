@@ -17,6 +17,8 @@ const log = createLogger('ECB');
 /** @typedef {import('../shared/types.js').CurrencyCode} CurrencyCode */
 
 const ECB_BASE_URL = 'https://www.ecb.europa.eu/stats/policy_and_exchange_rates/euro_reference_exchange_rates/html';
+const MAX_RETRIES = 2;
+const RETRY_DELAY_MS = 2000;
 
 /**
  * @param {string} html
@@ -49,44 +51,58 @@ export async function fetchAllRates(currency) {
   const url = `${ECB_BASE_URL}/eurofxref-graph-${currency.toLowerCase()}.en.html`;
   log.info(`Fetching ${currency}`);
   
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      log.error(`HTTP ${response.status} for ${currency}`);
-      return null;
+  let lastError = null;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      if (attempt > 0) {
+        const delay = RETRY_DELAY_MS * attempt;
+        log.warn(`Retry ${attempt}/${MAX_RETRIES} for ${currency} after ${delay}ms`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+
+      const response = await fetch(url);
+      if (!response.ok) {
+        lastError = new Error(`HTTP ${response.status}`);
+        if (response.status >= 500) continue; // retry server errors
+        log.error(`HTTP ${response.status} for ${currency}`);
+        return null; // don't retry client errors
+      }
+      
+      const html = await response.text();
+      const direct = extractRates(html, 'chartData');
+      const inverse = extractRates(html, 'chartDataInverse');
+      
+      if (direct.length === 0 && inverse.length === 0) {
+        log.error(`No data found for ${currency}`);
+        return null;
+      }
+      
+      log.success(`Found ${direct.length} EUR→${currency}, ${inverse.length} ${currency}→EUR`);
+      
+      return {
+        eurTo: direct.map(d => ({
+          date: formatDate(d.date),
+          from_curr: 'EUR',
+          to_curr: currency,
+          provider: /** @type {const} */ ('ECB'),
+          rate: d.rate,
+          markup: /** @type {null} */ (null)
+        })),
+        toEur: inverse.map(d => ({
+          date: formatDate(d.date),
+          from_curr: currency,
+          to_curr: 'EUR',
+          provider: /** @type {const} */ ('ECB'),
+          rate: d.rate,
+          markup: /** @type {null} */ (null)
+        }))
+      };
+    } catch (error) {
+      lastError = error;
+      if (attempt < MAX_RETRIES) continue;
     }
-    
-    const html = await response.text();
-    const direct = extractRates(html, 'chartData');
-    const inverse = extractRates(html, 'chartDataInverse');
-    
-    if (direct.length === 0 && inverse.length === 0) {
-      log.error(`No data found for ${currency}`);
-      return null;
-    }
-    
-    log.success(`Found ${direct.length} EUR→${currency}, ${inverse.length} ${currency}→EUR`);
-    
-    return {
-      eurTo: direct.map(d => ({
-        date: formatDate(d.date),
-        from_curr: 'EUR',
-        to_curr: currency,
-        provider: /** @type {const} */ ('ECB'),
-        rate: d.rate,
-        markup: /** @type {null} */ (null)
-      })),
-      toEur: inverse.map(d => ({
-        date: formatDate(d.date),
-        from_curr: currency,
-        to_curr: 'EUR',
-        provider: /** @type {const} */ ('ECB'),
-        rate: d.rate,
-        markup: /** @type {null} */ (null)
-      }))
-    };
-  } catch (error) {
-    log.error(`Error fetching ${currency}: ${error.message}`);
-    return null;
   }
+
+  log.error(`Failed ${currency} after ${MAX_RETRIES + 1} attempts: ${lastError?.message}`);
+  return null;
 }
