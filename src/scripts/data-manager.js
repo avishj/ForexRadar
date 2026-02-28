@@ -73,7 +73,7 @@ function makeRecordKey(date, provider) {
 
 /**
  * Save records to IndexedDB and merge into the working maps.
- * Marks records as 'server' source only if they aren't already tracked.
+ * Always marks records as 'server' source since server data supersedes cache.
  *
  * @param {RateRecord[]} records
  * @param {Map<string, RateRecord>} mergedData
@@ -85,9 +85,7 @@ async function saveAndMergeServerRecords(records, mergedData, recordSources) {
   for (const record of records) {
     const key = makeRecordKey(record.date, record.provider);
     mergedData.set(key, record);
-    if (!recordSources.has(key)) {
-      recordSources.set(key, 'server');
-    }
+    recordSources.set(key, 'server');
   }
 }
 
