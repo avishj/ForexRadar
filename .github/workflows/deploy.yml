@@ -14,7 +14,7 @@ on:
 permissions: {}
 
 concurrency:
-  group: "pages"
+  group: pages-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:
