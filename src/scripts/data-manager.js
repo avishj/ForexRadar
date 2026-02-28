@@ -72,6 +72,28 @@ function makeRecordKey(date, provider) {
 }
 
 /**
+ * Save records to IndexedDB and merge into the working maps.
+ * Always marks records as 'server' source since server data supersedes cache.
+ *
+ * @param {RateRecord[]} records
+ * @param {Map<string, RateRecord>} mergedData
+ * @param {Map<string, string>} recordSources
+ * @returns {Promise<void>}
+ */
+async function saveAndMergeServerRecords(records, mergedData, recordSources) {
+  for (const record of records) {
+    const key = makeRecordKey(record.date, record.provider);
+    mergedData.set(key, record);
+    recordSources.set(key, 'server');
+  }
+  try {
+    await StorageManager.saveRates(records);
+  } catch (error) {
+    console.error('Failed to persist server records:', error);
+  }
+}
+
+/**
  * Calculates the start date based on a date range
  * @param {DateRange} range - Date range specification
  * @returns {string|null} Start date string or null for "all"
@@ -96,6 +118,18 @@ function getStartDateFromRange(range) {
   startDate.setHours(0, 0, 0, 0);
   
   return formatDate(startDate);
+}
+
+/**
+ * Calculates the earliest year needed for CSV fetching based on a date range.
+ * Returns null for "all" (fetch every year).
+ * @param {DateRange} range - Date range specification
+ * @returns {number|null} Start year or null for "all"
+ */
+export function getStartYearFromRange(range) {
+  const startDate = getStartDateFromRange(range);
+  if (!startDate) return null;
+  return parseInt(startDate.slice(0, 4), 10);
 }
 
 /**
@@ -177,35 +211,29 @@ export async function fetchRates(fromCurr, toCurr, range, options = {}) {
 
   // Step 2: Check if we need to refresh from server
   const needsRefresh = StorageManager.needsServerRefresh(fromCurr);
+  const startYear = getStartYearFromRange(range);
   
   if (needsRefresh) {
     notify('server', 'Fetching server data...');
     
     try {
-      // Fetch all data for this currency pair from server
-      const { visa, mastercard, ecb } = await csvReader.fetchRatesByProvider(fromCurr, toCurr);
+      // Server is stale — refetch all year files needed for the current range.
+      // This ensures we pick up any newly-available data (e.g., today's rates).
+      const serverData = await csvReader.fetchRatesByProviderInRange(fromCurr, toCurr, startYear);
+
+      const serverRecords = [...serverData.visa, ...serverData.mastercard, ...serverData.ecb];
+      hasServerData = serverRecords.length > 0 || fromCache > 0;
       
-      const serverRecords = [...visa, ...mastercard, ...ecb];
-      hasServerData = serverRecords.length > 0;
-      
-      if (hasServerData) {
-        // Save to cache
-        await StorageManager.saveRates(serverRecords);
-        
-        // Mark new records from server (overwrite cache source)
-        for (const record of serverRecords) {
-          const key = makeRecordKey(record.date, record.provider);
-          mergedData.set(key, record);
-          // Only mark as server if it wasn't already in cache
-          if (!recordSources.has(key)) {
-            recordSources.set(key, 'server');
-          }
-        }
-        
-        // Mark this currency as refreshed
-        StorageManager.markServerRefreshed(fromCurr);
+      if (serverRecords.length > 0) {
+        await saveAndMergeServerRecords(serverRecords, mergedData, recordSources);
         notify('server', `Fetched ${serverRecords.length} records from server`);
-      } else {
+
+        // Only mark as refreshed when records were actually retrieved.
+        // Transient network errors return [] instead of throwing, so an empty
+        // result may indicate a silent failure — don't suppress retries.
+        StorageManager.setLastFetchedStartYear(fromCurr, startYear);
+        StorageManager.markServerRefreshed(fromCurr);
+      } else if (!hasServerData) {
         notify('server', 'No server data available for this pair');
       }
     } catch (error) {
@@ -215,10 +243,51 @@ export async function fetchRates(fromCurr, toCurr, range, options = {}) {
     notify('server', 'Server data is up to date');
     // Mark server data as existing if we have cached data
     hasServerData = fromCache > 0;
+
+    // Even when server is fresh, check if range expanded beyond what we fetched.
+    // This handles: switching from "1mo" to "all" without triggering a full refetch.
+    const prevStartYear = StorageManager.getLastFetchedStartYear(fromCurr);
+    const rangeExpanded = prevStartYear !== null && prevStartYear !== 0
+      && (startYear === null || startYear < prevStartYear);
+
+    if (rangeExpanded) {
+      notify('server', 'Fetching older year files for expanded range...');
+      try {
+        /** @type {{ visa: RateRecord[], mastercard: RateRecord[], ecb: RateRecord[] }} */
+        let deltaData;
+        if (startYear === null) {
+          // "All" requested — fetch every year before prevStartYear
+          deltaData = await csvReader.fetchRatesByProviderInYearRange(fromCurr, toCurr, 0, prevStartYear);
+        } else {
+          deltaData = await csvReader.fetchRatesByProviderInYearRange(fromCurr, toCurr, startYear, prevStartYear);
+        }
+        const deltaRecords = [...deltaData.visa, ...deltaData.mastercard, ...deltaData.ecb];
+
+        if (deltaRecords.length > 0) {
+          await saveAndMergeServerRecords(deltaRecords, mergedData, recordSources);
+          notify('server', `Fetched ${deltaRecords.length} older records`);
+          StorageManager.setLastFetchedStartYear(fromCurr, startYear);
+        }
+      } catch (error) {
+        notify('server', `Delta fetch error: ${error.message}`);
+      }
+    } else if (prevStartYear === null && fromCache > 0) {
+      // First call after page load but server is still fresh — record what we have.
+      // Only set when cache data exists; otherwise an empty cache would block
+      // future delta fetches for this range.
+      StorageManager.setLastFetchedStartYear(fromCurr, startYear);
+    }
   }
 
   // Step 3: Check for gaps and fetch live data from Visa/Mastercard
-  if (!skipLive && (fetchVisa || fetchMastercard)) {
+  // Skip if live data was already fetched since the last UTC 12:00 boundary.
+  // markLiveFetched is only called when both providers are in scope (below),
+  // so single-provider calls won't suppress the other provider's future fetches.
+  const bothProviders = fetchVisa && fetchMastercard;
+  const needsLive = !skipLive && (fetchVisa || fetchMastercard)
+    && StorageManager.needsLiveRefresh(fromCurr, toCurr);
+
+  if (needsLive) {
     const yesterday = getYesterday();
     const yesterdayStr = formatDate(yesterday);
     
@@ -279,6 +348,12 @@ export async function fetchRates(fromCurr, toCurr, range, options = {}) {
       } else {
         console.error('Live fetch failed:', result.reason);
       }
+    }
+
+    // Only mark pair-level freshness when both providers were in scope.
+    // Otherwise a later call enabling the skipped provider would be blocked.
+    if (bothProviders) {
+      StorageManager.markLiveFetched(fromCurr, toCurr);
     }
 
     if (fromLive === 0 && (fetchVisa || fetchMastercard)) {

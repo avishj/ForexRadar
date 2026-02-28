@@ -88,3 +88,4 @@ jobs:
     with:
       url: http://localhost:3000
       local-server: true
+      save-history: false

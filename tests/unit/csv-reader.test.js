@@ -342,6 +342,147 @@ describe('CSVReader', () => {
     });
   });
 
+  describe('fetchRatesForPairInRange', () => {
+    test('fetches only years >= startYear', async () => {
+      /** @type {string[]} */
+      const fetchedUrls = [];
+
+      globalThis.fetch = mock((url, options) => {
+        const urlStr = typeof url === 'string' ? url : url.toString();
+        
+        // Manifest returns years 2020-2024
+        if (urlStr.includes('manifest.json')) {
+          return Promise.resolve(new Response(JSON.stringify({ INR: [2020, 2021, 2022, 2023, 2024] }), { status: 200 }));
+        }
+
+        // Track GET requests
+        if (!options?.method || options.method === 'GET') {
+          fetchedUrls.push(urlStr);
+        }
+
+        if (urlStr.includes('/2023.csv')) {
+          return Promise.resolve(new Response(SAMPLE_CSV_2023, { status: 200 }));
+        }
+        if (urlStr.includes('/2024.csv')) {
+          return Promise.resolve(new Response(SAMPLE_CSV_2024, { status: 200 }));
+        }
+        return Promise.resolve(new Response('Not Found', { status: 404 }));
+      });
+
+      const reader = new CSVReader('./db');
+      const records = await reader.fetchRatesForPairInRange(
+        /** @type {any} */ ('INR'),
+        /** @type {any} */ ('USD'),
+        2023
+      );
+
+      // Should only fetch 2023 and 2024, not 2020-2022
+      expect(fetchedUrls.some(u => u.includes('/2020.csv'))).toBe(false);
+      expect(fetchedUrls.some(u => u.includes('/2021.csv'))).toBe(false);
+      expect(fetchedUrls.some(u => u.includes('/2022.csv'))).toBe(false);
+      expect(records.length).toBeGreaterThan(0);
+      expect(records.every(r => r.to_curr === 'USD')).toBe(true);
+    });
+
+    test('fetches all years when startYear is null', async () => {
+      /** @type {string[]} */
+      const fetchedUrls = [];
+
+      globalThis.fetch = mock((url, options) => {
+        const urlStr = typeof url === 'string' ? url : url.toString();
+        
+        if (urlStr.includes('manifest.json')) {
+          return Promise.resolve(new Response(JSON.stringify({ INR: [2023, 2024] }), { status: 200 }));
+        }
+
+        if (!options?.method || options.method === 'GET') {
+          fetchedUrls.push(urlStr);
+        }
+
+        if (urlStr.includes('/2023.csv')) {
+          return Promise.resolve(new Response(SAMPLE_CSV_2023, { status: 200 }));
+        }
+        if (urlStr.includes('/2024.csv')) {
+          return Promise.resolve(new Response(SAMPLE_CSV_2024, { status: 200 }));
+        }
+        return Promise.resolve(new Response('Not Found', { status: 404 }));
+      });
+
+      const reader = new CSVReader('./db');
+      const records = await reader.fetchRatesForPairInRange(
+        /** @type {any} */ ('INR'),
+        /** @type {any} */ ('USD'),
+        null
+      );
+
+      expect(fetchedUrls.some(u => u.includes('/2023.csv'))).toBe(true);
+      expect(fetchedUrls.some(u => u.includes('/2024.csv'))).toBe(true);
+      expect(records.length).toBe(5); // 2 from 2023 + 3 USD from 2024
+    });
+  });
+
+  describe('fetchRatesByProviderInYearRange', () => {
+    test('fetches only years in [fromYear, toYear)', async () => {
+      /** @type {string[]} */
+      const fetchedUrls = [];
+
+      globalThis.fetch = mock((url, options) => {
+        const urlStr = typeof url === 'string' ? url : url.toString();
+        
+        if (urlStr.includes('manifest.json')) {
+          return Promise.resolve(new Response(JSON.stringify({ INR: [2021, 2022, 2023, 2024] }), { status: 200 }));
+        }
+
+        if (!options?.method || options.method === 'GET') {
+          fetchedUrls.push(urlStr);
+        }
+
+        if (urlStr.includes('/2021.csv') || urlStr.includes('/2022.csv')) {
+          const csv = `date,to_curr,provider,rate,markup\n2021-06-15,USD,VISA,74.5,0.3`;
+          return Promise.resolve(new Response(csv, { status: 200 }));
+        }
+        return Promise.resolve(new Response('Not Found', { status: 404 }));
+      });
+
+      const reader = new CSVReader('./db');
+      const { visa } = await reader.fetchRatesByProviderInYearRange(
+        /** @type {any} */ ('INR'),
+        /** @type {any} */ ('USD'),
+        2021,
+        2023
+      );
+
+      // Should fetch 2021, 2022 but NOT 2023 or 2024
+      expect(fetchedUrls.some(u => u.includes('/2021.csv'))).toBe(true);
+      expect(fetchedUrls.some(u => u.includes('/2022.csv'))).toBe(true);
+      expect(fetchedUrls.some(u => u.includes('/2023.csv'))).toBe(false);
+      expect(fetchedUrls.some(u => u.includes('/2024.csv'))).toBe(false);
+      expect(visa.length).toBeGreaterThan(0);
+    });
+
+    test('returns empty when no years in range', async () => {
+      globalThis.fetch = mock((url) => {
+        const urlStr = typeof url === 'string' ? url : url.toString();
+        if (urlStr.includes('manifest.json')) {
+          return Promise.resolve(new Response(JSON.stringify({ INR: [2024, 2025] }), { status: 200 }));
+        }
+        return Promise.resolve(new Response('Not Found', { status: 404 }));
+      });
+
+      const reader = new CSVReader('./db');
+      const { visa, mastercard, ecb } = await reader.fetchRatesByProviderInYearRange(
+        /** @type {any} */ ('INR'),
+        /** @type {any} */ ('USD'),
+        2020,
+        2023
+      );
+
+      expect(visa).toEqual([]);
+      expect(mastercard).toEqual([]);
+      expect(ecb).toEqual([]);
+    });
+  });
+
   describe('year discovery gap detection', () => {
     test('stops discovery after gap of years with no data', async () => {
       const currentYear = new Date().getFullYear();

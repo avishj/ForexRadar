@@ -1,6 +1,6 @@
 // @ts-check
 import { describe, test, expect } from 'bun:test';
-import { calculateStats, calculateMultiProviderStats } from '../../src/scripts/data-manager.js';
+import { calculateStats, calculateMultiProviderStats, getStartYearFromRange } from '../../src/scripts/data-manager.js';
 
 /** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
 
@@ -277,5 +277,43 @@ describe('calculateMultiProviderStats', () => {
     expect(stats.ecb.low).toBe(82.5);
     expect(stats.ecb.current).toBe(83.0);
     expect(stats.ecb.avgMarkup).toBeNull();
+  });
+});
+
+describe('getStartYearFromRange', () => {
+  test('returns null for "all" range', () => {
+    expect(getStartYearFromRange({ all: true })).toBeNull();
+  });
+
+  test('returns correct year for months range', () => {
+    const now = new Date();
+    const expected = new Date(now);
+    expected.setMonth(expected.getMonth() - 1);
+    const expectedYear = expected.getFullYear();
+
+    expect(getStartYearFromRange({ months: 1 })).toBe(expectedYear);
+  });
+
+  test('returns correct year for years range', () => {
+    const now = new Date();
+    const expectedYear = now.getFullYear() - 5;
+
+    expect(getStartYearFromRange({ years: 5 })).toBe(expectedYear);
+  });
+
+  test('returns previous year for 13 months range crossing year boundary', () => {
+    const now = new Date();
+    const thirteenMonthsAgo = new Date(now);
+    thirteenMonthsAgo.setMonth(thirteenMonthsAgo.getMonth() - 13);
+
+    const result = getStartYearFromRange({ months: 13 });
+    expect(result).toBe(thirteenMonthsAgo.getFullYear());
+  });
+
+  test('returns previous year for 1 year range', () => {
+    const now = new Date();
+    const expected = now.getFullYear() - 1;
+
+    expect(getStartYearFromRange({ years: 1 })).toBe(expected);
   });
 });

@@ -26,6 +26,7 @@ const DB_NAME = 'ForexRadarDB';
 const DB_VERSION = 2;
 const STORE_NAME = 'rates';
 const REFRESH_KEY_PREFIX = 'forexRadar_serverRefresh_';
+const LIVE_REFRESH_KEY_PREFIX = 'forexRadar_liveRefresh_';
 
 /** @type {IDBDatabase|null} */
 let dbInstance = null;
@@ -82,13 +83,110 @@ export function getLastServerRefresh(fromCurr) {
 }
 
 /**
- * Clear all server refresh timestamps.
+ * Check if live data needs refresh for a currency pair.
+ * Uses the same UTC 12:00 boundary as server refresh.
+ * 
+ * @param {string} fromCurr - Source currency code
+ * @param {string} toCurr - Target currency code
+ * @returns {boolean} True if live data needs refresh
  */
-export function clearAllRefreshTimestamps() {
+export function needsLiveRefresh(fromCurr, toCurr) {
+  const key = LIVE_REFRESH_KEY_PREFIX + fromCurr + '_' + toCurr;
+  const lastRefresh = localStorage.getItem(key);
+
+  if (!lastRefresh) {
+    return true;
+  }
+
+  return new Date(lastRefresh).getTime() < getLastUTC12pm();
+}
+
+/**
+ * Mark live data as fetched for a currency pair.
+ * 
+ * @param {string} fromCurr - Source currency code
+ * @param {string} toCurr - Target currency code
+ */
+export function markLiveFetched(fromCurr, toCurr) {
+  const key = LIVE_REFRESH_KEY_PREFIX + fromCurr + '_' + toCurr;
+  localStorage.setItem(key, new Date().toISOString());
+}
+
+// ============================================================================
+// Range Tracking Functions
+// ============================================================================
+
+const LAST_START_YEAR_PREFIX = 'forexRadar_lastStartYear_';
+
+/**
+ * Get the last fetched start year for a source currency.
+ * Returns null if no fetch has been tracked yet.
+ * 
+ * @param {string} fromCurr - Source currency code
+ * @returns {number|null}
+ */
+export function getLastFetchedStartYear(fromCurr) {
+  const key = LAST_START_YEAR_PREFIX + fromCurr;
+  const value = localStorage.getItem(key);
+  if (value === null) return null;
+  const parsed = parseInt(value, 10);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+/**
+ * Record the start year that was fetched for a source currency.
+ * Only updates if the new start year is earlier (wider range)
+ * or if no value was stored yet.
+ * 
+ * A value of 0 means "all years" were fetched.
+ * 
+ * @param {string} fromCurr - Source currency code
+ * @param {number|null} startYear - Start year fetched (null = all, stored as 0)
+ */
+export function setLastFetchedStartYear(fromCurr, startYear) {
+  const key = LAST_START_YEAR_PREFIX + fromCurr;
+  const storeValue = startYear === null ? 0 : startYear;
+  const existing = localStorage.getItem(key);
+
+  if (existing === null) {
+    localStorage.setItem(key, String(storeValue));
+    return;
+  }
+
+  const existingYear = parseInt(existing, 10);
+  // Treat corrupted value as missing — overwrite
+  if (Number.isNaN(existingYear)) {
+    localStorage.setItem(key, String(storeValue));
+    return;
+  }
+  // 0 means "all" — can't go wider than that
+  if (existingYear === 0) return;
+  // New value is "all" or earlier year — update
+  if (storeValue === 0 || storeValue < existingYear) {
+    localStorage.setItem(key, String(storeValue));
+  }
+}
+
+/**
+ * Clear the last fetched start year for a source currency.
+ * Called when server refresh timestamp is cleared (cache invalidation).
+ * 
+ * @param {string} fromCurr - Source currency code
+ */
+export function clearLastFetchedStartYear(fromCurr) {
+  const key = LAST_START_YEAR_PREFIX + fromCurr;
+  localStorage.removeItem(key);
+}
+
+/**
+ * Clear all cached metadata (server refresh timestamps, live refresh
+ * timestamps, and start-year tracking keys).
+ */
+export function clearAllCachedMetadata() {
   const keysToRemove = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (key && key.startsWith(REFRESH_KEY_PREFIX)) {
+    if (key && (key.startsWith(REFRESH_KEY_PREFIX) || key.startsWith(LIVE_REFRESH_KEY_PREFIX) || key.startsWith(LAST_START_YEAR_PREFIX))) {
       keysToRemove.push(key);
     }
   }
@@ -338,8 +436,8 @@ export async function clearCache() {
     };
   });
   
-  // Also clear refresh timestamps
-  clearAllRefreshTimestamps();
+  // Also clear cached metadata
+  clearAllCachedMetadata();
 }
 
 /**
