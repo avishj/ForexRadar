@@ -9,6 +9,10 @@ permissions:
   contents: write
   issues: write
 
+concurrency:
+  group: lighthouse-scheduled
+  cancel-in-progress: true
+
 jobs:
   lighthouse:
     uses: ./.github/workflows/_lighthouse.yml

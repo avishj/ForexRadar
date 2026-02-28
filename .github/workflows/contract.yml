@@ -10,6 +10,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: contract-tests
+  cancel-in-progress: true
+
 jobs:
   contract:
     uses: ./.github/workflows/_contract.yml
