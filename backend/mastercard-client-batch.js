@@ -250,14 +250,16 @@ export async function fetchBatch(requests) {
 				const { status: apiStatus, data } = await fetchRate(from, to, date);
 
 				// Handle errors
-				if (apiStatus === 403) {
-					console.error(`[MASTERCARD] 403 Forbidden - Pausing ${config.pauseOnForbiddenMs / 1000}s`);
-					await closeBrowser();
-					await sleep(config.pauseOnForbiddenMs);
-					console.log("[MASTERCARD] Resuming");
-					await refreshSession();
-					continue;
-				}
+			if (apiStatus === 403) {
+				console.error(`[MASTERCARD] 403 Forbidden - Pausing ${config.pauseOnForbiddenMs / 1000}s`);
+				await closeBrowser();
+				await sleep(config.pauseOnForbiddenMs);
+				console.log("[MASTERCARD] Resuming - retrying request");
+				await refreshSession();
+				i--; // Retry the same request after session refresh
+				requestCounter++;
+				continue;
+			}
 
 				if (apiStatus !== 200 || !data) {
 					console.error(`[MASTERCARD] FAILED ${date} ${from}/${to}: HTTP ${apiStatus}`);
