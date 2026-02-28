@@ -81,12 +81,15 @@ describe('addMonths', () => {
     expect(addMonths('2024-11-15', 3)).toBe('2025-02-15');
   });
 
-  test('handles variable month lengths (Jan 31 + 1 month)', () => {
-    // Jan 31 + 1 month = Feb 28/29 (day clamped to month length)
-    const result = addMonths('2024-01-31', 1);
-    // JS Date automatically clamps, so it becomes Mar 2 (31 days into Feb = Mar 2 in leap year)
-    // Actually JS Date.setMonth behavior: adding 1 month to Jan 31 in leap year gives Mar 2
-    expect(result).toBe('2024-03-02');
+  test('clamps to end of month when target month is shorter', () => {
+    // Jan 31 + 1 month → Feb 29 (2024 is a leap year)
+    expect(addMonths('2024-01-31', 1)).toBe('2024-02-29');
+    // Jan 31 + 1 month → Feb 28 (2025 is not a leap year)
+    expect(addMonths('2025-01-31', 1)).toBe('2025-02-28');
+    // Mar 31 - 1 month → Feb 29 (2024 leap year)
+    expect(addMonths('2024-03-31', -1)).toBe('2024-02-29');
+    // May 31 + 1 month → Jun 30
+    expect(addMonths('2024-05-31', 1)).toBe('2024-06-30');
   });
 
   test('subtracts months with negative value', () => {
