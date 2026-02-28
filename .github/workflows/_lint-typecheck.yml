@@ -30,6 +30,6 @@ jobs:
 
       - name: Lint GitHub Actions
         run: |
-          bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+          bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/393031adb9afb225ee52ae2ccd7a5af5525e03e8/scripts/download-actionlint.bash) # v1.7.11
           ./actionlint -color
         shell: bash
