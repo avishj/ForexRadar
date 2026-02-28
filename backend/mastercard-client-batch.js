@@ -112,7 +112,12 @@ async function closeBrowser() {
 		resetBrowserState();
 		try {
 			// Try graceful close with timeout
-			await Promise.race([browser.close(), new Promise((_, reject) => setTimeout(() => reject(new Error("Close timeout")), BROWSER_CONFIG.MASTERCARD.closeTimeout))]);
+			let timer;
+			try {
+				await Promise.race([browser.close(), new Promise((_, reject) => { timer = setTimeout(() => reject(new Error("Close timeout")), BROWSER_CONFIG.MASTERCARD.closeTimeout); })]);
+			} finally {
+				clearTimeout(timer);
+			}
 			console.log("[MASTERCARD] Browser closed");
 		} catch (_error) {
 			console.warn("[MASTERCARD] Browser close timed out, force-killing process");
@@ -231,6 +236,8 @@ export async function fetchBatch(requests) {
 
 	try {
 		let requestCounter = 0;
+		const MAX_CONSECUTIVE_403 = 3;
+		let consecutive403 = 0;
 
 		for (let i = 0; i < requests.length; i++) {
 			const { date, from, to } = requests[i];
@@ -251,13 +258,23 @@ export async function fetchBatch(requests) {
 
 				// Handle errors
 				if (apiStatus === 403) {
-					console.error(`[MASTERCARD] 403 Forbidden - Pausing ${config.pauseOnForbiddenMs / 1000}s`);
+					consecutive403++;
+					console.error(`[MASTERCARD] 403 Forbidden (${consecutive403}/${MAX_CONSECUTIVE_403}) - Pausing ${config.pauseOnForbiddenMs / 1000}s`);
 					await closeBrowser();
 					await sleep(config.pauseOnForbiddenMs);
-					console.log("[MASTERCARD] Resuming");
-					await refreshSession();
+
+					if (consecutive403 >= MAX_CONSECUTIVE_403) {
+						console.error(`[MASTERCARD] ${MAX_CONSECUTIVE_403} consecutive 403s - skipping ${date} ${from}/${to}`);
+						consecutive403 = 0;
+					} else {
+						console.log("[MASTERCARD] Resuming - retrying request");
+						await refreshSession();
+						i--; // Retry the same request after session refresh
+					}
 					continue;
 				}
+
+				consecutive403 = 0;
 
 				if (apiStatus !== 200 || !data) {
 					console.error(`[MASTERCARD] FAILED ${date} ${from}/${to}: HTTP ${apiStatus}`);

@@ -52,7 +52,13 @@ export function addDays(dateStr, days) {
  */
 export function addMonths(dateStr, months) {
   const date = parseDate(dateStr);
+  const targetMonth = (date.getMonth() + months % 12 + 12) % 12;
   date.setMonth(date.getMonth() + months);
+  // Clamp overflow: if setMonth overflowed into the next month (e.g. Jan 31 + 1 = Mar 3),
+  // roll back to the last day of the intended target month
+  if (date.getMonth() !== targetMonth) {
+    date.setDate(0);
+  }
   return formatDate(date);
 }
 
