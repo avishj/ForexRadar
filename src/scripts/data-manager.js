@@ -266,9 +266,8 @@ export async function fetchRates(fromCurr, toCurr, range, options = {}) {
         if (deltaRecords.length > 0) {
           await saveAndMergeServerRecords(deltaRecords, mergedData, recordSources);
           notify('server', `Fetched ${deltaRecords.length} older records`);
+          StorageManager.setLastFetchedStartYear(fromCurr, startYear);
         }
-
-        StorageManager.setLastFetchedStartYear(fromCurr, startYear);
       } catch (error) {
         notify('server', `Delta fetch error: ${error.message}`);
       }
