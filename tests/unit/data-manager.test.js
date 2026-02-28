@@ -301,14 +301,13 @@ describe('getStartYearFromRange', () => {
     expect(getStartYearFromRange({ years: 5 })).toBe(expectedYear);
   });
 
-  test('returns current year for 1 month range within same year', () => {
-    // 1 month back should stay in the same year (unless near Jan boundary)
+  test('returns previous year for 13 months range crossing year boundary', () => {
     const now = new Date();
-    const oneMonthAgo = new Date(now);
-    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    const thirteenMonthsAgo = new Date(now);
+    thirteenMonthsAgo.setMonth(thirteenMonthsAgo.getMonth() - 13);
 
-    const result = getStartYearFromRange({ months: 1 });
-    expect(result).toBe(oneMonthAgo.getFullYear());
+    const result = getStartYearFromRange({ months: 13 });
+    expect(result).toBe(thirteenMonthsAgo.getFullYear());
   });
 
   test('returns previous year for 1 year range', () => {
