@@ -128,7 +128,9 @@ const LAST_START_YEAR_PREFIX = 'forexRadar_lastStartYear_';
 export function getLastFetchedStartYear(fromCurr) {
   const key = LAST_START_YEAR_PREFIX + fromCurr;
   const value = localStorage.getItem(key);
-  return value !== null ? parseInt(value, 10) : null;
+  if (value === null) return null;
+  const parsed = parseInt(value, 10);
+  return Number.isNaN(parsed) ? null : parsed;
 }
 
 /**
@@ -152,6 +154,11 @@ export function setLastFetchedStartYear(fromCurr, startYear) {
   }
 
   const existingYear = parseInt(existing, 10);
+  // Treat corrupted value as missing — overwrite
+  if (Number.isNaN(existingYear)) {
+    localStorage.setItem(key, String(storeValue));
+    return;
+  }
   // 0 means "all" — can't go wider than that
   if (existingYear === 0) return;
   // New value is "all" or earlier year — update
