@@ -133,27 +133,24 @@ export async function fetchBatch(requests) {
 					url.searchParams.set("fromCurr", to);
 					url.searchParams.set("toCurr", from);
 
-					const page = await context.newPage();
+				const page = await context.newPage();
+				try {
 					const navResponse = await page.goto(url.toString(), { waitUntil: "networkidle", timeout: 30000 });
 					const apiStatus = navResponse?.status() ?? null;
 
 					if (apiStatus === 500 || apiStatus === 400) {
-						await page.close();
 						return { req, record: null };
 					}
 					if (apiStatus === 429 || apiStatus === 403) {
-						await page.close();
 						throw new Error(`Rate limited: ${apiStatus}`);
 					}
 					if (apiStatus !== 200) {
-						await page.close();
 						throw new Error(`HTTP ${apiStatus}`);
 					}
 
 					// Extract JSON from page body (Firefox renders JSON in a <pre> tag)
 					// This avoids the NS_ERROR_FAILURE bug with response.text()
 					const bodyText = await page.evaluate(() => document.body.innerText);
-					await page.close();
 
 					const data = JSON.parse(bodyText);
 					const rate = data.originalValues?.fxRateVisa;
@@ -172,6 +169,9 @@ export async function fetchBatch(requests) {
 							markup: parseFloat(markup)
 						}
 					};
+				} finally {
+					await page.close();
+				}
 				})
 			);
 
