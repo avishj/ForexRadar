@@ -11,12 +11,12 @@ runs:
   using: composite
   steps:
     - name: Setup Bun
-      uses: oven-sh/setup-bun@v2.1.2
+      uses: oven-sh/setup-bun@3d267786b128fe76c2f16a390aa2448b815359f3 # v2.1.2
       with:
         bun-version: "1.3.x"
 
     - name: Cache Bun dependencies
-      uses: actions/cache@v5.0.3
+      uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
       with:
         path: ~/.bun/install/cache
         key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
@@ -26,13 +26,25 @@ runs:
       shell: bash
       run: bun install --frozen-lockfile --ignore-scripts
 
+    - name: Get Playwright version
+      if: inputs.playwright == 'true'
+      id: pw-version
+      shell: bash
+      run: |
+        version=$(bun pm ls | grep '@playwright/test' | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' || true)
+        if [ -z "$version" ]; then
+          echo "::error::Failed to extract Playwright version from bun pm ls"
+          exit 1
+        fi
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+
     - name: Cache Playwright browsers
       if: inputs.playwright == 'true'
-      uses: actions/cache@v5.0.3
+      uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
       with:
         path: ~/.cache/ms-playwright
-        key: playwright-${{ runner.os }}-${{ hashFiles('bun.lock') }}
-        restore-keys: playwright-${{ runner.os }}-
+        key: playwright-${{ runner.os }}-${{ steps.pw-version.outputs.version }}-${{ hashFiles('bun.lock') }}
+        restore-keys: playwright-${{ runner.os }}-${{ steps.pw-version.outputs.version }}-
 
     - name: Install Playwright browsers
       if: inputs.playwright == 'true'

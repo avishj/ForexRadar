@@ -7,6 +7,13 @@ on:
   workflow_dispatch:
     # Allow manual trigger
 
+permissions:
+  contents: read
+
+concurrency:
+  group: contract-tests
+  cancel-in-progress: true
+
 jobs:
   contract:
     uses: ./.github/workflows/_contract.yml

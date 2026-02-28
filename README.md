@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/avishj/ForexRadar/actions/workflows/ci.yml/badge.svg)](https://github.com/avishj/ForexRadar/actions/workflows/ci.yml)
 [![Data Update](https://github.com/avishj/ForexRadar/actions/workflows/daily.yml/badge.svg)](https://github.com/avishj/ForexRadar/actions/workflows/daily.yml)
+[![CodeQL](https://github.com/avishj/ForexRadar/actions/workflows/codeql.yml/badge.svg)](https://github.com/avishj/ForexRadar/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/avishj/ForexRadar/badge)](https://scorecard.dev/viewer/?uri=github.com/avishj/ForexRadar)
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE)
 
 Track historical Visa, Mastercard, and ECB exchange rates with real markup data.

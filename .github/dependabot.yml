@@ -1,0 +1,110 @@
+version: 2
+
+updates:
+  # ── npm (package.json) ─────────────────────────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 15
+    rebase-strategy: "auto"
+    versioning-strategy: "increase"
+    pull-request-branch-name:
+      separator: "/"
+    commit-message:
+      prefix: "deps"
+      prefix-development: "deps(dev)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "npm"
+    assignees:
+      - "avishj"
+    cooldown:
+      default-days: 3
+      semver-major-days: 7
+      semver-minor-days: 3
+      semver-patch-days: 1
+    groups:
+      framework:
+        applies-to: "version-updates"
+        patterns:
+          - "astro"
+          - "tailwindcss"
+          - "@tailwindcss/*"
+        update-types:
+          - "minor"
+          - "patch"
+      types:
+        applies-to: "version-updates"
+        patterns:
+          - "@types/*"
+        update-types:
+          - "minor"
+          - "patch"
+      linting:
+        applies-to: "version-updates"
+        patterns:
+          - "eslint*"
+          - "stylelint*"
+          - "htmlhint"
+          - "markdownlint*"
+          - "@eslint/*"
+          - "@dreamsicle.io/*"
+        update-types:
+          - "minor"
+          - "patch"
+      testing:
+        applies-to: "version-updates"
+        patterns:
+          - "playwright"
+          - "@playwright/*"
+        update-types:
+          - "minor"
+          - "patch"
+      dev-minor-patch:
+        applies-to: "version-updates"
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+      security:
+        applies-to: "security-updates"
+        patterns:
+          - "*"
+
+  # ── GitHub Actions (.github/workflows + composite actions) ─────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 10
+    rebase-strategy: "auto"
+    pull-request-branch-name:
+      separator: "/"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    assignees:
+      - "avishj"
+    groups:
+      actions:
+        applies-to: "version-updates"
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      actions-security:
+        applies-to: "security-updates"
+        patterns:
+          - "*"

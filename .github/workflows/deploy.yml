@@ -11,8 +11,10 @@ on:
       - completed
   workflow_dispatch:
 
+permissions: {}
+
 concurrency:
-  group: "pages"
+  group: pages
   cancel-in-progress: true
 
 jobs:
@@ -36,8 +38,13 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@a90bcbc6539c36a85cdfeb73f7e2f433735f215b # v2.15.0
+        with:
+          egress-policy: audit
+
       - name: Checkout
-        uses: actions/checkout@v6.0.1
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
@@ -48,16 +55,16 @@ jobs:
         run: bun run build
 
       - name: Setup Pages
-        uses: actions/configure-pages@v5.0.0
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5.0.0
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v4.0.0
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4.0.0
         with:
           path: dist/
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4.0.5
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
     outputs:
       page_url: ${{ steps.deployment.outputs.page_url }}
 
@@ -65,6 +72,9 @@ jobs:
     needs: deploy
     if: needs.deploy.result == 'success'
     uses: ./.github/workflows/_lighthouse.yml
+    permissions:
+      contents: write
+      issues: write
     with:
       url: ${{ needs.deploy.outputs.page_url }}
       wait-seconds: 30
