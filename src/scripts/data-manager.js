@@ -72,6 +72,26 @@ function makeRecordKey(date, provider) {
 }
 
 /**
+ * Save records to IndexedDB and merge into the working maps.
+ * Marks records as 'server' source only if they aren't already tracked.
+ *
+ * @param {RateRecord[]} records
+ * @param {Map<string, RateRecord>} mergedData
+ * @param {Map<string, string>} recordSources
+ * @returns {Promise<void>}
+ */
+async function saveAndMergeServerRecords(records, mergedData, recordSources) {
+  await StorageManager.saveRates(records);
+  for (const record of records) {
+    const key = makeRecordKey(record.date, record.provider);
+    mergedData.set(key, record);
+    if (!recordSources.has(key)) {
+      recordSources.set(key, 'server');
+    }
+  }
+}
+
+/**
  * Calculates the start date based on a date range
  * @param {DateRange} range - Date range specification
  * @returns {string|null} Start date string or null for "all"
@@ -203,19 +223,7 @@ export async function fetchRates(fromCurr, toCurr, range, options = {}) {
       hasServerData = serverRecords.length > 0 || fromCache > 0;
       
       if (serverRecords.length > 0) {
-        // Save to cache
-        await StorageManager.saveRates(serverRecords);
-        
-        // Mark new records from server (overwrite cache source)
-        for (const record of serverRecords) {
-          const key = makeRecordKey(record.date, record.provider);
-          mergedData.set(key, record);
-          // Only mark as server if it wasn't already in cache
-          if (!recordSources.has(key)) {
-            recordSources.set(key, 'server');
-          }
-        }
-        
+        await saveAndMergeServerRecords(serverRecords, mergedData, recordSources);
         notify('server', `Fetched ${serverRecords.length} records from server`);
       } else if (!hasServerData) {
         notify('server', 'No server data available for this pair');
@@ -252,14 +260,7 @@ export async function fetchRates(fromCurr, toCurr, range, options = {}) {
         const deltaRecords = [...deltaData.visa, ...deltaData.mastercard, ...deltaData.ecb];
 
         if (deltaRecords.length > 0) {
-          await StorageManager.saveRates(deltaRecords);
-          for (const record of deltaRecords) {
-            const key = makeRecordKey(record.date, record.provider);
-            mergedData.set(key, record);
-            if (!recordSources.has(key)) {
-              recordSources.set(key, 'server');
-            }
-          }
+          await saveAndMergeServerRecords(deltaRecords, mergedData, recordSources);
           notify('server', `Fetched ${deltaRecords.length} older records`);
         }
 
