@@ -48,9 +48,18 @@ jobs:
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
-          config-file: ./.github/codeql/codeql-config.yml
           queries: security-and-quality
           trap-caching: true
+          config: |
+            paths-ignore:
+              - db
+              - dist
+              - docs
+              - node_modules
+              - playwright-report
+              - test-results
+            threat-models:
+              - local
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@e34fc2711fb7964ca6850c8a8382121f34745f3b # v4.32.4
