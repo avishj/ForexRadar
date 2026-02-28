@@ -26,6 +26,7 @@ const DB_NAME = 'ForexRadarDB';
 const DB_VERSION = 2;
 const STORE_NAME = 'rates';
 const REFRESH_KEY_PREFIX = 'forexRadar_serverRefresh_';
+const LIVE_REFRESH_KEY_PREFIX = 'forexRadar_liveRefresh_';
 
 /** @type {IDBDatabase|null} */
 let dbInstance = null;
@@ -82,13 +83,43 @@ export function getLastServerRefresh(fromCurr) {
 }
 
 /**
+ * Check if live data needs refresh for a currency pair.
+ * Uses the same UTC 12:00 boundary as server refresh.
+ * 
+ * @param {string} fromCurr - Source currency code
+ * @param {string} toCurr - Target currency code
+ * @returns {boolean} True if live data needs refresh
+ */
+export function needsLiveRefresh(fromCurr, toCurr) {
+  const key = LIVE_REFRESH_KEY_PREFIX + fromCurr + '_' + toCurr;
+  const lastRefresh = localStorage.getItem(key);
+
+  if (!lastRefresh) {
+    return true;
+  }
+
+  return new Date(lastRefresh).getTime() < getLastUTC12pm();
+}
+
+/**
+ * Mark live data as fetched for a currency pair.
+ * 
+ * @param {string} fromCurr - Source currency code
+ * @param {string} toCurr - Target currency code
+ */
+export function markLiveFetched(fromCurr, toCurr) {
+  const key = LIVE_REFRESH_KEY_PREFIX + fromCurr + '_' + toCurr;
+  localStorage.setItem(key, new Date().toISOString());
+}
+
+/**
  * Clear all server refresh timestamps.
  */
 export function clearAllRefreshTimestamps() {
   const keysToRemove = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (key && key.startsWith(REFRESH_KEY_PREFIX)) {
+    if (key && (key.startsWith(REFRESH_KEY_PREFIX) || key.startsWith(LIVE_REFRESH_KEY_PREFIX))) {
       keysToRemove.push(key);
     }
   }
