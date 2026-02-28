@@ -112,6 +112,65 @@ export function markLiveFetched(fromCurr, toCurr) {
   localStorage.setItem(key, new Date().toISOString());
 }
 
+// ============================================================================
+// Range Tracking Functions
+// ============================================================================
+
+const LAST_START_YEAR_PREFIX = 'forexRadar_lastStartYear_';
+
+/**
+ * Get the last fetched start year for a source currency.
+ * Returns null if no fetch has been tracked yet.
+ * 
+ * @param {string} fromCurr - Source currency code
+ * @returns {number|null}
+ */
+export function getLastFetchedStartYear(fromCurr) {
+  const key = LAST_START_YEAR_PREFIX + fromCurr;
+  const value = localStorage.getItem(key);
+  return value !== null ? parseInt(value, 10) : null;
+}
+
+/**
+ * Record the start year that was fetched for a source currency.
+ * Only updates if the new start year is earlier (wider range)
+ * or if no value was stored yet.
+ * 
+ * A value of 0 means "all years" were fetched.
+ * 
+ * @param {string} fromCurr - Source currency code
+ * @param {number|null} startYear - Start year fetched (null = all, stored as 0)
+ */
+export function setLastFetchedStartYear(fromCurr, startYear) {
+  const key = LAST_START_YEAR_PREFIX + fromCurr;
+  const storeValue = startYear === null ? 0 : startYear;
+  const existing = localStorage.getItem(key);
+
+  if (existing === null) {
+    localStorage.setItem(key, String(storeValue));
+    return;
+  }
+
+  const existingYear = parseInt(existing, 10);
+  // 0 means "all" — can't go wider than that
+  if (existingYear === 0) return;
+  // New value is "all" or earlier year — update
+  if (storeValue === 0 || storeValue < existingYear) {
+    localStorage.setItem(key, String(storeValue));
+  }
+}
+
+/**
+ * Clear the last fetched start year for a source currency.
+ * Called when server refresh timestamp is cleared (cache invalidation).
+ * 
+ * @param {string} fromCurr - Source currency code
+ */
+export function clearLastFetchedStartYear(fromCurr) {
+  const key = LAST_START_YEAR_PREFIX + fromCurr;
+  localStorage.removeItem(key);
+}
+
 /**
  * Clear all server refresh timestamps.
  */
@@ -119,7 +178,7 @@ export function clearAllRefreshTimestamps() {
   const keysToRemove = [];
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (key && (key.startsWith(REFRESH_KEY_PREFIX) || key.startsWith(LIVE_REFRESH_KEY_PREFIX))) {
+    if (key && (key.startsWith(REFRESH_KEY_PREFIX) || key.startsWith(LIVE_REFRESH_KEY_PREFIX) || key.startsWith(LAST_START_YEAR_PREFIX))) {
       keysToRemove.push(key);
     }
   }
