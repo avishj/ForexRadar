@@ -645,12 +645,6 @@ export async function initChart(containerId, visaRecords, mastercardRecords, ecb
 	const minDate = uniqueDates.length > 0 ? uniqueDates[0] : undefined;
 	const maxDate = uniqueDates.length > 0 ? uniqueDates[uniqueDates.length - 1] : undefined;
 
-	console.log("initChart - Data Range:", {
-		minDate,
-		maxDate,
-		dataPointCount: uniqueDates.length
-	});
-
 	const options = getChartOptions(fromCurr, toCurr);
 	options.series[SERIES_VISA_RATE].data = visaRateSeries;
 	options.series[SERIES_MC_RATE].data = mcRateSeries;
@@ -690,14 +684,6 @@ export async function initChart(containerId, visaRecords, mastercardRecords, ecb
 		}
 
 		options.xaxis.tickAmount = tickCount;
-
-		console.log("Chart data range:", {
-			totalDates: uniqueDates.length,
-			firstTimestamp: minTimestamp,
-			lastTimestamp: maxTimestamp,
-			daysInRange: daysInRange.toFixed(1),
-			tickCount
-		});
 	}
 
 	// Add zoom/pan event listeners
