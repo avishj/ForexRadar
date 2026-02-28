@@ -275,8 +275,11 @@ export async function fetchRates(fromCurr, toCurr, range, options = {}) {
   }
 
   // Step 3: Check for gaps and fetch live data from Visa/Mastercard
-  // Skip if live data was already fetched since the last UTC 12:00 boundary
-  const needsLive = !skipLive && (fetchVisa || fetchMastercard) && StorageManager.needsLiveRefresh(fromCurr, toCurr);
+  // Only use the pair-level freshness gate when both providers are in scope.
+  // A single-provider call shouldn't suppress future fetches for the other.
+  const bothProviders = fetchVisa && fetchMastercard;
+  const needsLive = !skipLive && (fetchVisa || fetchMastercard)
+    && (!bothProviders || StorageManager.needsLiveRefresh(fromCurr, toCurr));
 
   if (needsLive) {
     const yesterday = getYesterday();
@@ -341,9 +344,11 @@ export async function fetchRates(fromCurr, toCurr, range, options = {}) {
       }
     }
 
-    // Mark live data as fetched regardless of results (avoid re-attempting
-    // failed/unavailable dates on every time range switch)
-    StorageManager.markLiveFetched(fromCurr, toCurr);
+    // Only mark pair-level freshness when both providers were in scope.
+    // Otherwise a later call enabling the skipped provider would be blocked.
+    if (bothProviders) {
+      StorageManager.markLiveFetched(fromCurr, toCurr);
+    }
 
     if (fromLive === 0 && (fetchVisa || fetchMastercard)) {
       notify('live', 'Data is up to date');
