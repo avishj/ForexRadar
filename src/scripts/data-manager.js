@@ -81,11 +81,15 @@ function makeRecordKey(date, provider) {
  * @returns {Promise<void>}
  */
 async function saveAndMergeServerRecords(records, mergedData, recordSources) {
-  await StorageManager.saveRates(records);
   for (const record of records) {
     const key = makeRecordKey(record.date, record.provider);
     mergedData.set(key, record);
     recordSources.set(key, 'server');
+  }
+  try {
+    await StorageManager.saveRates(records);
+  } catch (error) {
+    console.error('Failed to persist server records:', error);
   }
 }
 
