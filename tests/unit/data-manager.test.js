@@ -1,6 +1,6 @@
 // @ts-check
 import { describe, test, expect } from 'bun:test';
-import { calculateStats, calculateMultiProviderStats } from '../../src/scripts/data-manager.js';
+import { calculateStats, calculateMultiProviderStats, getStartYearFromRange } from '../../src/scripts/data-manager.js';
 
 /** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
 
@@ -277,5 +277,44 @@ describe('calculateMultiProviderStats', () => {
     expect(stats.ecb.low).toBe(82.5);
     expect(stats.ecb.current).toBe(83.0);
     expect(stats.ecb.avgMarkup).toBeNull();
+  });
+});
+
+describe('getStartYearFromRange', () => {
+  test('returns null for "all" range', () => {
+    expect(getStartYearFromRange({ all: true })).toBeNull();
+  });
+
+  test('returns correct year for months range', () => {
+    const now = new Date();
+    const expected = new Date(now);
+    expected.setMonth(expected.getMonth() - 1);
+    const expectedYear = expected.getFullYear();
+
+    expect(getStartYearFromRange({ months: 1 })).toBe(expectedYear);
+  });
+
+  test('returns correct year for years range', () => {
+    const now = new Date();
+    const expectedYear = now.getFullYear() - 5;
+
+    expect(getStartYearFromRange({ years: 5 })).toBe(expectedYear);
+  });
+
+  test('returns current year for 1 month range within same year', () => {
+    // 1 month back should stay in the same year (unless near Jan boundary)
+    const now = new Date();
+    const oneMonthAgo = new Date(now);
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+
+    const result = getStartYearFromRange({ months: 1 });
+    expect(result).toBe(oneMonthAgo.getFullYear());
+  });
+
+  test('returns previous year for 1 year range', () => {
+    const now = new Date();
+    const expected = now.getFullYear() - 1;
+
+    expect(getStartYearFromRange({ years: 1 })).toBe(expected);
   });
 });

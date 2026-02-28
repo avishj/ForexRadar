@@ -4,6 +4,11 @@ import {
   needsServerRefresh,
   markServerRefreshed,
   getLastServerRefresh,
+  needsLiveRefresh,
+  markLiveFetched,
+  getLastFetchedStartYear,
+  setLastFetchedStartYear,
+  clearLastFetchedStartYear,
   clearAllRefreshTimestamps
 } from '../../src/scripts/storage-manager.js';
 
@@ -225,6 +230,119 @@ describe('storage-manager cache staleness', () => {
       mockStorage.setItem('forexRadar_serverRefresh_USD', beforeBoundary.toISOString());
 
       expect(needsServerRefresh('USD')).toBe(true);
+    });
+  });
+
+  describe('needsLiveRefresh', () => {
+    test('returns true when never fetched', () => {
+      expect(needsLiveRefresh('USD', 'INR')).toBe(true);
+    });
+
+    test('returns false after marking as fetched', () => {
+      markLiveFetched('USD', 'INR');
+      expect(needsLiveRefresh('USD', 'INR')).toBe(false);
+    });
+
+    test('tracks pairs independently', () => {
+      markLiveFetched('USD', 'INR');
+
+      expect(needsLiveRefresh('USD', 'INR')).toBe(false);
+      expect(needsLiveRefresh('USD', 'EUR')).toBe(true);
+      expect(needsLiveRefresh('EUR', 'INR')).toBe(true);
+    });
+
+    test('returns true when fetched before last UTC 12pm', () => {
+      const now = new Date();
+      const utc12Today = new Date(Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate(),
+        12, 0, 0, 0
+      ));
+      const lastUTC12pm = now < utc12Today
+        ? new Date(utc12Today.getTime() - 24 * 60 * 60 * 1000)
+        : utc12Today;
+
+      const beforeBoundary = new Date(lastUTC12pm.getTime() - 60 * 1000);
+      mockStorage.setItem('forexRadar_liveRefresh_USD_INR', beforeBoundary.toISOString());
+
+      expect(needsLiveRefresh('USD', 'INR')).toBe(true);
+    });
+  });
+
+  describe('clearAllRefreshTimestamps', () => {
+    test('clears server, live, and start year keys', () => {
+      mockStorage.setItem('forexRadar_serverRefresh_USD', new Date().toISOString());
+      mockStorage.setItem('forexRadar_liveRefresh_USD_INR', new Date().toISOString());
+      mockStorage.setItem('forexRadar_lastStartYear_USD', '2024');
+      mockStorage.setItem('otherApp_key', 'keep');
+
+      clearAllRefreshTimestamps();
+
+      expect(mockStorage.getItem('forexRadar_serverRefresh_USD')).toBeNull();
+      expect(mockStorage.getItem('forexRadar_liveRefresh_USD_INR')).toBeNull();
+      expect(mockStorage.getItem('forexRadar_lastStartYear_USD')).toBeNull();
+      expect(mockStorage.getItem('otherApp_key')).toBe('keep');
+    });
+  });
+
+  describe('getLastFetchedStartYear / setLastFetchedStartYear', () => {
+    test('returns null when never set', () => {
+      expect(getLastFetchedStartYear('USD')).toBeNull();
+    });
+
+    test('stores and retrieves a start year', () => {
+      setLastFetchedStartYear('USD', 2023);
+      expect(getLastFetchedStartYear('USD')).toBe(2023);
+    });
+
+    test('stores 0 for null (all years)', () => {
+      setLastFetchedStartYear('USD', null);
+      expect(getLastFetchedStartYear('USD')).toBe(0);
+    });
+
+    test('updates to earlier year', () => {
+      setLastFetchedStartYear('USD', 2024);
+      setLastFetchedStartYear('USD', 2020);
+      expect(getLastFetchedStartYear('USD')).toBe(2020);
+    });
+
+    test('does not update to later year (narrower range)', () => {
+      setLastFetchedStartYear('USD', 2020);
+      setLastFetchedStartYear('USD', 2024);
+      expect(getLastFetchedStartYear('USD')).toBe(2020);
+    });
+
+    test('does not update when already "all" (0)', () => {
+      setLastFetchedStartYear('USD', null);
+      setLastFetchedStartYear('USD', 2020);
+      expect(getLastFetchedStartYear('USD')).toBe(0);
+    });
+
+    test('updates from year to "all"', () => {
+      setLastFetchedStartYear('USD', 2024);
+      setLastFetchedStartYear('USD', null);
+      expect(getLastFetchedStartYear('USD')).toBe(0);
+    });
+
+    test('tracks currencies independently', () => {
+      setLastFetchedStartYear('USD', 2024);
+      setLastFetchedStartYear('EUR', 2020);
+
+      expect(getLastFetchedStartYear('USD')).toBe(2024);
+      expect(getLastFetchedStartYear('EUR')).toBe(2020);
+    });
+  });
+
+  describe('clearLastFetchedStartYear', () => {
+    test('removes the stored start year', () => {
+      setLastFetchedStartYear('USD', 2023);
+      clearLastFetchedStartYear('USD');
+      expect(getLastFetchedStartYear('USD')).toBeNull();
+    });
+
+    test('does nothing when not set', () => {
+      expect(() => clearLastFetchedStartYear('XYZ')).not.toThrow();
     });
   });
 });
