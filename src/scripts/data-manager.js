@@ -268,8 +268,10 @@ export async function fetchRates(fromCurr, toCurr, range, options = {}) {
       } catch (error) {
         notify('server', `Delta fetch error: ${error.message}`);
       }
-    } else if (prevStartYear === null) {
-      // First call after page load but server is still fresh — record what we'd need
+    } else if (prevStartYear === null && fromCache > 0) {
+      // First call after page load but server is still fresh — record what we have.
+      // Only set when cache data exists; otherwise an empty cache would block
+      // future delta fetches for this range.
       StorageManager.setLastFetchedStartYear(fromCurr, startYear);
     }
   }
