@@ -11,6 +11,8 @@ on:
       - completed
   workflow_dispatch:
 
+permissions: {}
+
 concurrency:
   group: "pages"
   cancel-in-progress: true
