@@ -7,6 +7,9 @@ on:
   workflow_dispatch:
     # Allow manual trigger
 
+permissions:
+  contents: read
+
 jobs:
   contract:
     uses: ./.github/workflows/_contract.yml

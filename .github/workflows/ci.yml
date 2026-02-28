@@ -6,6 +6,8 @@ on:
   pull_request:
     branches: [main]
 
+permissions: {}
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -14,6 +16,8 @@ jobs:
   changes:
     name: Detect Changes
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       code: ${{ steps.filter.outputs.code }}
       frontend: ${{ steps.filter.outputs.frontend }}
@@ -45,21 +49,29 @@ jobs:
     needs: changes
     if: needs.changes.outputs.code == 'true'
     uses: ./.github/workflows/_lint-typecheck.yml
+    permissions:
+      contents: read
 
   unit-integration:
     needs: changes
     if: needs.changes.outputs.code == 'true'
     uses: ./.github/workflows/_unit-integration.yml
+    permissions:
+      contents: read
 
   smoke:
     needs: changes
     if: needs.changes.outputs.code == 'true'
     uses: ./.github/workflows/_smoke.yml
+    permissions:
+      contents: read
 
   e2e:
     needs: changes
     if: needs.changes.outputs.code == 'true'
     uses: ./.github/workflows/_e2e.yml
+    permissions:
+      contents: read
 
   lighthouse:
     needs: changes
