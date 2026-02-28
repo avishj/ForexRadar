@@ -130,6 +130,8 @@ export async function fetchBatch(requests) {
 					url.searchParams.set("fee", "0");
 					url.searchParams.set("utcConvertedDate", formattedDate);
 					url.searchParams.set("exchangedate", formattedDate);
+					// Visa API: fromCurr = card billing currency, toCurr = transaction currency
+					// This is the inverse of our convention (from = transaction, to = billing)
 					url.searchParams.set("fromCurr", to);
 					url.searchParams.set("toCurr", from);
 
