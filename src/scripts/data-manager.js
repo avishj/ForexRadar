@@ -280,11 +280,12 @@ export async function fetchRates(fromCurr, toCurr, range, options = {}) {
   }
 
   // Step 3: Check for gaps and fetch live data from Visa/Mastercard
-  // Only use the pair-level freshness gate when both providers are in scope.
-  // A single-provider call shouldn't suppress future fetches for the other.
+  // Skip if live data was already fetched since the last UTC 12:00 boundary.
+  // markLiveFetched is only called when both providers are in scope (below),
+  // so single-provider calls won't suppress the other provider's future fetches.
   const bothProviders = fetchVisa && fetchMastercard;
   const needsLive = !skipLive && (fetchVisa || fetchMastercard)
-    && (!bothProviders || StorageManager.needsLiveRefresh(fromCurr, toCurr));
+    && StorageManager.needsLiveRefresh(fromCurr, toCurr);
 
   if (needsLive) {
     const yesterday = getYesterday();
