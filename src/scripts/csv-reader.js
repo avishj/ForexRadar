@@ -180,6 +180,65 @@ export class CSVReader {
   }
 
   /**
+   * Fetch rates for a pair, limited to years >= startYear.
+   * When startYear is null, fetches all years (same as fetchRatesForPair).
+   * 
+   * @param {CurrencyCode} fromCurr
+   * @param {CurrencyCode} toCurr
+   * @param {number|null} startYear - Earliest year to fetch (null = all)
+   * @returns {Promise<RateRecord[]>} Sorted by date ASC
+   */
+  async fetchRatesForPairInRange(fromCurr, toCurr, startYear) {
+    let years = await this.#discoverYears(fromCurr);
+
+    if (startYear !== null) {
+      years = years.filter(y => y >= startYear);
+    }
+
+    if (years.length === 0) return [];
+
+    const results = await Promise.all(years.map(year => this.#fetchYearFile(fromCurr, year)));
+    const allRecords = sortByDateAsc(results.flat());
+    return filterByTargetCurrency(allRecords, toCurr);
+  }
+
+  /**
+   * Fetch rates for a pair in range, split by provider.
+   * When startYear is null, fetches all years.
+   * 
+   * @param {CurrencyCode} fromCurr
+   * @param {CurrencyCode} toCurr
+   * @param {number|null} startYear - Earliest year to fetch (null = all)
+   * @returns {Promise<{ visa: RateRecord[], mastercard: RateRecord[], ecb: RateRecord[] }>}
+   */
+  async fetchRatesByProviderInRange(fromCurr, toCurr, startYear) {
+    const records = await this.fetchRatesForPairInRange(fromCurr, toCurr, startYear);
+    return splitByProvider(records);
+  }
+
+  /**
+   * Fetch rates for a pair, only for years in [fromYear, toYear).
+   * Used for delta fetching when expanding time range.
+   * 
+   * @param {CurrencyCode} fromCurr
+   * @param {CurrencyCode} toCurr
+   * @param {number} fromYear - Inclusive start year
+   * @param {number} toYear - Exclusive end year
+   * @returns {Promise<{ visa: RateRecord[], mastercard: RateRecord[], ecb: RateRecord[] }>}
+   */
+  async fetchRatesByProviderInYearRange(fromCurr, toCurr, fromYear, toYear) {
+    let years = await this.#discoverYears(fromCurr);
+    years = years.filter(y => y >= fromYear && y < toYear);
+
+    if (years.length === 0) return { visa: [], mastercard: [], ecb: [] };
+
+    const results = await Promise.all(years.map(year => this.#fetchYearFile(fromCurr, year)));
+    const allRecords = sortByDateAsc(results.flat());
+    const pairRecords = filterByTargetCurrency(allRecords, toCurr);
+    return splitByProvider(pairRecords);
+  }
+
+  /**
    * Check if server has data for a source currency.
    * Uses manifest when available, falls back to HEAD requests.
    * 
