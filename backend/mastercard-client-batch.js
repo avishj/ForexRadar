@@ -9,7 +9,11 @@
 
 import { chromium } from "playwright";
 import { PROVIDER_CONFIG, USER_AGENTS, BROWSER_CONFIG } from "../shared/constants.js";
+import { sleep } from "../shared/browser-utils.js";
+import { createLogger } from "../shared/logger.js";
 import { store } from "./csv-store.js";
+
+const log = createLogger("MASTERCARD");
 
 // Select a random user agent at script startup (stays consistent for session)
 const SESSION_USER_AGENT = USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
@@ -61,7 +65,7 @@ async function getBrowser() {
 
 	// Browser died unexpectedly - reset state
 	if (browserInstance && !browserInstance.isConnected()) {
-		console.warn("[MASTERCARD] Browser disconnected unexpectedly, resetting state");
+		log.warn("Browser disconnected unexpectedly, resetting state");
 		resetBrowserState();
 	}
 
@@ -71,7 +75,7 @@ async function getBrowser() {
 
 	browserInitPromise = (async () => {
 		const mcConfig = BROWSER_CONFIG.MASTERCARD;
-		console.log("[MASTERCARD] Launching Chromium browser...");
+		log.info("Launching Chromium browser...");
 		browserInstance = await chromium.launch({
 			headless: mcConfig.headless,
 			channel: mcConfig.channel,
@@ -89,7 +93,7 @@ async function getBrowser() {
 		const currentBrowser = browserInstance;
 		currentBrowser.on("disconnected", () => {
 			if (browserInstance === currentBrowser) {
-				console.warn("[MASTERCARD] Browser disconnected event fired, resetting state");
+				log.warn("Browser disconnected event fired, resetting state");
 				resetBrowserState();
 			}
 		});
@@ -106,7 +110,7 @@ async function getBrowser() {
  */
 async function closeBrowser() {
 	if (browserInstance) {
-		console.log("[MASTERCARD] Closing browser...");
+		log.info("Closing browser...");
 		const browser = browserInstance;
 		// Reset state immediately so we don't try to reuse a closing browser
 		resetBrowserState();
@@ -118,22 +122,14 @@ async function closeBrowser() {
 			} finally {
 				clearTimeout(timer);
 			}
-			console.log("[MASTERCARD] Browser closed");
+			log.info("Browser closed");
 		} catch (_error) {
-			console.warn("[MASTERCARD] Browser close timed out, force-killing process");
+			log.warn("Browser close timed out, force-killing process");
 			try {
 				/** @type {any} */ (browser).process()?.kill("SIGKILL");
 			} catch { /* already dead */ }
 		}
 	}
-}
-
-/**
- * Sleep utility for rate limiting
- * @param {number} ms
- */
-function sleep(ms) {
-	return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -154,14 +150,14 @@ async function getApiPage() {
  * @returns {Promise<void>}
  */
 async function refreshSession() {
-	console.log("[MASTERCARD] Refreshing session");
+	log.info("Refreshing session");
 	const page = await getApiPage();
 	try {
 		// Use domcontentloaded - we just need cookies, not full page render
 		await page.goto(MASTERCARD_UI_PAGE, { timeout: BROWSER_CONFIG.MASTERCARD.navigationTimeout, waitUntil: "domcontentloaded" });
 		await sleep(config.sessionRefreshDelayMs);
 	} catch (error) {
-		console.warn("[MASTERCARD] Session refresh failed:", error.message);
+		log.warn(`Session refresh failed: ${error.message}`);
 		// Page is likely in a broken state - close it so a fresh one is created
 		await page.close();
 		apiPage = null;
@@ -226,13 +222,13 @@ export async function fetchRate(from, to, date) {
  */
 export async function fetchBatch(requests) {
 	if (requests.length === 0) {
-		console.log("[MASTERCARD] No requests to process");
+		log.info("No requests to process");
 		return;
 	}
 
-	console.log(`[MASTERCARD] Using User-Agent: ${SESSION_USER_AGENT}`);
-	console.log(`\n[MASTERCARD] Starting: ${requests.length} requests (sequential)`);
-	console.log(`[MASTERCARD] Session refresh: every ${config.sessionRefreshInterval}, Browser restart: every ${config.browserRestartInterval}`);
+	log.info(`Using User-Agent: ${SESSION_USER_AGENT}`);
+	log.info(`Starting: ${requests.length} requests (sequential)`);
+	log.info(`Session refresh: every ${config.sessionRefreshInterval}, Browser restart: every ${config.browserRestartInterval}`);
 
 	try {
 		let requestCounter = 0;
@@ -244,7 +240,7 @@ export async function fetchBatch(requests) {
 
 			// Session management: check before request, increment after
 			if (requestCounter % config.browserRestartInterval === 0 && requestCounter > 0) {
-				console.log(`[MASTERCARD] Restarting browser after ${requestCounter} requests`);
+				log.info(`Restarting browser after ${requestCounter} requests`);
 				await closeBrowser();
 				await sleep(BROWSER_CONFIG.MASTERCARD.relaunchDelayMs);
 			}
@@ -259,15 +255,15 @@ export async function fetchBatch(requests) {
 				// Handle errors
 				if (apiStatus === 403) {
 					consecutive403++;
-					console.error(`[MASTERCARD] 403 Forbidden (${consecutive403}/${MAX_CONSECUTIVE_403}) - Pausing ${config.pauseOnForbiddenMs / 1000}s`);
+					log.error(`403 Forbidden (${consecutive403}/${MAX_CONSECUTIVE_403}) - Pausing ${config.pauseOnForbiddenMs / 1000}s`);
 					await closeBrowser();
 					await sleep(config.pauseOnForbiddenMs);
 
 					if (consecutive403 >= MAX_CONSECUTIVE_403) {
-						console.error(`[MASTERCARD] ${MAX_CONSECUTIVE_403} consecutive 403s - skipping ${date} ${from}/${to}`);
+						log.error(`${MAX_CONSECUTIVE_403} consecutive 403s - skipping ${date} ${from}/${to}`);
 						consecutive403 = 0;
 					} else {
-						console.log("[MASTERCARD] Resuming - retrying request");
+						log.info("Resuming - retrying request");
 						await refreshSession();
 						i--; // Retry the same request after session refresh
 					}
@@ -277,7 +273,7 @@ export async function fetchBatch(requests) {
 				consecutive403 = 0;
 
 				if (apiStatus !== 200 || !data) {
-					console.error(`[MASTERCARD] FAILED ${date} ${from}/${to}: HTTP ${apiStatus}`);
+					log.error(`FAILED ${date} ${from}/${to}: HTTP ${apiStatus}`);
 					continue;
 				}
 
@@ -285,16 +281,16 @@ export async function fetchBatch(requests) {
 				if (data.type === "error" || data.data?.errorCode) {
 					const errorMsg = data.data?.errorMessage || "Unknown error";
 					if (errorMsg.toLowerCase().includes("outside of approved historical rate range")) {
-						console.log(`[MASTERCARD] UNAVAILABLE ${date} ${from}/${to}`);
+						log.info(`UNAVAILABLE ${date} ${from}/${to}`);
 					} else {
-						console.error(`[MASTERCARD] FAILED ${date} ${from}/${to}: ${errorMsg}`);
+						log.error(`FAILED ${date} ${from}/${to}: ${errorMsg}`);
 					}
 					continue;
 				}
 
 				const conversionRate = data.data?.conversionRate;
 				if (!conversionRate) {
-					console.error(`[MASTERCARD] FAILED ${date} ${from}/${to}: Missing conversionRate`);
+					log.error(`FAILED ${date} ${from}/${to}: Missing conversionRate`);
 					continue;
 				}
 
@@ -311,14 +307,14 @@ export async function fetchBatch(requests) {
 
 				const inserted = store.add(record);
 				if (inserted > 0) {
-					console.log(`[MASTERCARD] SAVED ${date} ${from}/${to}: ${conversionRate}`);
+					log.success(`SAVED ${date} ${from}/${to}: ${conversionRate}`);
 				}
 				await sleep(config.batchDelayMs);
 			} catch (error) {
-				console.error(`[MASTERCARD] FAILED ${date} ${from}/${to}: ${error.message}`);
+				log.error(`FAILED ${date} ${from}/${to}: ${error.message}`);
 				// On timeout errors, restart the browser - session is likely dead
 				if (error.message.includes("Timeout")) {
-					console.log("[MASTERCARD] Timeout detected - restarting browser");
+					log.info("Timeout detected - restarting browser");
 					await closeBrowser();
 					await sleep(config.sessionRefreshDelayMs);
 					await refreshSession();
@@ -330,13 +326,13 @@ export async function fetchBatch(requests) {
 			// Progress
 			if (i % 10 === 0 || i === requests.length - 1) {
 				const pct = Math.round(((i + 1) / requests.length) * 100);
-				console.log(`[MASTERCARD] Progress: ${i + 1}/${requests.length} (${pct}%)`);
+				log.info(`Progress: ${i + 1}/${requests.length} (${pct}%)`);
 			}
 		}
 
-		console.log(`\n[MASTERCARD] Complete: ${requestCounter} processed`);
+		log.success(`Complete: ${requestCounter} processed`);
 	} catch (error) {
-		console.error(`[MASTERCARD] Fatal error: ${error.message}`);
+		log.error(`Fatal error: ${error.message}`);
 		throw error;
 	} finally {
 		await closeBrowser();

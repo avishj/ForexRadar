@@ -27,7 +27,7 @@ import { csvReader } from './csv-reader.js';
 import * as StorageManager from './storage-manager.js';
 import * as VisaClient from './visa-client.js';
 import * as MastercardClient from './mastercard-client.js';
-import { formatDate, getYesterday, addDays, parseDate } from '../../shared/utils.js';
+import { formatDate, getLatestAvailableDate, addDays, parseDate } from '../../shared/utils.js';
 
 /** @typedef {import('../../shared/types.js').RateRecord} RateRecord */
 /** @typedef {import('../../shared/types.js').RateStats} RateStats */
@@ -288,8 +288,8 @@ export async function fetchRates(fromCurr, toCurr, range, options = {}) {
     && StorageManager.needsLiveRefresh(fromCurr, toCurr);
 
   if (needsLive) {
-    const yesterday = getYesterday();
-    const yesterdayStr = formatDate(yesterday);
+    const latestAvailable = getLatestAvailableDate();
+    const latestAvailableStr = formatDate(latestAvailable);
     
     // Find the latest date we have for each provider (from merged data)
     let latestVisaDate = null;
@@ -311,13 +311,13 @@ export async function fetchRates(fromCurr, toCurr, range, options = {}) {
     /** @type {Promise<number>[]} */
     const livePromises = [];
 
-    if (fetchVisa && (!latestVisaDate || latestVisaDate < yesterdayStr)) {
+    if (fetchVisa && (!latestVisaDate || latestVisaDate < latestAvailableStr)) {
       livePromises.push(fetchLiveDataForProvider(
         'VISA',
         VisaClient,
         fromCurr,
         toCurr,
-        yesterdayStr,
+        latestAvailableStr,
         latestVisaDate,
         hasServerData,
         mergedData,
@@ -326,13 +326,13 @@ export async function fetchRates(fromCurr, toCurr, range, options = {}) {
       ));
     }
 
-    if (fetchMastercard && (!latestMcDate || latestMcDate < yesterdayStr)) {
+    if (fetchMastercard && (!latestMcDate || latestMcDate < latestAvailableStr)) {
       livePromises.push(fetchLiveDataForProvider(
         'MASTERCARD',
         MastercardClient,
         fromCurr,
         toCurr,
-        yesterdayStr,
+        latestAvailableStr,
         latestMcDate,
         hasServerData,
         mergedData,
@@ -410,7 +410,7 @@ export async function fetchRates(fromCurr, toCurr, range, options = {}) {
  * @param {typeof VisaClient | typeof MastercardClient} client - Provider client module
  * @param {CurrencyCode} fromCurr - Source currency
  * @param {CurrencyCode} toCurr - Target currency
- * @param {string} yesterdayStr - Yesterday's date string
+ * @param {string} latestAvailableStr - Latest available date string
  * @param {string|null} latestDate - Latest date we have for this provider
  * @param {boolean} hasServerData - Whether server data exists
  * @param {Map<string, RateRecord>} mergedData - Map to add records to
@@ -423,7 +423,7 @@ async function fetchLiveDataForProvider(
   client,
   fromCurr,
   toCurr,
-  yesterdayStr,
+  latestAvailableStr,
   latestDate,
   hasServerData,
   mergedData,
@@ -432,9 +432,9 @@ async function fetchLiveDataForProvider(
 ) {
   notify('live', `Fetching live ${providerName} data...`);
   
-  const startDate = parseDate(yesterdayStr);
+  const startDate = parseDate(latestAvailableStr);
   // If no historical data exists, only fetch last 7 days
-  const stopDateStr = latestDate || addDays(yesterdayStr, -7);
+  const stopDateStr = latestDate || addDays(latestAvailableStr, -7);
   
   // Collect all missing dates
   /** @type {Date[]} */
