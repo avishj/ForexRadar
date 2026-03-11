@@ -1,7 +1,6 @@
 version: 2
 
 updates:
-  # ── npm (package.json) ─────────────────────────────────────────────
   - package-ecosystem: "bun"
     directory: "/"
     schedule:
@@ -20,7 +19,7 @@ updates:
       include: "scope"
     labels:
       - "dependencies"
-      - "npm"
+      - "bun"
     assignees:
       - "avishj"
     cooldown:
