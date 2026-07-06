@@ -32,7 +32,7 @@
 		"test:visual:update": "bun run build && bunx playwright test --config=tests/playwright.visual.config.js --update-snapshots"
 	},
 	"dependencies": {
-		"playwright": "1.59.1"
+		"playwright": "1.61.1"
 	},
 	"devDependencies": {
 		"@dreamsicle.io/stylelint-config-tailwindcss": "1.2.2",
